@@ -1,0 +1,117 @@
+# QBZero
+
+[![NFL QB Evaluation Tool](https://img.shields.io/badge/NFL%20QB%20Evaluation-Tool-brightgreen)](docs/AUDIT_CERT.md)
+
+QBZero is a public-facing NFL quarterback scouting platform focused on clear data presentation and role-based player analysis. It provides a read-only interface backed entirely by Firebase. All quarterback evaluations, roles, grades and contract details are fetched from Firestore, allowing fans and analysts to explore a flattened set of scouting data.
+
+## Tech Stack
+
+- **React** with **Vite** for fast development
+- **Tailwind CSS** for styling
+- **Firebase** (Firestore) as the data store
+- Small helper scripts in **Python** to upload data using Firebase Admin
+
+## Setup
+
+1. Install dependencies:
+
+   ```bash
+   npm install
+   ```
+
+   This command installs both production and development packages, including
+   ESLint plugins used by `npm run lint`.
+
+   If the linter complains that `eslint-plugin-react` is missing, make sure
+   dev dependencies were installed. You can rerun the install with:
+
+   ```bash
+   npm install --include=dev
+   ```
+
+2. Configure Firebase by creating a `.env` file in the project root with the following keys:
+
+   ```
+   VITE_FIREBASE_API_KEY=<your key>
+   VITE_FIREBASE_AUTH_DOMAIN=<your domain>
+   VITE_FIREBASE_PROJECT_ID=<project id>
+   VITE_FIREBASE_STORAGE_BUCKET=<bucket>
+   VITE_FIREBASE_MESSAGING_SENDER_ID=<sender id>
+   VITE_FIREBASE_APP_ID=<app id>
+   ```
+
+   For running the Python upload helpers, place your `serviceAccountKey.json` file inside `src/`.
+
+3. Start the development server:
+
+   ```bash
+   npm run dev
+   ```
+
+The app will be available at `http://localhost:5173` by default.
+
+## Folder Structure
+
+```
+public/             Static assets and exported player JSON
+  assets/           Team logos & headshots
+  fonts/            Web fonts
+src/
+  components/       Layout wrapper and shared UI pieces
+  features/         Domain features (table, profile, roster, lists, filters, tierMaker)
+  hooks/            Custom React hooks for Firebase data and filtering
+  pages/            Route-level pages
+  utils/            Helper utilities for filtering, formatting and roster logic
+  constants/        Shared constants (role lists, badges)
+  firebase/         Firestore helper modules
+  styles/           Additional style sheets
+  firebaseConfig.js Firebase client initialization
+  firebaseHelpers.js Helper functions for Firestore writes
+  firebase_helpers.py Python Firebase Admin helper
+  index.css         Global styles
+  main.jsx          App entry point
+```
+
+Additional raw datasets live under `data/` for development and import scripts.
+
+## Key Features
+
+- **Advanced Filtering** – filter quarterbacks by team, physical metrics, contracts, roles, and statistics.
+- **QB Profiles** – view trait grades, role assignments, and editable blurbs for each quarterback.
+- **Roster Tools** – build hypothetical lineups with drag‑and‑drop sections and an add‑player drawer.
+- **Contract Display** – parse and present full contract breakdowns including yearly salary, options and free agency status.
+- **Role Logic** – assign roles to better capture on‑field quarterback responsibilities and playing styles.
+- **Trade Machine** – evaluate potential trades with salary cap validation and pick swaps.
+
+## 🔁 Firestore Collections
+
+This project uses multiple Firestore collections to separate global quarterback data from team/contract logic.
+
+- `/players` — master quarterback records, stats, grades, roles, and bio info
+- `/teams` — team rosters and `contract_clean` used for cap tools
+
+📄 See [`docs/DATA_SOURCE_MAP.md`](./docs/DATA_SOURCE_MAP.md) for full usage rules  
+📄 See [`docs/FIRESTORE_SCHEMA.md`](./docs/FIRESTORE_SCHEMA.md) for detailed field breakdowns
+
+## Compliance
+
+- [Audit Certification](docs/AUDIT_CERT.md)
+- [Deep Audit](docs/AUDIT_DEEP.md)
+- [Compliance Matrix](docs/COMPLIANCE_MATRIX.csv)
+- [Order of Operations](docs/ORDER_OF_OPERATIONS.md)
+
+## Developer Guide
+
+See the upcoming [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) for deeper notes on data structure, component architecture and coding conventions.
+
+## Further Docs
+
+The `docs/` folder contains reference maps of the codebase:
+
+- [FILE_MAP.md](docs/FILE_MAP.md) – high level project layout
+- [FiltersHierarchy.md](docs/FiltersHierarchy.md)
+- [ListsHierarchy.md](docs/ListsHierarchy.md)
+- [ProfileHierarchy.md](docs/ProfileHierarchy.md)
+- [RosterHierarchy.md](docs/RosterHierarchy.md)
+- [TableHierarchy.md](docs/TableHierarchy.md)
+- [TierMakerHierarchy.md](docs/TierMakerHierarchy.md)
