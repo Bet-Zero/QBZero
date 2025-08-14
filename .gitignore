@@ -2,6 +2,7 @@ node_modules/
 .venv/
 venv/
 data/
+docs/
 public/assets/headshots/
 .vite/
 .github/
