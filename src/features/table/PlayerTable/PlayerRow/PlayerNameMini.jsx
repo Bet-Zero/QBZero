@@ -27,8 +27,8 @@ const formatFullName = (name) => {
 };
 
 // Specific name overrides for spacing/sizing
-// Previously this list handled lengthy NBA player names. Repurposed here for
-// notable quarterback names that otherwise render awkwardly at default sizes.
+// Handles notable quarterback names that otherwise render
+// awkwardly at default sizes.
 const fontSizeOverrides = {
   'Michael Penix Jr': { first: 20, last: 18 },
   'Tua Tagovailoa': { first: 22, last: 17 },
