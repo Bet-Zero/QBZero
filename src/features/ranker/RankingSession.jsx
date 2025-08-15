@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import PlayerCompareCard from './PlayerCompareCard';
 import RankingResults from './RankingResults';
 import ComparisonMatrixDrawer from './ComparisonMatrixDrawer';
-import { RankingSetup } from './RankingSetup';
 import { AnchorComparison } from './AnchorComparison';
 import {
   generateRankingFromComparisons,
@@ -11,16 +10,47 @@ import {
   buildAnchorComparisons,
 } from '@/utils/ranker/rankingEngine';
 
-const RankingSession = ({ playerPool = [], onComplete }) => {
+const RankingSession = ({ playerPool = [], setupData, onComplete }) => {
   const players = useMemo(
     () => playerPool.map((p) => p.original || p),
     [playerPool]
   );
+
+  // Initialize state
   const [currentPair, setCurrentPair] = useState([]);
   const [results, setResults] = useState([]);
   const [isFinished, setIsFinished] = useState(false);
-  const [setupData, setSetupData] = useState(null);
-  const [anchorDone, setAnchorDone] = useState(false);
+  const [anchorDone, setAnchorDone] = useState(!setupData?.anchor);
+  const [comparisonTotal, setComparisonTotal] = useState(0);
+
+  // Compute initial results only once when setupData changes
+  const initialResults = useMemo(() => {
+    if (!setupData || !players.length) return [];
+
+    const initial = [];
+    if (setupData.firstPlace) {
+      players.forEach((p) => {
+        if (p.id !== setupData.firstPlace) {
+          initial.push({ winner: setupData.firstPlace, loser: p.id });
+        }
+      });
+    }
+    if (setupData.lastPlace) {
+      players.forEach((p) => {
+        if (p.id !== setupData.lastPlace) {
+          initial.push({ winner: p.id, loser: setupData.lastPlace });
+        }
+      });
+    }
+    return initial;
+  }, [setupData, players]);
+
+  // Set initial results once
+  useEffect(() => {
+    if (initialResults.length > 0) {
+      setResults(initialResults);
+    }
+  }, [initialResults]);
 
   const groupedPlayers = useMemo(() => {
     if (!setupData || (setupData.anchor && !anchorDone)) return players;
@@ -47,14 +77,9 @@ const RankingSession = ({ playerPool = [], onComplete }) => {
     [results, groupedPlayers]
   );
 
-  const [comparisonTotal, setComparisonTotal] = useState(0);
-
+  // Update comparison total once when starting comparisons
   useEffect(() => {
-    if (
-      comparisonTotal === 0 &&
-      setupData &&
-      (!setupData.anchor || anchorDone)
-    ) {
+    if (!comparisonTotal && setupData && (!setupData.anchor || anchorDone)) {
       setComparisonTotal(remaining);
     }
   }, [comparisonTotal, setupData, anchorDone, remaining]);
@@ -64,18 +89,17 @@ const RankingSession = ({ playerPool = [], onComplete }) => {
     ? (comparisonsDone / comparisonTotal) * 100
     : 0;
 
-  // Evaluate next pair every time results change
+  // Handle next pair and completion
   useEffect(() => {
     if (!setupData) return;
     if (setupData.anchor && !anchorDone) return;
     if (groupedPlayers.length < 2) return;
 
     const next = suggestNextPair(results, groupedPlayers);
-    if (next.length === 0) {
+    if (next.length === 0 && !isFinished) {
       setIsFinished(true);
       setCurrentPair([]);
 
-      // Call onComplete with final ranking and comparison results
       if (onComplete) {
         const ranking = generateRankingFromComparisons(
           results,
@@ -84,10 +108,10 @@ const RankingSession = ({ playerPool = [], onComplete }) => {
         );
         onComplete(ranking, results);
       }
-    } else {
+    } else if (next.length > 0) {
       setCurrentPair(next);
     }
-  }, [results, groupedPlayers, setupData, anchorDone, onComplete]);
+  }, [results, groupedPlayers, setupData, anchorDone, onComplete, isFinished]);
 
   const handleSelect = (winner, loser) => {
     setResults((prev) => [...prev, { winner: winner.id, loser: loser.id }]);
@@ -130,30 +154,6 @@ const RankingSession = ({ playerPool = [], onComplete }) => {
     );
   }
 
-  if (!setupData) {
-    const handleComplete = (data) => {
-      setSetupData(data);
-      setAnchorDone(!data.anchor);
-
-      const initial = [];
-      if (data.firstPlace) {
-        players.forEach((p) => {
-          if (p.id !== data.firstPlace)
-            initial.push({ winner: data.firstPlace, loser: p.id });
-        });
-      }
-      if (data.lastPlace) {
-        players.forEach((p) => {
-          if (p.id !== data.lastPlace)
-            initial.push({ winner: p.id, loser: data.lastPlace });
-        });
-      }
-      if (initial.length) setResults(initial);
-    };
-
-    return <RankingSetup playerPool={players} onComplete={handleComplete} />;
-  }
-
   if (setupData?.anchor && !anchorDone) {
     const anchorPlayer = players.find((p) => p.id === setupData.anchor);
     const tagged = new Set(
@@ -164,9 +164,11 @@ const RankingSession = ({ playerPool = [], onComplete }) => {
         setupData.lastPlace,
       ].filter(Boolean)
     );
+
     const untagged = players.filter(
       (p) => p.id !== setupData.anchor && !tagged.has(p.id)
     );
+
     const handleAnchorComplete = (betterIds) => {
       const newResults = buildAnchorComparisons(
         setupData.anchor,
@@ -176,6 +178,7 @@ const RankingSession = ({ playerPool = [], onComplete }) => {
       if (newResults.length) setResults((prev) => [...prev, ...newResults]);
       setAnchorDone(true);
     };
+
     return (
       <AnchorComparison
         anchor={anchorPlayer}

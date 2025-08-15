@@ -5,7 +5,10 @@ import { normalizePlayerData } from '@/utils/roster';
 const usePlayerData = () => {
   const { data, loading, error } = useFirebaseQuery('players');
 
-  const players = useMemo(() => data.map(normalizePlayerData), [data]);
+  const players = useMemo(
+    () => data.filter((p) => p.bio?.Position === 'QB').map(normalizePlayerData),
+    [data]
+  );
 
   return { players, loading, error };
 };

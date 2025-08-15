@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Link, Outlet } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import { ChevronDown, Menu, X } from 'lucide-react';
+import { ChevronDown, Menu, X, Lock } from 'lucide-react';
 
 const NavGroup = ({ label, children, align = 'left', isMobile = false }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -55,6 +55,13 @@ const NavGroup = ({ label, children, align = 'left', isMobile = false }) => {
   );
 };
 
+const LockedLink = ({ children }) => (
+  <span className="flex items-center gap-1 text-white/40 cursor-not-allowed select-none">
+    <Lock size={14} className="inline" />
+    {children}
+  </span>
+);
+
 const MobileMenu = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
@@ -69,7 +76,13 @@ const MobileMenu = ({ isOpen, onClose }) => {
       {/* Menu */}
       <div className="fixed top-0 right-0 h-full w-80 bg-[#121212] border-l border-white/10 z-50 lg:hidden transform transition-transform duration-200">
         <div className="flex items-center justify-between p-6 border-b border-white/10">
-          <div className="text-xl font-bold text-white">🏈 QBZero</div>
+          <Link
+            to="/"
+            className="text-xl font-bold text-white hover:text-blue-400 transition-colors"
+            onClick={onClose}
+          >
+            🏈 QBZero
+          </Link>
           <button
             onClick={onClose}
             className="p-2 text-white/60 hover:text-white"
@@ -79,67 +92,24 @@ const MobileMenu = ({ isOpen, onClose }) => {
         </div>
 
         <nav className="p-6 space-y-4">
-          <Link
-            to="/profiles"
-            className="block py-3 text-white/80 hover:text-white border-b border-white/10"
-            onClick={onClose}
-          >
-            QB Profiles
-          </Link>
-          <Link
-            to="/players"
-            className="block py-3 text-white/80 hover:text-white border-b border-white/10"
-            onClick={onClose}
-          >
-            Quarterbacks
-          </Link>
+          <LockedLink>QB Profiles</LockedLink>
+          <LockedLink>Rankings</LockedLink>
 
           <NavGroup label="Tools" isMobile={true}>
-            <Link
-              to="/roster"
-              className="block py-2 text-white/80 hover:text-white"
-              onClick={onClose}
-            >
-              Roster Builder
-            </Link>
-            <Link
-              to="/tier-maker"
-              className="block py-2 text-white/80 hover:text-white"
-              onClick={onClose}
-            >
-              Tier Maker
-            </Link>
+            <LockedLink>Tier Maker</LockedLink>
             <Link
               to="/ranker"
               className="block py-2 text-white/80 hover:text-white"
               onClick={onClose}
             >
-              Player Ranker
+              QB Ranker
             </Link>
           </NavGroup>
 
           <NavGroup label="Saved" isMobile={true}>
-            <Link
-              to="/rosters"
-              className="block py-2 text-white/80 hover:text-white"
-              onClick={onClose}
-            >
-              Rosters
-            </Link>
-            <Link
-              to="/lists"
-              className="block py-2 text-white/80 hover:text-white"
-              onClick={onClose}
-            >
-              Lists
-            </Link>
-            <Link
-              to="/tier-lists"
-              className="block py-2 text-white/80 hover:text-white"
-              onClick={onClose}
-            >
-              Tiers
-            </Link>
+            <LockedLink>Saved</LockedLink>
+            <LockedLink>Lists</LockedLink>
+            <LockedLink>Tiers</LockedLink>
           </NavGroup>
         </nav>
       </div>
@@ -153,41 +123,29 @@ const SiteLayout = () => {
   return (
     <div className="min-h-screen bg-neutral-900 text-white flex flex-col">
       <header className="bg-[#121212] border-b border-white/10 px-4 sm:px-6 py-4 flex items-center justify-between">
-        <div className="text-xl sm:text-2xl font-bold tracking-tight text-white">
+        <Link
+          to="/"
+          className="text-xl sm:text-2xl font-bold tracking-tight text-white hover:text-blue-400 transition-colors"
+        >
           🏈 QBZero
-        </div>
+        </Link>
 
         {/* Desktop Navigation */}
         <nav className="hidden lg:flex gap-6 text-sm text-white/60 items-center">
-          <Link to="/profiles" className="hover:text-white">
-            QB Profiles
-          </Link>
-          <Link to="/players" className="hover:text-white">
-            Quarterbacks
-          </Link>
+          <LockedLink>QB Profiles</LockedLink>
+          <LockedLink>Rankings</LockedLink>
 
           <NavGroup label="Tools" align="center">
-            <Link to="/roster" className="hover:text-white py-1 px-2">
-              Roster Builder
-            </Link>
-            <Link to="/tier-maker" className="hover:text-white py-1 px-2">
-              Tier Maker
-            </Link>
+            <LockedLink>Tier Maker</LockedLink>
             <Link to="/ranker" className="hover:text-white py-1 px-2">
-              Player Ranker
+              QB Ranker
             </Link>
           </NavGroup>
 
           <NavGroup label="Saved" align="right">
-            <Link to="/rosters" className="hover:text-white py-1 px-2">
-              Rosters
-            </Link>
-            <Link to="/lists" className="hover:text-white py-1 px-2">
-              Lists
-            </Link>
-            <Link to="/tier-lists" className="hover:text-white py-1 px-2">
-              Tiers
-            </Link>
+            <LockedLink>Saved</LockedLink>
+            <LockedLink>Lists</LockedLink>
+            <LockedLink>Tiers</LockedLink>
           </NavGroup>
         </nav>
 

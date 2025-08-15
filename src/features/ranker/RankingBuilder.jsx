@@ -138,8 +138,13 @@ const RankingBuilder = ({ onStartRanking }) => {
       >
         <div className="p-4 text-white max-w-[900px] mx-auto">
           <h1 className="text-2xl sm:text-3xl font-bold mb-4 text-center sm:text-left">
-            Player Ranker
+            QB Pool Builder
           </h1>
+          <p className="text-white/70 mb-6 text-center sm:text-left">
+            Select the quarterbacks you want to rank. Add from NFL teams or
+            saved lists, then click Start Ranking to begin the QB ranking
+            process.
+          </p>
           <h2 className="text-lg sm:text-xl font-semibold mb-3">Player Pool</h2>
           <div className="flex flex-wrap gap-2 mb-4 justify-center sm:justify-start">
             {pool.map((p) => (

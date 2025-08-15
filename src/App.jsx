@@ -14,37 +14,32 @@ import { RankerProvider } from '@/context/RankerContext';
 import SiteLayout from '@/components/layout/SiteLayout';
 import NotFound from '@/pages/NotFound';
 import ListPresentationView from '@/pages/ListPresentationView';
+import Home from '@/pages/Home';
+import ComingSoon from '@/pages/ComingSoon';
 
 const App = () => {
   return (
     <Routes>
       <Route element={<SiteLayout />}>
-        <Route path="/" element={<Navigate to="/players" replace />} />
-        <Route path="/players" element={<PlayerTableView />} />
-        <Route path="/profiles" element={<PlayerProfileView />} />
-        <Route path="/lists" element={<ListsHome />} />
-        <Route path="/lists/:listId" element={<ListManager />} />
-        <Route path="/list-presentation" element={<ListPresentationView />} />
-        <Route path="/tier-lists" element={<TierListsHome />} />
-        <Route path="/tier-maker/:tierListId?" element={<TierMakerView />} />
+        <Route path="/" element={<Home />} />
+        <Route path="/players" element={<ComingSoon />} />
+        <Route path="/profiles" element={<ComingSoon />} />
+        <Route path="/lists" element={<ComingSoon />} />
+        <Route path="/lists/:listId" element={<ComingSoon />} />
+        <Route path="/list-presentation" element={<ComingSoon />} />
+        <Route path="/tier-lists" element={<ComingSoon />} />
+        <Route path="/tier-maker/:tierListId?" element={<ComingSoon />} />
 
-        {/* Ranker Routes with shared context */}
-        <Route
-          path="/ranker/*"
-          element={
-            <RankerProvider>
-              <Routes>
-                <Route path="/" element={<RankerLandingPage />} />
-                <Route path="/setup" element={<RankerSetupPage />} />
-                <Route
-                  path="/comparisons"
-                  element={<RankerComparisonsPage />}
-                />
-                <Route path="/results" element={<RankerResultsPage />} />
-              </Routes>
-            </RankerProvider>
-          }
-        />
+        {/* Ranker Routes */}
+        <Route element={<RankerProvider />}>
+          <Route path="/ranker" element={<RankerLandingPage />} />
+          <Route path="/ranker/setup" element={<RankerSetupPage />} />
+          <Route
+            path="/ranker/comparisons"
+            element={<RankerComparisonsPage />}
+          />
+          <Route path="/ranker/results" element={<RankerResultsPage />} />
+        </Route>
 
         {/* Legacy route redirect */}
         <Route

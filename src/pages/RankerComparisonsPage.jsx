@@ -5,17 +5,22 @@ import RankingSession from '@/features/ranker/RankingSession';
 
 const RankerComparisonsPage = () => {
   const navigate = useNavigate();
-  const { playerPool, setCurrentPhase, setFinalRanking, setComparisonResults } =
-    useRankerContext();
+  const {
+    playerPool,
+    setupData,
+    setCurrentPhase,
+    setFinalRanking,
+    setComparisonResults,
+  } = useRankerContext();
 
   useEffect(() => {
     setCurrentPhase('comparisons');
 
-    // Redirect to setup if no player pool
-    if (!playerPool || playerPool.length < 2) {
+    // Redirect to setup if either player pool or setup data is missing
+    if (!playerPool?.length || !setupData) {
       navigate('/ranker/setup');
     }
-  }, [setCurrentPhase, playerPool, navigate]);
+  }, [setCurrentPhase, playerPool, setupData, navigate]);
 
   const handleRankingComplete = (ranking, comparisons) => {
     setFinalRanking(ranking);
@@ -23,7 +28,7 @@ const RankerComparisonsPage = () => {
     navigate('/ranker/results');
   };
 
-  if (!playerPool || playerPool.length < 2) {
+  if (!playerPool?.length || !setupData) {
     return (
       <div className="bg-neutral-900 min-h-screen text-white flex items-center justify-center">
         <div className="text-center">
@@ -43,6 +48,7 @@ const RankerComparisonsPage = () => {
     <div className="bg-neutral-900 min-h-screen">
       <RankingSession
         playerPool={playerPool}
+        setupData={setupData}
         onComplete={handleRankingComplete}
       />
     </div>

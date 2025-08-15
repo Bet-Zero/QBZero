@@ -219,7 +219,7 @@ export const RankingSetup = ({ playerPool = [], onComplete }) => {
           onClick={handleReady}
           className="px-8 py-3 rounded-lg bg-green-600 hover:bg-green-700 transition-colors text-white font-semibold text-lg shadow-lg"
         >
-          🚀 Start Ranking
+          Go
         </button>
       </div>
     </div>

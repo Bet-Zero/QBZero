@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
+import { Outlet } from 'react-router-dom';
 
 const RankerContext = createContext();
 
@@ -10,7 +11,7 @@ export const useRankerContext = () => {
   return context;
 };
 
-export const RankerProvider = ({ children }) => {
+export const RankerProvider = () => {
   // Player pool from setup
   const [playerPool, setPlayerPool] = useState([]);
 
@@ -55,7 +56,9 @@ export const RankerProvider = ({ children }) => {
   };
 
   return (
-    <RankerContext.Provider value={value}>{children}</RankerContext.Provider>
+    <RankerContext.Provider value={value}>
+      <Outlet />
+    </RankerContext.Provider>
   );
 };
 
