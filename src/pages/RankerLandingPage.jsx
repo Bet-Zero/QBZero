@@ -3,37 +3,47 @@ import { Link } from 'react-router-dom';
 
 const RankerLandingPage = () => {
   return (
-    <div className="min-h-screen bg-neutral-900 text-white flex flex-col items-center justify-center px-4">
-      <div className="max-w-2xl text-center">
-        <div className="mb-8">
-          <h1 className="text-4xl sm:text-6xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
-            QB Ranker
-          </h1>
-          <p className="text-xl sm:text-2xl text-white/80 mb-6">
-            Create the definitive quarterback rankings
-          </p>
-          <p className="text-lg text-white/60 leading-relaxed">
-            Build your custom QB rankings through head-to-head comparisons. Our
-            smart algorithm minimizes the number of decisions needed while
-            ensuring accurate results.
-          </p>
-        </div>
-
-        <div className="space-y-4">
-          <Link
-            to="/ranker/setup"
-            className="inline-block px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-lg font-semibold text-lg transition-all duration-200 transform hover:scale-105 shadow-lg"
-          >
-            🚀 Start Ranking
-          </Link>
-
-          <div className="text-sm text-white/50 mt-6">
-            <p>• Pre-select your top and bottom tier players</p>
-            <p>• Set anchor points for more accurate rankings</p>
-            <p>• Make head-to-head comparisons</p>
-            <p>• Export your final rankings</p>
-          </div>
-        </div>
+    <div className="min-h-screen bg-neutral-900 text-white flex flex-col items-center justify-start py-16 px-6 relative overflow-hidden">
+      {/* Animated gradient background circles */}
+      <div
+        className="absolute top-0 left-0 w-96 h-96 bg-teal-500 opacity-20 rounded-full blur-3xl animate-slow-pulse"
+        style={{ zIndex: 0 }}
+      />
+      <div
+        className="absolute bottom-0 right-0 w-72 h-72 bg-gray-700 opacity-20 rounded-full blur-2xl"
+        style={{ zIndex: 0 }}
+      />
+      {/* QB icon */}
+      <img
+        src="/assets/logos/qb-icon.svg"
+        alt="QB Icon"
+        className="w-20 h-20 mb-4 z-10"
+      />
+      <h1 className="text-5xl font-bold mb-6 bg-gradient-to-r from-gray-700 to-teal-400 bg-clip-text text-transparent z-10">
+        QB Ranker
+      </h1>
+      <p className="text-lg text-white/80 mb-44 text-center z-10">
+        Build your custom QB rankings through head-to-head comparisons with our
+        smart algorithm.
+      </p>
+      <Link
+        to="/ranker/setup"
+        className="inline-block px-8 py-4 bg-gradient-to-r from-gray-700 to-teal-600 hover:from-gray-600 hover:to-teal-500 rounded-lg font-semibold text-lg transition-all duration-200 transform hover:scale-105 shadow-lg z-10"
+      >
+        🚀 Launch Ranker
+      </Link>
+      {/* Divider */}
+      <div className="w-full max-w-md my-10 border-t border-teal-700 opacity-40 z-10" />
+      {/* How it works feature list */}
+      <div className="max-w-md w-full flex flex-col gap-4 z-10">
+        <h2 className="text-xl font-semibold text-teal-300 mb-2 text-center">
+          How it works
+        </h2>
+        <ul className="space-y-2 text-white/70 text-base">
+          <li>1. Compare QBs head-to-head</li>
+          <li>2. Let our algorithm sort your rankings</li>
+          <li>3. Save and share your custom list</li>
+        </ul>
       </div>
     </div>
   );

@@ -5,6 +5,13 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Custom slower pulse animation */
+@layer utilities {
+  .animate-slow-pulse {
+    animation: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+}
+
 body {
   font-family: system-ui, sans-serif;
 }
