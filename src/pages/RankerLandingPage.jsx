@@ -35,18 +35,7 @@ const RankerLandingPage = () => {
         🚀 Launch Ranker
       </Link>
       {/* Divider */}
-      <div className="w-full max-w-md my-10 border-t border-teal-700 opacity-40 z-10" />
-      {/* How it works feature list */}
-      <div className="max-w-md w-full flex flex-col gap-4 z-10">
-        <h2 className="text-xl font-semibold text-teal-300 mb-2 text-center">
-          How it works
-        </h2>
-        <ul className="space-y-2 text-white/70 text-base">
-          <li>1. Compare QBs head-to-head</li>
-          <li>2. Let the algorithm sort your rankings</li>
-          <li>3. Save and share your custom list</li>
-        </ul>
-      </div>
+      <div className="w-full max-w-md mt-10 border-t border-teal-700 opacity-40 z-10" />
     </div>
   );
 };
