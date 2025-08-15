@@ -27,28 +27,16 @@ const formatFullName = (name) => {
 };
 
 // Specific name overrides for spacing/sizing
+// Previously this list handled lengthy NBA player names. Repurposed here for
+// notable quarterback names that otherwise render awkwardly at default sizes.
 const fontSizeOverrides = {
-  'Giannis Antetokounmpo': { first: 20, last: 17 },
-  'Shai Gilgeous-Alexander': { first: 21, last: 13 },
-  'Nickeil Alexander-Walker': { first: 20, last: 13 },
-  'Cade Cunningham': { first: 20, last: 21 },
-  'Dorian Finney-Smith': { first: 20, last: 19 },
-  'Jonas Valanciunas': { first: 20, last: 20 },
-  'Karl-Anthony Towns': { first: 18, last: 21 },
-  'Victor Wembenyama': { first: 20, last: 20 },
-  'Kentavious Caldwell-Pope': { first: 21, last: 16 },
-  'Jalen Hood-Schifino': { first: 21, last: 16 },
-  'Talen Horton-Tucker': { first: 20, last: 15 },
-  'Kevin McCullar Jr': { first: 22, last: 20 },
-  'Tim Hardaway Jr': { first: 22, last: 19 },
-  'TyTy Washington Jr': { first: 22, last: 16 },
-  'Olivier-Maxence Prosper': { first: 16, last: 20 },
-  'Jeremiah Robinson-Earl': { first: 20, last: 16 },
-  'Trayce Jackson-Davis': { first: 20, last: 17 },
+  'Michael Penix Jr': { first: 20, last: 18 },
+  'Tua Tagovailoa': { first: 22, last: 17 },
+  'C.J. Stroud': { first: 22, last: 19 },
 };
 
 const PlayerNameMini = ({
-  name = 'LeBron James',
+  name = 'Patrick Mahomes',
   scale = 1,
   width = 140,
   firstWeightClass = 'font-light',
