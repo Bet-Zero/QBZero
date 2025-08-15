@@ -115,9 +115,3 @@ The `docs/` folder contains reference maps of the codebase:
 - [RosterHierarchy.md](docs/RosterHierarchy.md)
 - [TableHierarchy.md](docs/TableHierarchy.md)
 - [TierMakerHierarchy.md](docs/TierMakerHierarchy.md)
-
-QB Headshot Sample Structure
-{ id: 'aaron-rodgers', name: 'Aaron Rodgers' },
-{ id: 'anthony-richardson', name: 'Anthony Richardson' },
-{ id: 'baker-mayfield', name: 'Baker Mayfield' },
-{ id: 'bo-nix', name: 'Bo Nix' },

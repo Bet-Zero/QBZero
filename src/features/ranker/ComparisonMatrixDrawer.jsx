@@ -1,31 +1,51 @@
 import React, { useState } from 'react';
 import ComparisonMatrix from './ComparisonMatrix';
 
-const ComparisonMatrixDrawer = ({ players, comparisons }) => {
+const ComparisonMatrixDrawer = ({ players, comparisons, onExport }) => {
   const [open, setOpen] = useState(false);
 
   return (
     <>
       {!open && (
-        <button
-          onClick={() => setOpen(true)}
-          className="fixed bottom-2 right-2 z-30 p-1.5 rounded-full bg-black/30 hover:bg-black/50 text-white"
-          title="Show comparison matrix"
-        >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
+        <div className="fixed bottom-2 right-2 z-30 flex gap-2">
+          <button
+            onClick={onExport}
+            className="p-2 rounded-full bg-black/30 hover:bg-black/50 text-white"
+            title="Export CSV"
           >
-            <rect x="3" y="3" width="7" height="7" />
-            <rect x="14" y="3" width="7" height="7" />
-            <rect x="14" y="14" width="7" height="7" />
-            <rect x="3" y="14" width="7" height="7" />
-          </svg>
-        </button>
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M12 16v-8" />
+              <path d="M8 12l4 4 4-4" />
+              <rect x="4" y="4" width="16" height="16" rx="2" />
+            </svg>
+          </button>
+          <button
+            onClick={() => setOpen(true)}
+            className="p-1.5 rounded-full bg-black/30 hover:bg-black/50 text-white"
+            title="Show comparison matrix"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <rect x="3" y="3" width="7" height="7" />
+              <rect x="14" y="3" width="7" height="7" />
+              <rect x="14" y="14" width="7" height="7" />
+              <rect x="3" y="14" width="7" height="7" />
+            </svg>
+          </button>
+        </div>
       )}
       <div
         className={`fixed inset-x-0 bottom-0 z-40 transition-transform duration-200 ${

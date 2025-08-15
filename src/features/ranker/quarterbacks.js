@@ -7,7 +7,7 @@ export const quarterbacks = [
   { id: 'bryce-young', name: 'Bryce Young' },
   { id: 'c-j-stroud', name: 'C.J. Stroud' },
   { id: 'caleb-williams', name: 'Caleb Williams' },
-  { id: 'cameron-ward', name: 'Cameron Ward' },
+  { id: 'cameron-ward', name: 'Cam Ward' },
   { id: 'dak-prescott', name: 'Dak Prescott' },
   { id: 'daniel-jones', name: 'Daniel Jones' },
   { id: 'drake-maye', name: 'Drake Maye' },

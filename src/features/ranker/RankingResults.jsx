@@ -14,7 +14,10 @@ const RankingResults = ({ ranking = [] }) => {
 
   const handleExportCSV = () => {
     const rows = ranking
-      .map((p, idx) => `${idx + 1},"${(p.display_name || p.name).replace(/"/g, '""')}"`)
+      .map(
+        (p, idx) =>
+          `${idx + 1},"${(p.display_name || p.name).replace(/"/g, '""')}"`
+      )
       .join('\n');
     const csv = `Rank,Name\n${rows}`;
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -28,20 +31,34 @@ const RankingResults = ({ ranking = [] }) => {
 
   return (
     <div className="mt-6 mx-auto max-w-5xl px-4">
-      <div className="flex flex-col items-center mb-4 gap-2 sm:flex-row sm:justify-between sm:gap-4">
-        <h2 className="text-2xl font-bold text-center flex-1">Your Rankings</h2>
+      <div className="flex flex-col items-center mb-4 mt-12 gap-2 sm:flex-row sm:justify-between sm:gap-4">
+        <h2 className="text-2xl font-bold text-center flex-1 mb-1">
+          QB Rankings 2025
+        </h2>
         <div className="flex gap-2">
+          {/* Copy icon button */}
           <button
             onClick={handleCopy}
-            className="px-3 py-1 text-sm text-white bg-white/10 rounded hover:bg-white/20"
+            className="px-3 py-1 text-sm text-white bg-white/10 rounded hover:bg-white/20 flex items-center"
+            title="Copy List"
           >
-            Copy List
-          </button>
-          <button
-            onClick={handleExportCSV}
-            className="px-3 py-1 text-sm text-white bg-white/10 rounded hover:bg-white/20"
-          >
-            Export CSV
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              className="mr-1"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+              />
+            </svg>
+            Copy
           </button>
         </div>
       </div>

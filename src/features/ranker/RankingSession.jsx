@@ -104,8 +104,13 @@ const RankingSession = ({ playerPool = [] }) => {
     return (
       <>
         <RankingResults ranking={ranking} />
-        <div className="text-green-400 mt-4 text-center">
-          ✅ All comparisons complete!
+        <div className="text-white/30 mt-8 text-center text-sm italic">
+          Ranking created on{' '}
+          {new Date().toLocaleDateString(undefined, {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          })}
         </div>
         <ComparisonMatrixDrawer
           players={groupedPlayers}
