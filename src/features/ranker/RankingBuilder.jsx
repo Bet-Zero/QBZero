@@ -9,7 +9,7 @@ import AddPlayerDrawer from '@/features/roster/AddPlayerDrawer';
 import RankingSession from './RankingSession';
 import TierPlayerTile from '@/features/lists/TierPlayerTile';
 
-const RankingBuilder = () => {
+const RankingBuilder = ({ onStartRanking }) => {
   const { players: allPlayers, loading } = usePlayerData();
   const { data: listsData } = useFirebaseQuery('lists');
 
@@ -48,35 +48,26 @@ const RankingBuilder = () => {
 
   const playersMap = useMemo(() => {
     const map = {};
-    allPlayers.forEach((p) => {
+    processedPlayers.forEach((p) => {
       map[p.id] = p;
     });
     return map;
-  }, [allPlayers]);
-
-  const lists = useMemo(
-    () =>
-      (listsData || []).map((l) => {
-        const orderIds = l.playerOrder || [];
-        const allIds = l.playerIds || [];
-        const merged = [...orderIds];
-        allIds.forEach((id) => {
-          if (!merged.includes(id)) merged.push(id);
-        });
-        return {
-          id: l.id,
-          name: l.name,
-          playerIds: merged,
-        };
-      }),
-    [listsData]
-  );
+  }, [processedPlayers]);
 
   const [pool, setPool] = useState([]);
   const [drawerOpen, setDrawerOpen] = useState(false);
+
   const [selectedTeam, setSelectedTeam] = useState(null);
   const [selectedList, setSelectedList] = useState('');
-  const [started, setStarted] = useState(false);
+
+  const lists = useMemo(() => {
+    if (!listsData) return [];
+    return Object.entries(listsData).map(([id, data]) => ({
+      id,
+      name: data.name,
+      playerIds: data.order || [],
+    }));
+  }, [listsData]);
 
   const addPlayerToPool = (player) => {
     setPool((prev) => {
@@ -85,18 +76,18 @@ const RankingBuilder = () => {
     });
   };
 
-  const addPlayersToPool = (playersArr) => {
+  const addPlayersToPool = (players) => {
     setPool((prev) => {
       const existingIds = new Set(prev.map((p) => p.id));
-      const additions = playersArr.filter((p) => !existingIds.has(p.id));
-      return [...prev, ...additions];
+      const newPlayers = players.filter((p) => !existingIds.has(p.id));
+      return [...prev, ...newPlayers];
     });
   };
 
   const handleAddTeam = () => {
     if (!selectedTeam) return;
-    const teamPlayers = allPlayers.filter(
-      (p) => (p.bio?.Team || '').toLowerCase() === selectedTeam.id
+    const teamPlayers = processedPlayers.filter(
+      (p) => p.team === selectedTeam.teamName.toLowerCase()
     );
     addPlayersToPool(teamPlayers);
     setSelectedTeam(null);
@@ -117,12 +108,13 @@ const RankingBuilder = () => {
     setPool((prev) => prev.filter((p) => p.id !== id));
   };
 
+  const handleStartRanking = () => {
+    if (pool.length < 2) return;
+    onStartRanking?.(pool);
+  };
+
   if (loading) {
     return <div className="p-4 text-white">Loading players...</div>;
-  }
-
-  if (started) {
-    return <RankingSession playerPool={pool} />;
   }
 
   return (
@@ -145,15 +137,17 @@ const RankingBuilder = () => {
         }`}
       >
         <div className="p-4 text-white max-w-[900px] mx-auto">
-          <h1 className="text-3xl font-bold mb-4">Player Ranker</h1>
-          <h2 className="text-xl font-semibold mb-2">Player Pool</h2>
-          <div className="flex flex-wrap gap-2 mb-4">
+          <h1 className="text-2xl sm:text-3xl font-bold mb-4 text-center sm:text-left">
+            Player Ranker
+          </h1>
+          <h2 className="text-lg sm:text-xl font-semibold mb-3">Player Pool</h2>
+          <div className="flex flex-wrap gap-2 mb-4 justify-center sm:justify-start">
             {pool.map((p) => (
               <div key={p.id} className="relative">
                 <TierPlayerTile player={{ ...p, player_id: p.id }} />
                 <button
                   onClick={() => removePlayer(p.id)}
-                  className="absolute top-1 right-1 text-xs text-red-300 bg-black/40 px-[4px] rounded hover:bg-red-600"
+                  className="absolute top-1 right-1 text-xs text-red-300 bg-black/40 px-[4px] rounded hover:bg-red-600 transition-colors"
                 >
                   ✕
                 </button>
@@ -161,8 +155,8 @@ const RankingBuilder = () => {
             ))}
           </div>
 
-          <div className="flex items-center gap-2 flex-wrap mb-4">
-            <div className="flex items-center gap-1">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-2 flex-wrap mb-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
               <select
                 value={selectedTeam?.id || ''}
                 onChange={(e) =>
@@ -170,7 +164,7 @@ const RankingBuilder = () => {
                     TeamListFull.find((t) => t.id === e.target.value) || null
                   )
                 }
-                className="bg-[#1a1a1a] text-white text-sm px-2 py-1 rounded border border-white/10"
+                className="w-full sm:w-auto bg-[#1a1a1a] text-white text-sm px-2 py-1 rounded border border-white/10"
               >
                 <option value="">Add Team...</option>
                 {TeamListFull.map((team) => (
@@ -181,17 +175,17 @@ const RankingBuilder = () => {
               </select>
               <button
                 onClick={handleAddTeam}
-                className="px-2 py-1 text-sm rounded bg-white/10 hover:bg-white/20 text-white"
+                className="w-full sm:w-auto px-3 py-1 text-sm rounded bg-white/10 hover:bg-white/20 text-white transition-colors"
               >
                 Add Team
               </button>
             </div>
 
-            <div className="flex items-center gap-1">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
               <select
                 value={selectedList}
                 onChange={(e) => setSelectedList(e.target.value)}
-                className="bg-[#1a1a1a] text-white text-sm px-2 py-1 rounded border border-white/10"
+                className="w-full sm:w-auto bg-[#1a1a1a] text-white text-sm px-2 py-1 rounded border border-white/10"
               >
                 <option value="">Add List...</option>
                 {lists.map((l) => (
@@ -202,26 +196,26 @@ const RankingBuilder = () => {
               </select>
               <button
                 onClick={handleAddList}
-                className="px-2 py-1 text-sm rounded bg-white/10 hover:bg-white/20 text-white"
+                className="w-full sm:w-auto px-3 py-1 text-sm rounded bg-white/10 hover:bg-white/20 text-white transition-colors"
               >
                 Add List
               </button>
             </div>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-2 justify-center sm:justify-start">
             <button
               onClick={() => setPool([])}
-              className="px-4 py-2 rounded bg-white/10 hover:bg-white/20 text-white"
+              className="w-full sm:w-auto px-4 py-2 rounded bg-white/10 hover:bg-white/20 text-white transition-colors"
             >
               Clear Pool
             </button>
             <button
-              onClick={() => setStarted(true)}
+              onClick={handleStartRanking}
               disabled={pool.length < 2}
-              className="px-4 py-2 rounded bg-black/20 hover:bg-white/20 text-white disabled:opacity-50"
+              className="w-full sm:w-auto px-4 py-2 rounded bg-black/20 hover:bg-white/20 text-white disabled:opacity-50 transition-colors font-semibold"
             >
-              Go
+              Start Ranking
             </button>
           </div>
         </div>

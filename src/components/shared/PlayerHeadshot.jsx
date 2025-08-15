@@ -11,9 +11,12 @@ const PlayerHeadshot = ({ src, playerId, className = '' }) => {
     e.target.src = '/assets/headshots/default.png';
   };
 
+  // Default size if no className provided
+  const defaultClasses = className || 'w-[200px] h-[200px]';
+
   return (
     <div
-      className={`w-[200px] h-[200px] rounded-xl overflow-hidden border-2 border-black ${className}`}
+      className={`${defaultClasses} rounded-xl overflow-hidden border-2 border-black`}
     >
       <img
         src={initialSrc}

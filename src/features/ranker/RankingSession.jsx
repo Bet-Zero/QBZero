@@ -11,7 +11,7 @@ import {
   buildAnchorComparisons,
 } from '@/utils/ranker/rankingEngine';
 
-const RankingSession = ({ playerPool = [] }) => {
+const RankingSession = ({ playerPool = [], onComplete }) => {
   const players = useMemo(
     () => playerPool.map((p) => p.original || p),
     [playerPool]
@@ -74,10 +74,20 @@ const RankingSession = ({ playerPool = [] }) => {
     if (next.length === 0) {
       setIsFinished(true);
       setCurrentPair([]);
+
+      // Call onComplete with final ranking and comparison results
+      if (onComplete) {
+        const ranking = generateRankingFromComparisons(
+          results,
+          groupedPlayers,
+          setupData
+        );
+        onComplete(ranking, results);
+      }
     } else {
       setCurrentPair(next);
     }
-  }, [results, groupedPlayers, setupData, anchorDone]);
+  }, [results, groupedPlayers, setupData, anchorDone, onComplete]);
 
   const handleSelect = (winner, loser) => {
     setResults((prev) => [...prev, { winner: winner.id, loser: loser.id }]);
@@ -104,7 +114,7 @@ const RankingSession = ({ playerPool = [] }) => {
     return (
       <>
         <RankingResults ranking={ranking} />
-        <div className="text-white/30 mt-8 text-center text-sm italic">
+        <div className="text-white/30 mt-8 text-center text-sm italic px-4">
           Ranking created on{' '}
           {new Date().toLocaleDateString(undefined, {
             year: 'numeric',
@@ -176,12 +186,12 @@ const RankingSession = ({ playerPool = [] }) => {
   }
 
   if (!currentPair.length) {
-    return <div className="text-white">Loading...</div>;
+    return <div className="text-white px-4 text-center">Loading...</div>;
   }
 
   return (
     <>
-      <div className="flex flex-col items-center pt-12">
+      <div className="flex flex-col items-center pt-6 sm:pt-12 px-4">
         <PlayerCompareCard
           left={currentPair[0]}
           right={currentPair[1]}
@@ -189,15 +199,15 @@ const RankingSession = ({ playerPool = [] }) => {
           onSkip={handleSkip}
           onUndo={handleUndo}
         />
-        <div className="w-full max-w-xs mt-4">
+        <div className="w-full max-w-sm sm:max-w-xs mt-6 sm:mt-4">
           <div className="w-full bg-white/20 h-3 rounded-full">
             <div
-              className="bg-green-500 h-3 rounded-full"
+              className="bg-green-500 h-3 rounded-full transition-all duration-300"
               style={{ width: `${progressPercent}%` }}
             />
           </div>
         </div>
-        <div className="mt-2 text-white/60 text-sm">
+        <div className="mt-3 text-white/60 text-sm text-center">
           {comparisonsDone} / {comparisonTotal} comparisons
         </div>
       </div>
