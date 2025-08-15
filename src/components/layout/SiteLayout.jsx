@@ -94,6 +94,7 @@ const MobileMenu = ({ isOpen, onClose }) => {
         <nav className="p-6 space-y-4">
           <LockedLink>QB Profiles</LockedLink>
           <LockedLink>Rankings</LockedLink>
+          <LockedLink>QBW 🔮</LockedLink>
 
           <NavGroup label="Tools" isMobile={true}>
             <LockedLink>Tier Maker</LockedLink>
@@ -104,12 +105,12 @@ const MobileMenu = ({ isOpen, onClose }) => {
             >
               QB Ranker
             </Link>
-          </NavGroup>
-
-          <NavGroup label="Saved" isMobile={true}>
-            <LockedLink>Saved</LockedLink>
-            <LockedLink>Lists</LockedLink>
-            <LockedLink>Tiers</LockedLink>
+            <div className="border-t border-white/10 my-2" />
+            <div>
+              <div className="text-xs text-white/50 mb-1">Saved</div>
+              <LockedLink>Lists</LockedLink>
+              <LockedLink>Tiers</LockedLink>
+            </div>
           </NavGroup>
         </nav>
       </div>
@@ -134,18 +135,18 @@ const SiteLayout = () => {
         <nav className="hidden lg:flex gap-6 text-sm text-white/60 items-center">
           <LockedLink>QB Profiles</LockedLink>
           <LockedLink>Rankings</LockedLink>
-
+          <LockedLink>QBW 🔮</LockedLink>
           <NavGroup label="Tools" align="center">
             <LockedLink>Tier Maker</LockedLink>
             <Link to="/ranker" className="hover:text-white py-1 px-2">
               QB Ranker
             </Link>
-          </NavGroup>
-
-          <NavGroup label="Saved" align="right">
-            <LockedLink>Saved</LockedLink>
-            <LockedLink>Lists</LockedLink>
-            <LockedLink>Tiers</LockedLink>
+            <div className="border-t border-white/10 my-2" />
+            <div>
+              <div className="text-xs text-white/50 mb-1">Saved</div>
+              <LockedLink>Lists</LockedLink>
+              <LockedLink>Tiers</LockedLink>
+            </div>
           </NavGroup>
         </nav>
 
