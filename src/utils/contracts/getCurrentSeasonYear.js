@@ -6,9 +6,9 @@ export function getCurrentSeasonYear(date = new Date()) {
   const month = date.getUTCMonth(); // 0 = Jan … 6 = Jul … 11 = Dec
   const day = date.getUTCDate();
 
-  // NBA season rolls over **July 1**.
-  // • June 30 or earlier  → previous season
-  // • July 1 or later     → current season
-  const isNewSeason = month > 6 || (month === 6 && day >= 1);
+  // NFL league year starts mid-March.
+  // • March 14 or earlier → previous season
+  // • March 15 or later   → current season
+  const isNewSeason = month > 2 || (month === 2 && day >= 15);
   return isNewSeason ? year : year - 1;
 }
