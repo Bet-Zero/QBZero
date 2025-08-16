@@ -10,6 +10,7 @@ import RankerLandingPage from '@/pages/RankerLandingPage';
 import RankerSetupPage from '@/pages/RankerSetupPage';
 import RankerComparisonsPage from '@/pages/RankerComparisonsPage';
 import RankerResultsPage from '@/pages/RankerResultsPage';
+import QBRankingsPage from '@/pages/QBRankingsPage';
 import { RankerProvider } from '@/context/RankerContext';
 import SiteLayout from '@/components/layout/SiteLayout';
 import NotFound from '@/pages/NotFound';
@@ -24,6 +25,7 @@ const App = () => {
         <Route path="/" element={<Home />} />
         <Route path="/players" element={<ComingSoon />} />
         <Route path="/profiles" element={<ComingSoon />} />
+        <Route path="/rankings" element={<QBRankingsPage />} />
         <Route path="/lists" element={<ComingSoon />} />
         <Route path="/lists/:listId" element={<ComingSoon />} />
         <Route path="/list-presentation" element={<ComingSoon />} />

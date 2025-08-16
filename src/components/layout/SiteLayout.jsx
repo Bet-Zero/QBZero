@@ -93,7 +93,7 @@ const MobileMenu = ({ isOpen, onClose }) => {
 
         <nav className="p-6 space-y-4">
           <LockedLink>QB Profiles</LockedLink>
-          <LockedLink>Rankings</LockedLink>
+          <LockedLink>QB Rankings</LockedLink>
           <LockedLink>QBW 🔮</LockedLink>
 
           <NavGroup label="Tools" isMobile={true}>
@@ -134,7 +134,7 @@ const SiteLayout = () => {
         {/* Desktop Navigation */}
         <nav className="hidden lg:flex gap-6 text-sm text-white/60 items-center">
           <LockedLink>QB Profiles</LockedLink>
-          <LockedLink>Rankings</LockedLink>
+          <LockedLink>QB Rankings</LockedLink>
           <LockedLink>QBW 🔮</LockedLink>
           <NavGroup label="Tools" align="center">
             <LockedLink>Tier Maker</LockedLink>
