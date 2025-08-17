@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { ChevronUp, ChevronDown, Trash2, Edit3 } from 'lucide-react';
-import TeamLogo from '@/components/shared/TeamLogo';
 
 // Mapping team abbreviations to logo file names
 const teamLogoMap = {
@@ -81,7 +80,7 @@ const QBRankingCard = ({
       )}
 
       {/* Controls */}
-      <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+      <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-20">
         <button
           onClick={onMoveUp}
           disabled={!canMoveUp}
@@ -158,7 +157,12 @@ const QBRankingCard = ({
             </h3>
             {qb.team && (
               <div className="flex items-center gap-2 px-2 py-1 bg-[#111]/80 backdrop-blur-sm rounded text-white/80">
-                <TeamLogo teamAbbr={qb.team} className="w-4 h-4" />
+                <div
+                  className="w-4 h-4 bg-center bg-no-repeat bg-contain"
+                  style={{
+                    backgroundImage: `url(${teamLogo})`,
+                  }}
+                />
                 <span className="text-xs font-medium">{qb.team}</span>
               </div>
             )}

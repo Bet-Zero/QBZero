@@ -47,7 +47,7 @@ const teamLogoMap = {
 };
 
 const AddQBModal = ({ onClose, onAdd, existingQBNames = [] }) => {
-  const [showQBPool, setShowQBPool] = useState(false);
+  const [showQBPool, setShowQBPool] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [formData, setFormData] = useState({
     name: '',
@@ -153,17 +153,6 @@ const AddQBModal = ({ onClose, onAdd, existingQBNames = [] }) => {
         {/* Tab Navigation */}
         <div className="flex border-b border-white/10">
           <button
-            onClick={() => setShowQBPool(false)}
-            className={`flex-1 px-6 py-3 text-sm font-medium transition-all ${
-              !showQBPool
-                ? 'bg-blue-600 text-white'
-                : 'text-white/60 hover:text-white hover:bg-white/5'
-            }`}
-          >
-            <User size={16} className="inline mr-2" />
-            Manual Entry
-          </button>
-          <button
             onClick={() => setShowQBPool(true)}
             className={`flex-1 px-6 py-3 text-sm font-medium transition-all ${
               showQBPool
@@ -174,112 +163,21 @@ const AddQBModal = ({ onClose, onAdd, existingQBNames = [] }) => {
             <Users size={16} className="inline mr-2" />
             QB Pool ({availableQBs.length})
           </button>
+          <button
+            onClick={() => setShowQBPool(false)}
+            className={`flex-1 px-6 py-3 text-sm font-medium transition-all ${
+              !showQBPool
+                ? 'bg-blue-600 text-white'
+                : 'text-white/60 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            <User size={16} className="inline mr-2" />
+            Manual Entry
+          </button>
         </div>
 
         <div className="overflow-y-auto max-h-[calc(90vh-120px)]">
-          {showQBPool ? (
-            /* QB Pool Tab */
-            <div className="p-6 space-y-4">
-              {/* Search and Add All */}
-              <div className="flex gap-3">
-                <div className="relative flex-1">
-                  <Search
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40"
-                    size={16}
-                  />
-                  <input
-                    type="text"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    placeholder="Search QBs by name..."
-                    className="w-full pl-10 pr-4 py-3 bg-[#121212] border border-white/20 rounded-lg text-white placeholder-white/40 focus:border-blue-500 focus:outline-none transition-all"
-                  />
-                </div>
-                <button
-                  onClick={handleAddAll}
-                  disabled={availableQBs.length === 0}
-                  className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-white font-medium transition-all whitespace-nowrap"
-                >
-                  <UserPlus size={16} />
-                  Add All ({availableQBs.length})
-                </button>
-              </div>
-
-              {availableQBs.length === 0 ? (
-                <div className="text-center py-8 text-white/60">
-                  <div className="text-lg mb-2">🎉 All QBs Added!</div>
-                  <div className="text-sm">
-                    You've added all available quarterbacks to your rankings.
-                  </div>
-                </div>
-              ) : (
-                <>
-                  {/* QB Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-96 overflow-y-auto">
-                    {filteredQBs.map((qb) => (
-                      <button
-                        key={qb.id}
-                        onClick={() => handleQBSelect(qb)}
-                        className="flex items-center gap-3 p-3 bg-[#121212] hover:bg-[#1f1f1f] border border-white/10 hover:border-blue-500/50 rounded-lg transition-all text-left group"
-                      >
-                        <div className="w-12 h-12 rounded-lg overflow-hidden bg-[#0a0a0a] flex-shrink-0">
-                          <img
-                            src={`/assets/headshots/${qb.id}.png`}
-                            alt={qb.name}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              e.target.src = '/assets/headshots/default.png';
-                            }}
-                          />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-white group-hover:text-blue-300 transition-colors truncate">
-                            {qb.name}
-                          </div>
-                          <div className="flex items-center gap-2 mt-1">
-                            {qb.team && qb.team !== 'N/A' ? (
-                              <>
-                                <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
-                                  <img
-                                    src={`/assets/logos/${teamLogoMap[qb.team] || qb.team.toLowerCase()}.svg`}
-                                    alt={qb.team}
-                                    className="w-full h-full object-contain"
-                                    onError={(e) => {
-                                      e.target.style.display = 'none';
-                                      e.target.nextSibling.style.display =
-                                        'inline';
-                                    }}
-                                  />
-                                  <span className="text-xs text-white/60 font-medium hidden">
-                                    {qb.team}
-                                  </span>
-                                </div>
-                                <span className="text-xs text-white/60">
-                                  {qb.team}
-                                </span>
-                              </>
-                            ) : (
-                              <span className="text-xs text-white/40 italic">
-                                {qb.team === 'N/A'
-                                  ? 'Free Agent'
-                                  : 'Click to add'}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-
-                  {filteredQBs.length === 0 && searchTerm && (
-                    <div className="text-center py-8 text-white/40">
-                      No available QBs found matching "{searchTerm}"
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          ) : (
+          {!showQBPool ? (
             /* Manual Entry Tab */
             <form onSubmit={handleSubmit} className="p-6 space-y-6">
               {/* QB Name */}
@@ -386,6 +284,108 @@ const AddQBModal = ({ onClose, onAdd, existingQBNames = [] }) => {
                 </button>
               </div>
             </form>
+          ) : (
+            /* QB Pool Tab */
+            <div className="p-6 space-y-4">
+              {/* Search and Add All */}
+              <div className="flex gap-3">
+                <div className="relative flex-1">
+                  <Search
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40"
+                    size={16}
+                  />
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Search QBs by name..."
+                    className="w-full pl-10 pr-4 py-3 bg-[#121212] border border-white/20 rounded-lg text-white placeholder-white/40 focus:border-blue-500 focus:outline-none transition-all"
+                  />
+                </div>
+                <button
+                  onClick={handleAddAll}
+                  disabled={availableQBs.length === 0}
+                  className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-neutral-600 to-neutral-700 hover:from-neutral-700 hover:to-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-white font-medium transition-all whitespace-nowrap"
+                >
+                  <UserPlus size={16} />
+                  Add All ({availableQBs.length})
+                </button>
+              </div>
+
+              {availableQBs.length === 0 ? (
+                <div className="text-center py-8 text-white/60">
+                  <div className="text-lg mb-2">🎉 All QBs Added!</div>
+                  <div className="text-sm">
+                    You've added all available quarterbacks to your rankings.
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* QB Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-96 overflow-y-auto">
+                    {filteredQBs.map((qb) => (
+                      <button
+                        key={qb.id}
+                        onClick={() => handleQBSelect(qb)}
+                        className="flex items-center gap-3 p-3 bg-[#121212] hover:bg-[#1f1f1f] border border-white/10 hover:border-blue-500/50 rounded-lg transition-all text-left group"
+                      >
+                        <div className="w-12 h-12 rounded-lg overflow-hidden bg-[#0a0a0a] flex-shrink-0">
+                          <img
+                            src={`/assets/headshots/${qb.id}.png`}
+                            alt={qb.name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.target.src = '/assets/headshots/default.png';
+                            }}
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-white group-hover:text-blue-300 transition-colors truncate">
+                            {qb.name}
+                          </div>
+                          <div className="flex items-center gap-2 mt-1">
+                            {qb.team && qb.team !== 'N/A' ? (
+                              <>
+                                <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
+                                  <img
+                                    src={`/assets/logos/${teamLogoMap[qb.team] || qb.team.toLowerCase()}.svg`}
+                                    alt={qb.team}
+                                    className="w-full h-full object-contain"
+                                    onError={(e) => {
+                                      e.target.style.display = 'none';
+                                      e.target.nextSibling.style.display =
+                                        'inline';
+                                    }}
+                                  />
+                                  <span className="text-xs text-white/60 font-medium hidden">
+                                    {qb.team}
+                                  </span>
+                                </div>
+                                <span className="text-xs text-white/60">
+                                  {qb.team}
+                                </span>
+                              </>
+                            ) : (
+                              <span className="text-xs text-white/40 italic">
+                                {qb.team === 'N/A'
+                                  ? 'Free Agent'
+                                  : 'Click to add'}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+
+                  {filteredQBs.length === 0 && searchTerm && (
+                    <div className="text-center py-8 text-white/40">
+                      No available QBs found matching "{searchTerm}"
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
           )}
         </div>
       </div>
