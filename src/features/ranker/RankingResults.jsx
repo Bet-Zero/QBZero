@@ -1,10 +1,67 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { LayoutGrid, ListOrdered, Download } from 'lucide-react';
+import useImageDownload from '@/hooks/useImageDownload';
+
+// Mapping team abbreviations to logo file names
+const teamLogoMap = {
+  ARI: 'cardinals',
+  ATL: 'falcons',
+  BAL: 'ravens',
+  BUF: 'bills',
+  CAR: 'panthers',
+  CHI: 'bears',
+  CIN: 'bengals',
+  CLE: 'browns',
+  DAL: 'cowboys',
+  DEN: 'broncos',
+  DET: 'lions',
+  GB: 'packers',
+  HOU: 'texans',
+  IND: 'colts',
+  JAX: 'jaguars',
+  KC: 'chiefs',
+  LAC: 'chargers',
+  LAR: 'rams',
+  LAV: 'raiders', // Fix Raiders abbreviation
+  LV: 'raiders', // Support both LAV and LV
+  MIA: 'dolphins',
+  MIN: 'vikings',
+  NE: 'patriots',
+  NO: 'saints',
+  NYG: 'giants',
+  NYJ: 'jets',
+  PHI: 'eagles',
+  PIT: 'steelers',
+  SF: '49ers',
+  SEA: 'seahawks',
+  TB: 'buccaneers',
+  TEN: 'titans',
+  WAS: 'commanders',
+};
+
+// Helper function to get logo path safely
+const getLogoPath = (team) => {
+  if (!team) return null;
+  const logoId = teamLogoMap[team] || team.toLowerCase();
+  return `/assets/logos/${logoId}.svg`;
+};
 
 // Simple grid display for final rankings. Renders a responsive list of
 // player names with their rank number. Designed to scale up to large player
 // pools by using a multi-column layout.
 
 const RankingResults = ({ ranking = [] }) => {
+  const [viewType, setViewType] = useState('list'); // 'list' or 'grid'
+  const [showLogoBg, setShowLogoBg] = useState(true); // Add state for logo background toggle
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [isLocked, setIsLocked] = useState(false); // Add state to manage lock status
+  const shareViewRef = useRef(null);
+  const downloadImage = useImageDownload(shareViewRef);
+
+  useEffect(() => {
+    setIsLocked(false); // Unlock the page by default
+  }, []);
+
   const handleCopy = () => {
     const text = ranking
       .map((p, idx) => `#${idx + 1} ${p.display_name || p.name}`)
@@ -29,9 +86,78 @@ const RankingResults = ({ ranking = [] }) => {
     URL.revokeObjectURL(url);
   };
 
+  const handleDownloadImage = async () => {
+    setIsDownloading(true);
+    const date = new Date()
+      .toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      })
+      .replace(/,/g, '');
+    try {
+      await downloadImage(`qb-rankings-${date}.png`);
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   const ActionButtons = () => (
     <div className="flex gap-2 justify-center sm:justify-start">
-      {/* Copy icon button */}
+      {viewType === 'grid' && (
+        <button
+          onClick={() => setShowLogoBg(!showLogoBg)}
+          className="px-3 py-2 text-sm text-white bg-white/10 rounded hover:bg-white/20 flex items-center transition-colors"
+          title={showLogoBg ? 'Hide Logo Background' : 'Show Logo Background'}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            className="mr-1"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+            />
+          </svg>
+          <span className="hidden sm:inline">
+            {showLogoBg ? 'Hide Logo BG' : 'Show Logo BG'}
+          </span>
+        </button>
+      )}
+      <button
+        onClick={() => setViewType(viewType === 'grid' ? 'list' : 'grid')}
+        className="px-3 py-2 text-sm text-white bg-white/10 rounded hover:bg-white/20 flex items-center transition-colors"
+        title={
+          viewType === 'grid' ? 'Switch to List View' : 'Switch to Grid View'
+        }
+      >
+        {viewType === 'grid' ? (
+          <>
+            <ListOrdered size={16} className="mr-1" />
+            <span className="hidden sm:inline">List View</span>
+          </>
+        ) : (
+          <>
+            <LayoutGrid size={16} className="mr-1" />
+            <span className="hidden sm:inline">Grid View</span>
+          </>
+        )}
+      </button>
+      <button
+        onClick={handleDownloadImage}
+        className="px-3 py-2 text-sm text-white bg-white/10 rounded hover:bg-white/20 flex items-center transition-colors"
+        title="Download Image"
+      >
+        <Download size={16} className="mr-1" />
+        <span className="hidden sm:inline">Download</span>
+      </button>
       <button
         onClick={handleCopy}
         className="px-3 py-2 text-sm text-white bg-white/10 rounded hover:bg-white/20 flex items-center transition-colors"
@@ -55,80 +181,334 @@ const RankingResults = ({ ranking = [] }) => {
         </svg>
         <span className="hidden sm:inline">Copy</span>
       </button>
-      {/* Export CSV button */}
-      <button
-        onClick={handleExportCSV}
-        className="px-3 py-2 text-sm text-white bg-white/10 rounded hover:bg-white/20 flex items-center transition-colors"
-        title="Export as CSV"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="16"
-          height="16"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          className="mr-1"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-          />
-        </svg>
-        <span className="hidden sm:inline">CSV</span>
-      </button>
     </div>
   );
+
+  // Calculate number of columns and items per column for list view
+  const numCols = {
+    base: 2, // mobile
+    sm: 3, // tablet
+    md: 4, // desktop
+  };
+
+  // Create column arrays for list view
+  const createColumns = (cols) => {
+    const itemsPerCol = Math.ceil(ranking.length / cols);
+    const columns = Array(cols)
+      .fill()
+      .map(() => []);
+
+    ranking.forEach((player, idx) => {
+      const colIndex = Math.floor(idx / itemsPerCol);
+      if (colIndex < cols) {
+        columns[colIndex].push({ player, rank: idx + 1 });
+      }
+    });
+
+    return columns;
+  };
+
+  const renderContent = () => {
+    const sharedHeader = (
+      <div className="text-center mb-6">
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 bg-clip-text text-transparent mb-2">
+          QB Rankings 2025
+        </h1>
+        <div className="text-sm text-white/60 italic">
+          {new Date().toLocaleDateString(undefined, {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          })}
+        </div>
+      </div>
+    );
+
+    if (viewType === 'grid') {
+      return (
+        <div
+          ref={shareViewRef}
+          className="bg-neutral-900 p-6 rounded-lg border border-white/10"
+        >
+          {sharedHeader}
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 max-w-[1400px] mx-auto">
+            {ranking.map((p, idx) => {
+              const logoPath = getLogoPath(p.team);
+              const headshot =
+                p.headshotUrl || `/assets/headshots/${p.player_id || p.id}.png`;
+              const logoBackgroundPath = getLogoPath(p.team); // Ensure same path for background and logo
+
+              return (
+                <div key={p.id} className="relative group">
+                  {/* Card */}
+                  <div className="bg-[#1a1a1a] rounded-lg overflow-hidden border border-white/10 transition-all hover:border-white/20">
+                    {/* Headshot Container with overlaid rank */}
+                    <div
+                      className="aspect-square w-full overflow-hidden bg-[#111] relative"
+                      style={{
+                        backgroundImage: showLogoBg
+                          ? `url(${logoBackgroundPath})`
+                          : 'none',
+                      }} // Use same path for background
+                    >
+                      <img
+                        src={headshot}
+                        alt={p.name}
+                        className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                        onError={(e) => {
+                          e.target.src = '/assets/headshots/default.png';
+                        }}
+                      />
+                      {/* Rank overlay in corner */}
+                      <div className="absolute top-2 left-2 bg-neutral-600/50 backdrop-blur-sm text-white font-bold text-2xl px-1.5 py-1 rounded shadow-lg">
+                        {idx + 1}
+                      </div>
+                    </div>
+
+                    {/* Info Section */}
+                    <div className="p-3">
+                      <div className="text-white font-medium truncate mb-1">
+                        {p.display_name || p.name}
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        {logoPath && (
+                          <div className="w-4 h-4">
+                            <img
+                              src={logoPath}
+                              alt={p.team}
+                              className="w-full h-full object-contain"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                              }}
+                            />
+                          </div>
+                        )}
+                        <span className="text-white/60 text-sm">
+                          {p.team?.toUpperCase() || '—'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div
+        ref={shareViewRef}
+        className="bg-neutral-900 p-6 rounded-lg border border-white/10"
+      >
+        {sharedHeader}
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-2 gap-y-1">
+          {/* Mobile columns (2) */}
+          {createColumns(numCols.base).map((column, colIndex) => (
+            <div key={colIndex} className="flex flex-col gap-1 sm:hidden">
+              {column.map(({ player: p, rank }) => {
+                const headshot =
+                  p.headshotUrl ||
+                  `/assets/headshots/${p.player_id || p.id}.png`;
+                const logoPath = getLogoPath(p.team);
+
+                return (
+                  <div
+                    key={p.id}
+                    className="bg-white/5 rounded p-2 flex items-center gap-2"
+                  >
+                    <div className="w-8 h-8 flex items-center justify-center bg-white/10 rounded-full font-bold text-white/80">
+                      {rank}
+                    </div>
+                    <img
+                      src={headshot}
+                      alt=""
+                      className="w-10 h-10 rounded-full object-cover"
+                      onError={(e) => {
+                        e.target.src = '/assets/headshots/default.png';
+                      }}
+                    />
+                    <div className="flex-1 truncate text-sm">
+                      <div className="font-medium text-white truncate">
+                        {p.display_name || p.name}
+                      </div>
+                      <div className="flex items-center gap-1 text-white/60 text-xs">
+                        {logoPath && (
+                          <div className="w-4 h-4">
+                            <img
+                              src={logoPath}
+                              alt={p.team}
+                              className="w-full h-full object-contain"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                              }}
+                            />
+                          </div>
+                        )}
+                        <span>{p.team?.toUpperCase() || '—'}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+
+          {/* Tablet columns (3) */}
+          {createColumns(numCols.sm).map((column, colIndex) => (
+            <div
+              key={colIndex}
+              className="hidden sm:flex md:hidden flex-col gap-1"
+            >
+              {column.map(({ player: p, rank }) => {
+                const headshot =
+                  p.headshotUrl ||
+                  `/assets/headshots/${p.player_id || p.id}.png`;
+                const logoPath = getLogoPath(p.team);
+
+                return (
+                  <div
+                    key={p.id}
+                    className="bg-white/5 rounded p-2 flex items-center gap-2"
+                  >
+                    <div className="w-8 h-8 flex items-center justify-center bg-white/10 rounded-full font-bold text-white/80">
+                      {rank}
+                    </div>
+                    <img
+                      src={headshot}
+                      alt=""
+                      className="w-10 h-10 rounded-full object-cover"
+                      onError={(e) => {
+                        e.target.src = '/assets/headshots/default.png';
+                      }}
+                    />
+                    <div className="flex-1 truncate text-sm">
+                      <div className="font-medium text-white truncate">
+                        {p.display_name || p.name}
+                      </div>
+                      <div className="flex items-center gap-1 text-white/60 text-xs">
+                        {logoPath && (
+                          <div className="w-4 h-4">
+                            <img
+                              src={logoPath}
+                              alt={p.team}
+                              className="w-full h-full object-contain"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                              }}
+                            />
+                          </div>
+                        )}
+                        <span>{p.team?.toUpperCase() || '—'}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+
+          {/* Desktop columns (4) */}
+          {createColumns(numCols.md).map((column, colIndex) => (
+            <div key={colIndex} className="hidden md:flex flex-col gap-1">
+              {column.map(({ player: p, rank }) => {
+                const headshot =
+                  p.headshotUrl ||
+                  `/assets/headshots/${p.player_id || p.id}.png`;
+                const logoPath = getLogoPath(p.team);
+
+                return (
+                  <div
+                    key={p.id}
+                    className="bg-white/5 rounded p-2 flex items-center gap-2"
+                  >
+                    <div className="w-8 h-8 flex items-center justify-center bg-white/10 rounded-full font-bold text-white/80">
+                      {rank}
+                    </div>
+                    <img
+                      src={headshot}
+                      alt=""
+                      className="w-10 h-10 rounded-full object-cover"
+                      onError={(e) => {
+                        e.target.src = '/assets/headshots/default.png';
+                      }}
+                    />
+                    <div className="flex-1 truncate text-sm">
+                      <div className="font-medium text-white truncate">
+                        {p.display_name || p.name}
+                      </div>
+                      <div className="flex items-center gap-1 text-white/60 text-xs">
+                        {logoPath && (
+                          <div className="w-4 h-4">
+                            <img
+                              src={logoPath}
+                              alt={p.team}
+                              className="w-full h-full object-contain"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                              }}
+                            />
+                          </div>
+                        )}
+                        <span>{p.team?.toUpperCase() || '—'}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="mt-6 mx-auto max-w-5xl px-4">
       {/* Header with title and desktop buttons */}
       <div className="flex flex-col items-center mb-4 mt-8 sm:mt-12 gap-3 sm:flex-row sm:justify-between sm:gap-4">
-        <h2 className="text-xl sm:text-2xl font-bold text-center flex-1 mb-1">
-          QB Rankings 2025
-        </h2>
         {/* Desktop buttons - hidden on mobile */}
-        <div className="hidden sm:flex">
+        <div className="hidden sm:block">
           <ActionButtons />
         </div>
       </div>
 
-      {/* Original multi-column layout preserved for desktop, mobile-optimized */}
-      <ol className="list-none columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-4">
-        {ranking.map((p, idx) => {
-          const headshot =
-            p.headshot ||
-            p.headshotUrl ||
-            `/assets/headshots/${p.player_id || p.id}.png`;
-          return (
-            <li
-              key={p.id}
-              className="flex items-center h-20 sm:h-10 px-3 mb-3 sm:mb-2 bg-white/5 rounded text-white gap-3 break-inside-avoid"
-            >
-              <span className="font-bold text-xl sm:text-base min-w-[44px] sm:min-w-[32px] text-white/80">
-                #{idx + 1}
-              </span>
-              <img
-                src={headshot}
-                alt=""
-                className="w-16 h-16 sm:w-8 sm:h-8 rounded-full object-cover flex-shrink-0"
-                onError={(e) => {
-                  e.target.src = '/assets/headshots/default.png';
-                }}
-              />
-              <span className="truncate text-xl sm:text-base font-medium">
-                {p.display_name || p.name}
-              </span>
-            </li>
-          );
-        })}
-      </ol>
+      {/* Content */}
+      {renderContent()}
 
       {/* Mobile buttons - shown only on mobile, positioned after rankings */}
       <div className="mt-6 sm:hidden">
         <ActionButtons />
+      </div>
+
+      {/* CSV Export button at bottom */}
+      <div className="flex justify-center mt-6 mb-8">
+        <button
+          onClick={handleExportCSV}
+          className="px-4 py-2 text-sm text-white bg-white/10 rounded hover:bg-white/20 flex items-center transition-colors"
+          title="Export as CSV"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            className="mr-2"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V6a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+            />
+          </svg>
+          Export to CSV
+        </button>
       </div>
     </div>
   );

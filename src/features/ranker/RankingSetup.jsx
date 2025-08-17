@@ -150,7 +150,7 @@ export const RankingSetup = ({ playerPool = [], onComplete }) => {
         <h3 className="font-semibold mb-3 flex items-center text-sm sm:text-base text-blue-300">
           <span className="mr-2">⚓</span>
           Anchor Selector
-          <HelperIcon text="Select a player you believe will finish around the middle (50%)" />
+          <HelperIcon text="Select a player you believe will finish around the middle 50% (~20th best QB)" />
         </h3>
         <select
           value={anchor || ''}

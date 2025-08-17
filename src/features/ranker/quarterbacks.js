@@ -11,7 +11,7 @@ export const quarterbacks = [
   { id: 'dak-prescott', name: 'Dak Prescott', team: 'DAL' },
   { id: 'daniel-jones', name: 'Daniel Jones', team: 'NYG' },
   { id: 'drake-maye', name: 'Drake Maye', team: 'NE' },
-  { id: 'geno-smith', name: 'Geno Smith', team: 'LAV' },
+  { id: 'geno-smith', name: 'Geno Smith', team: 'LV' },
   { id: 'j-j-mccarthy', name: 'J.J. McCarthy', team: 'MIN' },
   { id: 'jake-haener', name: 'Jake Haener', team: 'NO' },
   { id: 'jalen-hurts', name: 'Jalen Hurts', team: 'PHI' },

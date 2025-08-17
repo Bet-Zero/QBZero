@@ -37,6 +37,27 @@ const useImageDownload = (ref) => {
         skipFonts: true,
         pixelRatio: options.pixelRatio || 2,
         backgroundColor: options.backgroundColor || '#111',
+        filter: (node) => {
+          // Don't filter out images even if they have failed to load
+          if (node.tagName === 'IMG') {
+            return true;
+          }
+          return true;
+        },
+        // Try to embed external SVGs
+        async beforeDrawImage(node) {
+          if (node.tagName === 'IMG' && node.src.endsWith('.svg')) {
+            try {
+              const response = await fetch(node.src);
+              const svgText = await response.text();
+              const svgDataUrl = `data:image/svg+xml;base64,${btoa(svgText)}`;
+              node.src = svgDataUrl;
+            } catch (err) {
+              console.warn('Failed to embed SVG:', err);
+            }
+          }
+          return node;
+        },
       });
 
       // 4. Download
