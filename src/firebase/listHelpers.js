@@ -101,7 +101,7 @@ export const fetchAllQBRankings = async () => {
   return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 };
 
-export const createQBRanking = async (name) => {
+export const createQBRanking = async (name, rankings = []) => {
   const q = query(qbRankingsRef, where('name', '==', name));
   const existing = await getDocs(q);
   if (!existing.empty)
@@ -109,7 +109,7 @@ export const createQBRanking = async (name) => {
 
   const newRanking = {
     name,
-    rankings: [],
+    rankings,
     createdAt: serverTimestamp(),
   };
   const docRef = await addDoc(qbRankingsRef, newRanking);

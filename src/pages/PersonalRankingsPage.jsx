@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import QBRankingCard from '@/features/rankings/QBRankingCard';
 import AddQBModal from '@/features/rankings/AddQBModal';
 import RankingsHeader from '@/features/rankings/RankingsHeader';
+import CreateRankingModal from '@/features/rankings/CreateRankingModal';
+import { createQBRanking } from '@/firebase/listHelpers';
 
 const PersonalRankingsPage = () => {
   const [rankings, setRankings] = useState([
@@ -32,6 +34,8 @@ const PersonalRankingsPage = () => {
   ]);
 
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [isSavingSnapshot, setIsSavingSnapshot] = useState(false);
 
   const handleAddQB = (qbData) => {
     const newQB = {
@@ -89,10 +93,49 @@ const PersonalRankingsPage = () => {
     );
   };
 
+  const handleSaveSnapshot = async () => {
+    if (rankings.length === 0) return;
+
+    setIsSavingSnapshot(true);
+    try {
+      const now = new Date();
+      const dateStr = now.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+      const timeStr = now.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      });
+      
+      const snapshotName = `Personal Rankings - ${dateStr} ${timeStr}`;
+      
+      await createQBRanking(snapshotName, rankings);
+      
+      // You could show a success message here if needed
+      console.log('Snapshot saved successfully!');
+    } catch (error) {
+      console.error('Error saving snapshot:', error);
+      // You could show an error message here if needed
+    } finally {
+      setIsSavingSnapshot(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-neutral-900 text-white">
       <div className="max-w-4xl mx-auto px-4 py-8">
-        <RankingsHeader onAddQB={() => setShowAddModal(true)} />
+        <RankingsHeader 
+          onAddQB={() => setShowAddModal(true)} 
+          rankingName="Personal QB Rankings"
+          onCreateNew={() => setShowCreateModal(true)}
+          showCreateNew={true}
+          onSaveSnapshot={handleSaveSnapshot}
+          isSavingSnapshot={isSavingSnapshot}
+          showSaveSnapshot={true}
+        />
 
         <div className="space-y-4">
           {rankings.map((qb, index) => (
@@ -131,6 +174,14 @@ const PersonalRankingsPage = () => {
           existingQBNames={rankings.map((qb) => qb.name)}
         />
       )}
+
+      <CreateRankingModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onCreated={() => {
+          // Optional: Show success message or refresh
+        }}
+      />
     </div>
   );
 };

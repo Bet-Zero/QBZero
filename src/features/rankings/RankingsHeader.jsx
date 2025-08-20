@@ -7,7 +7,12 @@ const RankingsHeader = ({
   rankingName, 
   isSaving, 
   canSave, 
-  onSave 
+  onSave,
+  onCreateNew,
+  showCreateNew,
+  onSaveSnapshot,
+  isSavingSnapshot,
+  showSaveSnapshot
 }) => {
   return (
     <div className="mb-8">
@@ -47,6 +52,36 @@ const RankingsHeader = ({
         </div>
 
         <div className="flex items-center gap-3">
+          {showSaveSnapshot && (
+            <button
+              onClick={onSaveSnapshot}
+              disabled={isSavingSnapshot}
+              className="flex items-center gap-2 px-4 py-2 bg-purple-600/80 hover:bg-purple-700 disabled:bg-purple-800 disabled:opacity-50 rounded-lg font-medium text-white text-sm transition-all backdrop-blur-sm"
+            >
+              {isSavingSnapshot ? (
+                <>
+                  <Save size={16} className="animate-pulse" />
+                  Saving Snapshot...
+                </>
+              ) : (
+                <>
+                  <CheckCircle size={16} />
+                  Save Snapshot
+                </>
+              )}
+            </button>
+          )}
+
+          {showCreateNew && (
+            <button
+              onClick={onCreateNew}
+              className="flex items-center gap-2 px-4 py-2 bg-green-600/80 hover:bg-green-700 rounded-lg font-medium text-white text-sm transition-all backdrop-blur-sm"
+            >
+              <Plus size={16} />
+              Create New List
+            </button>
+          )}
+
           {canSave && (
             <button
               onClick={onSave}
