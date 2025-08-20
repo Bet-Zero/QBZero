@@ -18,12 +18,11 @@ const CreateRankingModal = ({ isOpen, onClose, onCreated }) => {
 
     try {
       const rankingId = await createQBRanking(name.trim());
-      setName('');
+      onCreated?.(rankingId);
       onClose();
-      onCreated?.();
-      navigate(`/rankings/${rankingId}`);
-    } catch (err) {
-      setError(err.message);
+    } catch (error) {
+      console.error('Error creating ranking:', error);
+      setError('Failed to create ranking. Please try again.');
     } finally {
       setIsCreating(false);
     }
@@ -43,7 +42,7 @@ const CreateRankingModal = ({ isOpen, onClose, onCreated }) => {
         <h2 className="text-white font-bold text-xl mb-4">
           Create New QB Ranking
         </h2>
-        
+
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label className="block text-white/70 text-sm mb-2">
@@ -60,11 +59,7 @@ const CreateRankingModal = ({ isOpen, onClose, onCreated }) => {
             />
           </div>
 
-          {error && (
-            <div className="mb-4 text-red-400 text-sm">
-              {error}
-            </div>
-          )}
+          {error && <div className="mb-4 text-red-400 text-sm">{error}</div>}
 
           <div className="flex justify-end gap-2">
             <button

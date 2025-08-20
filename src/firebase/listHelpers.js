@@ -97,45 +97,90 @@ export const saveTierList = async (id, { tiers, tierOrder }) => {
 
 // ===== QB Rankings =====
 export const fetchAllQBRankings = async () => {
-  const snapshot = await getDocs(qbRankingsRef);
-  return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  try {
+    const rankingsSnapshot = await getDocs(qbRankingsRef);
+    return rankingsSnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+  } catch (error) {
+    console.error('Error fetching QB rankings:', error);
+    throw error;
+  }
 };
 
-export const createQBRanking = async (name, rankings = []) => {
-  const q = query(qbRankingsRef, where('name', '==', name));
-  const existing = await getDocs(q);
-  if (!existing.empty)
-    throw new Error('A QB ranking with this name already exists.');
+export const createQBRanking = async (name) => {
+  try {
+    const rankingRef = await addDoc(qbRankingsRef, {
+      name: name || 'New QB Ranking',
+      rankings: [],
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
 
-  const newRanking = {
-    name,
-    rankings,
-    createdAt: serverTimestamp(),
-  };
-  const docRef = await addDoc(qbRankingsRef, newRanking);
-  return docRef.id;
+    return rankingRef.id;
+  } catch (error) {
+    console.error('Error creating QB ranking:', error);
+    throw error;
+  }
 };
 
-export const fetchQBRanking = async (id) => {
-  const docRef = doc(db, 'qbRankings', id);
-  const snap = await getDoc(docRef);
-  return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+export const fetchQBRanking = async (rankingId) => {
+  try {
+    const rankingRef = doc(db, 'qbRankings', rankingId);
+    const rankingSnap = await getDoc(rankingRef);
+
+    if (rankingSnap.exists()) {
+      return {
+        id: rankingSnap.id,
+        ...rankingSnap.data(),
+      };
+    } else {
+      throw new Error('Ranking not found');
+    }
+  } catch (error) {
+    console.error('Error fetching QB ranking:', error);
+    throw error;
+  }
 };
 
-export const saveQBRanking = async (id, { rankings }) => {
-  const docRef = doc(db, 'qbRankings', id);
-  await updateDoc(docRef, {
-    rankings,
-    updatedAt: serverTimestamp(),
-  });
+export const saveQBRanking = async (rankingId, rankingData) => {
+  try {
+    const rankingRef = doc(db, 'qbRankings', rankingId);
+
+    await updateDoc(rankingRef, {
+      rankings: rankingData.rankings || [],
+      name: rankingData.name || 'Untitled Ranking',
+      updatedAt: serverTimestamp(),
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error saving QB ranking:', error);
+    throw error;
+  }
 };
 
-export const renameQBRanking = async (id, newName) => {
-  const docRef = doc(db, 'qbRankings', id);
-  await updateDoc(docRef, { name: newName });
+export const renameQBRanking = async (rankingId, newName) => {
+  try {
+    const rankingRef = doc(db, 'qbRankings', rankingId);
+    await updateDoc(rankingRef, {
+      name: newName,
+      updatedAt: serverTimestamp(),
+    });
+    return { success: true };
+  } catch (error) {
+    console.error('Error renaming QB ranking:', error);
+    throw error;
+  }
 };
 
-export const deleteQBRanking = async (id) => {
-  const docRef = doc(db, 'qbRankings', id);
-  await deleteDoc(docRef);
+export const deleteQBRanking = async (rankingId) => {
+  try {
+    await deleteDoc(doc(db, 'qbRankings', rankingId));
+    return { success: true };
+  } catch (error) {
+    console.error('Error deleting QB ranking:', error);
+    throw error;
+  }
 };

@@ -74,6 +74,12 @@ const QBRankingsHome = () => {
     }
   };
 
+  const handleCreateSuccess = (rankingId) => {
+    setShowCreateModal(false);
+    fetchRankings(); // Refresh the rankings list
+    navigate(`/rankings/${rankingId}`);
+  };
+
   return (
     <>
       <div className="max-w-[800px] py-4 mx-auto">
@@ -114,8 +120,9 @@ const QBRankingsHome = () => {
                   </h2>
                   <div className="text-xs text-white/30">
                     {ranking.rankings?.length || 0} QBs • Last updated{' '}
-                    {ranking.updatedAt?.toDate?.().toLocaleDateString?.() || 
-                     ranking.createdAt?.toDate?.().toLocaleDateString?.() || '—'}
+                    {ranking.updatedAt?.toDate?.().toLocaleDateString?.() ||
+                      ranking.createdAt?.toDate?.().toLocaleDateString?.() ||
+                      '—'}
                   </div>
                 </Link>
 
@@ -144,11 +151,8 @@ const QBRankingsHome = () => {
 
       <CreateRankingModal
         isOpen={showCreateModal}
-        onClose={() => {
-          setShowCreateModal(false);
-          fetchRankings();
-        }}
-        onCreated={fetchRankings}
+        onClose={() => setShowCreateModal(false)}
+        onCreated={handleCreateSuccess}
       />
 
       {renamingId && (

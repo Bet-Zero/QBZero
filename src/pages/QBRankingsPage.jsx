@@ -1,60 +1,83 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import QBRankingCard from '@/features/rankings/QBRankingCard';
 import AddQBModal from '@/features/rankings/AddQBModal';
 import RankingsHeader from '@/features/rankings/RankingsHeader';
-import { fetchQBRanking, saveQBRanking } from '@/firebase/listHelpers';
+import {
+  fetchQBRanking,
+  saveQBRanking,
+  createQBRanking,
+} from '@/firebase/listHelpers';
 
 const QBRankingsPage = () => {
   const { rankingId } = useParams();
+  const navigate = useNavigate();
   const [rankings, setRankings] = useState([]);
   const [rankingName, setRankingName] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [currentRankingId, setCurrentRankingId] = useState(rankingId);
 
   // Load ranking data when component mounts or rankingId changes
   useEffect(() => {
     const loadRanking = async () => {
-      if (!rankingId) {
-        // If no ranking ID, show empty state
-        setRankings([]);
-        setRankingName('New QB Ranking');
-        setIsLoading(false);
+      if (!rankingId || rankingId === 'new') {
+        // Create new ranking
+        try {
+          const newRankingId = await createQBRanking('New QB Ranking');
+          setCurrentRankingId(newRankingId);
+          setRankings([]);
+          setRankingName('New QB Ranking');
+          navigate(`/rankings/${newRankingId}`, { replace: true });
+        } catch (error) {
+          console.error('Error creating new ranking:', error);
+          setRankings([]);
+          setRankingName('New QB Ranking');
+        } finally {
+          setIsLoading(false);
+        }
         return;
       }
 
+      // Load existing ranking
       try {
         const ranking = await fetchQBRanking(rankingId);
-        if (ranking) {
-          setRankings(ranking.rankings || []);
-          setRankingName(ranking.name || 'Untitled Ranking');
-        } else {
-          // Ranking not found
-          setRankings([]);
-          setRankingName('Ranking Not Found');
-        }
+        setRankings(ranking.rankings || []);
+        setRankingName(ranking.name || 'QB Ranking');
+        setCurrentRankingId(rankingId);
       } catch (error) {
         console.error('Error loading ranking:', error);
-        setRankings([]);
-        setRankingName('Error Loading Ranking');
+        // If ranking doesn't exist, create a new one
+        try {
+          const newRankingId = await createQBRanking('New QB Ranking');
+          setCurrentRankingId(newRankingId);
+          setRankings([]);
+          setRankingName('New QB Ranking');
+          navigate(`/rankings/${newRankingId}`, { replace: true });
+        } catch (createError) {
+          console.error('Error creating fallback ranking:', createError);
+        }
       } finally {
         setIsLoading(false);
       }
     };
 
     loadRanking();
-  }, [rankingId]);
+  }, [rankingId, navigate]);
 
   // Save rankings to Firestore
   const saveRankings = async () => {
-    if (!rankingId) return;
+    if (!currentRankingId) return;
 
     setIsSaving(true);
     try {
-      await saveQBRanking(rankingId, { rankings });
+      await saveQBRanking(currentRankingId, {
+        rankings,
+        name: rankingName,
+      });
     } catch (error) {
-      console.error('Error saving ranking:', error);
+      console.error('Error saving rankings:', error);
     } finally {
       setIsSaving(false);
     }
@@ -118,16 +141,17 @@ const QBRankingsPage = () => {
 
   // Auto-save when rankings change (with debounce)
   useEffect(() => {
-    if (isLoading) return; // Don't save while loading
+    if (isLoading || !currentRankingId) return; // Don't save while loading or without ID
 
     const timeoutId = setTimeout(() => {
-      if (rankingId && rankings.length > 0) {
+      if (rankings.length >= 0) {
+        // Save even empty rankings
         saveRankings();
       }
     }, 1000); // Save 1 second after last change
 
     return () => clearTimeout(timeoutId);
-  }, [rankings, rankingId, isLoading]);
+  }, [rankings, currentRankingId, isLoading]);
 
   if (isLoading) {
     return (
@@ -140,11 +164,11 @@ const QBRankingsPage = () => {
   return (
     <div className="min-h-screen bg-neutral-900 text-white">
       <div className="max-w-4xl mx-auto px-4 py-8">
-        <RankingsHeader 
-          onAddQB={() => setShowAddModal(true)} 
+        <RankingsHeader
+          onAddQB={() => setShowAddModal(true)}
           rankingName={rankingName}
           isSaving={isSaving}
-          canSave={!!rankingId}
+          canSave={!!currentRankingId}
           onSave={saveRankings}
         />
 
@@ -165,7 +189,9 @@ const QBRankingsPage = () => {
           {rankings.length === 0 && (
             <div className="text-center py-12">
               <div className="text-white/40 text-lg mb-4">
-                {rankingId ? 'No QBs ranked yet' : 'Create or select a ranking to get started'}
+                {rankingId
+                  ? 'No QBs ranked yet'
+                  : 'Create or select a ranking to get started'}
               </div>
               {rankingId && (
                 <button
@@ -180,7 +206,7 @@ const QBRankingsPage = () => {
         </div>
       </div>
 
-      {showAddModal && rankingId && (
+      {showAddModal && currentRankingId && (
         <AddQBModal
           onClose={() => setShowAddModal(false)}
           onAdd={handleAddQB}
