@@ -15,6 +15,7 @@ import {
 
 const listsRef = collection(db, 'lists');
 const tierListsRef = collection(db, 'tierLists');
+const qbRankingsRef = collection(db, 'qbRankings');
 
 // ✅ Get all lists
 export const fetchAllLists = async () => {
@@ -92,4 +93,49 @@ export const saveTierList = async (id, { tiers, tierOrder }) => {
     tierOrder,
     updatedAt: serverTimestamp(),
   });
+};
+
+// ===== QB Rankings =====
+export const fetchAllQBRankings = async () => {
+  const snapshot = await getDocs(qbRankingsRef);
+  return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+};
+
+export const createQBRanking = async (name) => {
+  const q = query(qbRankingsRef, where('name', '==', name));
+  const existing = await getDocs(q);
+  if (!existing.empty)
+    throw new Error('A QB ranking with this name already exists.');
+
+  const newRanking = {
+    name,
+    rankings: [],
+    createdAt: serverTimestamp(),
+  };
+  const docRef = await addDoc(qbRankingsRef, newRanking);
+  return docRef.id;
+};
+
+export const fetchQBRanking = async (id) => {
+  const docRef = doc(db, 'qbRankings', id);
+  const snap = await getDoc(docRef);
+  return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+};
+
+export const saveQBRanking = async (id, { rankings }) => {
+  const docRef = doc(db, 'qbRankings', id);
+  await updateDoc(docRef, {
+    rankings,
+    updatedAt: serverTimestamp(),
+  });
+};
+
+export const renameQBRanking = async (id, newName) => {
+  const docRef = doc(db, 'qbRankings', id);
+  await updateDoc(docRef, { name: newName });
+};
+
+export const deleteQBRanking = async (id) => {
+  const docRef = doc(db, 'qbRankings', id);
+  await deleteDoc(docRef);
 };
