@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, ChevronRight, ChevronDown, Eye, ArrowLeft } from 'lucide-react';
-import { fetchAllPersonalRankingArchives, fetchPersonalRankingArchive } from '@/firebase/personalRankingHelpers';
+import {
+  fetchAllPersonalRankingArchives,
+  fetchPersonalRankingArchive,
+} from '@/firebase/personalRankingHelpers';
 import QBRankingCard from '@/features/rankings/QBRankingCard';
 
 const PersonalRankingArchives = ({ onClose, onLoadArchive }) => {
@@ -51,7 +54,7 @@ const PersonalRankingArchives = ({ onClose, onLoadArchive }) => {
       day: 'numeric',
       hour: 'numeric',
       minute: '2-digit',
-      hour12: true
+      hour12: true,
     });
   };
 
@@ -116,7 +119,8 @@ const PersonalRankingArchives = ({ onClose, onLoadArchive }) => {
                   readOnly={true}
                 />
               ))}
-              {(!viewingArchive.rankings || viewingArchive.rankings.length === 0) && (
+              {(!viewingArchive.rankings ||
+                viewingArchive.rankings.length === 0) && (
                 <div className="text-center py-8 text-white/60">
                   No rankings in this archive
                 </div>
@@ -137,8 +141,12 @@ const PersonalRankingArchives = ({ onClose, onLoadArchive }) => {
             <div className="flex items-center gap-3">
               <Clock size={24} className="text-blue-400" />
               <div>
-                <h2 className="text-xl font-bold text-white">Personal Rankings Archive</h2>
-                <p className="text-white/60 text-sm">View and restore previous ranking snapshots</p>
+                <h2 className="text-xl font-bold text-white">
+                  Personal Rankings Archive
+                </h2>
+                <p className="text-white/60 text-sm">
+                  View and restore previous ranking snapshots
+                </p>
               </div>
             </div>
             <button
@@ -158,7 +166,8 @@ const PersonalRankingArchives = ({ onClose, onLoadArchive }) => {
             </div>
           ) : archives.length === 0 ? (
             <div className="text-center py-8 text-white/60">
-              No archives found. Save your first snapshot to start building your archive history.
+              No archives found. Save your first snapshot to start building your
+              archive history.
             </div>
           ) : (
             <div className="space-y-3">
@@ -178,7 +187,8 @@ const PersonalRankingArchives = ({ onClose, onLoadArchive }) => {
                             Snapshot {archive.snapshotNumber}
                           </div>
                           <div className="text-white/60 text-sm">
-                            {formatDate(archive.timestamp)} • {archive.rankings?.length || 0} QBs ranked
+                            {formatDate(archive.timestamp)} •{' '}
+                            {archive.rankings?.length || 0} QBs ranked
                           </div>
                           {archive.notes && (
                             <div className="text-white/70 text-sm mt-1 italic">
@@ -210,11 +220,18 @@ const PersonalRankingArchives = ({ onClose, onLoadArchive }) => {
 
                     {expandedArchive === archive.id && (
                       <div className="mt-4 pt-4 border-t border-white/10">
-                        <div className="text-sm text-white/80 mb-2">Quick Preview:</div>
+                        <div className="text-sm text-white/80 mb-2">
+                          Quick Preview:
+                        </div>
                         <div className="space-y-2 max-h-40 overflow-y-auto">
                           {archive.rankings?.slice(0, 5).map((qb, qbIndex) => (
-                            <div key={qb.id} className="flex items-center gap-3 text-sm">
-                              <span className="text-white/60 w-6">#{qb.rank}</span>
+                            <div
+                              key={qb.id}
+                              className="flex items-center gap-3 text-sm"
+                            >
+                              <span className="text-white/60 w-6">
+                                #{qb.rank}
+                              </span>
                               <span className="text-white">{qb.name}</span>
                               <span className="text-white/60">({qb.team})</span>
                             </div>
