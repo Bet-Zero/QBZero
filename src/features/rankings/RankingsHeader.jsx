@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Save, CheckCircle } from 'lucide-react';
+import { Plus, Save, CheckCircle, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const RankingsHeader = ({ 
@@ -12,7 +12,9 @@ const RankingsHeader = ({
   showCreateNew,
   onSaveSnapshot,
   isSavingSnapshot,
-  showSaveSnapshot
+  showSaveSnapshot,
+  onViewArchives,
+  showViewArchives
 }) => {
   return (
     <div className="mb-8">
@@ -52,6 +54,16 @@ const RankingsHeader = ({
         </div>
 
         <div className="flex items-center gap-3">
+          {showViewArchives && (
+            <button
+              onClick={onViewArchives}
+              className="flex items-center gap-2 px-4 py-2 bg-orange-600/80 hover:bg-orange-700 rounded-lg font-medium text-white text-sm transition-all backdrop-blur-sm"
+            >
+              <Clock size={16} />
+              View Archives
+            </button>
+          )}
+
           {showSaveSnapshot && (
             <button
               onClick={onSaveSnapshot}

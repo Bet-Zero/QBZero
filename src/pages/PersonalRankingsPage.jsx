@@ -1,9 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import QBRankingCard from '@/features/rankings/QBRankingCard';
 import AddQBModal from '@/features/rankings/AddQBModal';
 import RankingsHeader from '@/features/rankings/RankingsHeader';
 import CreateRankingModal from '@/features/rankings/CreateRankingModal';
-import { createQBRanking } from '@/firebase/listHelpers';
+import PersonalRankingArchives from '@/features/rankings/PersonalRankingArchives';
+import { 
+  savePersonalRankingArchive, 
+  getLatestPersonalRankingArchive 
+} from '@/firebase/personalRankingHelpers';
 
 const PersonalRankingsPage = () => {
   const [rankings, setRankings] = useState([
@@ -35,7 +39,27 @@ const PersonalRankingsPage = () => {
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showArchives, setShowArchives] = useState(false);
   const [isSavingSnapshot, setIsSavingSnapshot] = useState(false);
+  const [hasLoadedFromArchive, setHasLoadedFromArchive] = useState(false);
+
+  // Load latest archive on component mount
+  useEffect(() => {
+    loadLatestArchive();
+  }, []);
+
+  const loadLatestArchive = async () => {
+    try {
+      const latestArchive = await getLatestPersonalRankingArchive();
+      if (latestArchive && latestArchive.rankings && latestArchive.rankings.length > 0) {
+        setRankings(latestArchive.rankings);
+        setHasLoadedFromArchive(true);
+      }
+    } catch (error) {
+      console.error('Error loading latest archive:', error);
+      // Keep default rankings if loading fails
+    }
+  };
 
   const handleAddQB = (qbData) => {
     const newQB = {
@@ -98,30 +122,22 @@ const PersonalRankingsPage = () => {
 
     setIsSavingSnapshot(true);
     try {
-      const now = new Date();
-      const dateStr = now.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      });
-      const timeStr = now.toLocaleTimeString('en-US', {
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true
-      });
+      const notes = ''; // Could add a notes input modal in the future
+      await savePersonalRankingArchive(rankings, notes);
       
-      const snapshotName = `Personal Rankings - ${dateStr} ${timeStr}`;
-      
-      await createQBRanking(snapshotName, rankings);
-      
-      // You could show a success message here if needed
-      console.log('Snapshot saved successfully!');
+      console.log('Archive saved successfully!');
+      // Could show a success toast here
     } catch (error) {
-      console.error('Error saving snapshot:', error);
-      // You could show an error message here if needed
+      console.error('Error saving archive:', error);
+      // Could show an error toast here
     } finally {
       setIsSavingSnapshot(false);
     }
+  };
+
+  const handleLoadArchive = (archiveRankings) => {
+    setRankings(archiveRankings);
+    setHasLoadedFromArchive(true);
   };
 
   return (
@@ -135,6 +151,8 @@ const PersonalRankingsPage = () => {
           onSaveSnapshot={handleSaveSnapshot}
           isSavingSnapshot={isSavingSnapshot}
           showSaveSnapshot={true}
+          onViewArchives={() => setShowArchives(true)}
+          showViewArchives={true}
         />
 
         <div className="space-y-4">
@@ -182,6 +200,13 @@ const PersonalRankingsPage = () => {
           // Optional: Show success message or refresh
         }}
       />
+
+      {showArchives && (
+        <PersonalRankingArchives
+          onClose={() => setShowArchives(false)}
+          onLoadArchive={handleLoadArchive}
+        />
+      )}
     </div>
   );
 };
