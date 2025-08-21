@@ -1,3 +1,5 @@
+// Force redeploy - Firebase config updated
+// Updated: August 21, 2025
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
