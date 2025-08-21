@@ -109,11 +109,11 @@ export const fetchAllQBRankings = async () => {
   }
 };
 
-export const createQBRanking = async (name) => {
+export const createQBRanking = async (name, rankings = []) => {
   try {
     const rankingRef = await addDoc(qbRankingsRef, {
       name: name || 'New QB Ranking',
-      rankings: [],
+      rankings: rankings,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });

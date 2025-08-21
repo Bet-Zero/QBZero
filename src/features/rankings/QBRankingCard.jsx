@@ -45,6 +45,7 @@ const QBRankingCard = ({
   onEditNotes,
   canMoveUp,
   canMoveDown,
+  readOnly = false,
 }) => {
   const [isEditingNotes, setIsEditingNotes] = useState(false);
   const [notesValue, setNotesValue] = useState(qb.notes || '');
@@ -80,38 +81,40 @@ const QBRankingCard = ({
       )}
 
       {/* Controls */}
-      <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-20">
-        <button
-          onClick={onMoveUp}
-          disabled={!canMoveUp}
-          className="p-1.5 bg-black/40 hover:bg-black/60 disabled:opacity-30 disabled:cursor-not-allowed rounded-lg transition-all backdrop-blur-sm"
-          title="Move up"
-        >
-          <ChevronUp size={14} />
-        </button>
-        <button
-          onClick={onMoveDown}
-          disabled={!canMoveDown}
-          className="p-1.5 bg-black/40 hover:bg-black/60 disabled:opacity-30 disabled:cursor-not-allowed rounded-lg transition-all backdrop-blur-sm"
-          title="Move down"
-        >
-          <ChevronDown size={14} />
-        </button>
-        <button
-          onClick={() => setIsEditingNotes(!isEditingNotes)}
-          className="p-1.5 bg-black/40 hover:bg-black/60 rounded-lg transition-all backdrop-blur-sm"
-          title="Edit notes"
-        >
-          <Edit3 size={14} />
-        </button>
-        <button
-          onClick={onRemove}
-          className="p-1.5 bg-red-500/60 hover:bg-red-500/80 rounded-lg transition-all backdrop-blur-sm"
-          title="Remove"
-        >
-          <Trash2 size={14} />
-        </button>
-      </div>
+      {!readOnly && (
+        <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+          <button
+            onClick={onMoveUp}
+            disabled={!canMoveUp}
+            className="p-1.5 bg-black/40 hover:bg-black/60 disabled:opacity-30 disabled:cursor-not-allowed rounded-lg transition-all backdrop-blur-sm"
+            title="Move up"
+          >
+            <ChevronUp size={14} />
+          </button>
+          <button
+            onClick={onMoveDown}
+            disabled={!canMoveDown}
+            className="p-1.5 bg-black/40 hover:bg-black/60 disabled:opacity-30 disabled:cursor-not-allowed rounded-lg transition-all backdrop-blur-sm"
+            title="Move down"
+          >
+            <ChevronDown size={14} />
+          </button>
+          <button
+            onClick={() => setIsEditingNotes(!isEditingNotes)}
+            className="p-1.5 bg-black/40 hover:bg-black/60 rounded-lg transition-all backdrop-blur-sm"
+            title="Edit notes"
+          >
+            <Edit3 size={14} />
+          </button>
+          <button
+            onClick={onRemove}
+            className="p-1.5 bg-red-500/60 hover:bg-red-500/80 rounded-lg transition-all backdrop-blur-sm"
+            title="Remove"
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
+      )}
 
       <div className="flex relative z-10 min-h-[80px]">
         {/* Rank Number Container */}
@@ -169,7 +172,7 @@ const QBRankingCard = ({
           </div>
 
           {/* Notes Section */}
-          {isEditingNotes ? (
+          {isEditingNotes && !readOnly ? (
             <div className="space-y-2">
               <textarea
                 value={notesValue}
@@ -197,7 +200,7 @@ const QBRankingCard = ({
             <div className="text-white/70 text-sm drop-shadow-lg">
               {qb.notes || (
                 <span className="italic text-white/40">
-                  Click edit to add notes about this QB...
+                  {readOnly ? "No notes" : "Click edit to add notes about this QB..."}
                 </span>
               )}
             </div>
