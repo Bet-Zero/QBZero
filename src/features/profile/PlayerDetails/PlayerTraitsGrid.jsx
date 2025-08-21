@@ -3,14 +3,14 @@ import React from 'react';
 import { NotebookText } from 'lucide-react';
 
 const TRAIT_ORDER = [
-  'Shooting',
-  'Passing',
-  'Playmaking',
-  'Rebounding',
-  'Defense',
+  'Throwing',
+  'Accuracy', 
+  'Decision',
+  'Mobility',
+  'Pocket',
   'IQ',
-  'Feel',
-  'Energy',
+  'Leadership',
+  'Durability',
 ];
 
 const getTraitColor = (rating) => {

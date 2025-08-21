@@ -26,7 +26,7 @@ const App = () => {
       <Route element={<SiteLayout />}>
         <Route path="/" element={<Home />} />
         <Route path="/players" element={<ComingSoon />} />
-        <Route path="/profiles" element={<ComingSoon />} />
+        <Route path="/profiles" element={<PlayerProfileView />} />
         <Route path="/rankings" element={<QBRankingsHome />} />
         <Route path="/rankings/:rankingId" element={<QBRankingsPage />} />
         <Route path="/personal-rankings" element={<PersonalRankingsPage />} />
