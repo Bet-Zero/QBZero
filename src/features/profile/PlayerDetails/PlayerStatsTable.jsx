@@ -18,15 +18,15 @@ const PlayerStatsTable = ({ player }) => {
       <div className="flex justify-between items-center mb-[0.5rem] font-bold">
         <div className="w-[60px] font-bold whitespace-nowrap">2024-25</div>
         <div className="h-4 w-[1px] bg-neutral-700" />
-        <div className="w-[50px] text-center">MIN</div>
-        <div className="w-[50px] text-center">PTS</div>
-        <div className="w-[50px] text-center">REB</div>
-        <div className="w-[50px] text-center">AST</div>
+        <div className="w-[50px] text-center">CMP</div>
+        <div className="w-[50px] text-center">ATT</div>
+        <div className="w-[50px] text-center">YDS</div>
+        <div className="w-[50px] text-center">TD</div>
         <div className="h-4 w-[1px] bg-neutral-700" />
-        <div className="w-[50px] text-center">FG%</div>
-        <div className="w-[50px] text-center">3PT%</div>
-        <div className="w-[50px] text-center">FT%</div>
-        <div className="w-[50px] text-center">eFG%</div>
+        <div className="w-[50px] text-center">INT</div>
+        <div className="w-[50px] text-center">CMP%</div>
+        <div className="w-[50px] text-center">RTG</div>
+        <div className="w-[50px] text-center">QBR</div>
       </div>
       <div className="h-[1px] bg-neutral-700 mb-[0.5rem]" />
       <div className="flex justify-between items-center font-light">
@@ -34,22 +34,20 @@ const PlayerStatsTable = ({ player }) => {
           G: {gamesPlayed}
         </div>
         <div className="h-4 w-[1px] bg-neutral-700" />
-        <div className="w-[50px] text-center">{formatStat(stats.MP)}</div>
-        <div className="w-[50px] text-center">{formatStat(stats.PTS)}</div>
-        <div className="w-[50px] text-center">{formatStat(stats.TRB)}</div>
-        <div className="w-[50px] text-center">{formatStat(stats.AST)}</div>
+        <div className="w-[50px] text-center">{formatStat(stats.CMP)}</div>
+        <div className="w-[50px] text-center">{formatStat(stats.ATT)}</div>
+        <div className="w-[50px] text-center">{formatStat(stats.YDS)}</div>
+        <div className="w-[50px] text-center">{formatStat(stats.TD)}</div>
         <div className="h-4 w-[1px] bg-neutral-700" />
+        <div className="w-[50px] text-center">{formatStat(stats.INT)}</div>
         <div className="w-[50px] text-center">
-          {formatStat(stats['FG%'], false, true)}
+          {formatStat(stats['CMP%'], false, true)}
         </div>
         <div className="w-[50px] text-center">
-          {formatStat(stats['3P%'], false, true)}
+          {formatStat(stats.RTG)}
         </div>
         <div className="w-[50px] text-center">
-          {formatStat(stats['FT%'], false, true)}
-        </div>
-        <div className="w-[50px] text-center">
-          {formatStat(stats['eFG%'], false, true)}
+          {formatStat(stats.QBR)}
         </div>
       </div>
     </div>

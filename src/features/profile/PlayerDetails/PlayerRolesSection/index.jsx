@@ -115,12 +115,12 @@ const PlayerRolesSection = ({
 
         <div className="border-t border-neutral-600 my-2"></div>
 
-        {/* Shooting Profile */}
+        {/* Throwing Profile */}
         <div className="px-2 -mt-1.5">
           <CenteredLabelWithIcon
-            label="Shooting Profile"
+            label="Throwing Profile"
             onClick={setOpenModal}
-            modalKey="shooting_profile"
+            modalKey="throwing_profile"
           />
           <ShootingProfileSelector
             value={shootingProfile}
