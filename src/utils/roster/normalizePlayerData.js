@@ -1,8 +1,9 @@
 import { POSITION_MAP } from '../roles/positionMap.js';
 
 const calculateHeight = (ht = '0-0') => {
+  if (!ht || ht === null) return 0;
   const parts = ht.split('-');
-  return parseInt(parts[0]) * 12 + parseInt(parts[1]);
+  return parseInt(parts[0] || 0) * 12 + parseInt(parts[1] || 0);
 };
 
 export function normalizePlayerData(playerData) {

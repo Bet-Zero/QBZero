@@ -92,7 +92,13 @@ const MobileMenu = ({ isOpen, onClose }) => {
         </div>
 
         <nav className="p-6 space-y-4">
-          <LockedLink>QB Profiles</LockedLink>
+          <Link
+            to="/profiles"
+            className="block py-2 text-white/80 hover:text-white"
+            onClick={onClose}
+          >
+            QB Profiles
+          </Link>
           <LockedLink>QB Rankings</LockedLink>
           <LockedLink>QBW 🔮</LockedLink>
 
@@ -133,7 +139,7 @@ const SiteLayout = () => {
 
         {/* Desktop Navigation */}
         <nav className="hidden lg:flex gap-6 text-sm text-white/60 items-center">
-          <LockedLink>QB Profiles</LockedLink>
+          <Link to="/profiles" className="text-white/80 hover:text-white">QB Profiles</Link>
           <LockedLink>QB Rankings</LockedLink>
           <LockedLink>QBW 🔮</LockedLink>
           <NavGroup label="Tools" align="center">
