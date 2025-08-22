@@ -18,6 +18,7 @@
     }
   },
   "plugins": ["react", "jsx-a11y", "react-hooks"],
+  "ignorePatterns": ["dist/", "node_modules/"],
   "rules": {},
   "settings": {
     "react": {
