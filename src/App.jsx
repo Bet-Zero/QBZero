@@ -30,11 +30,11 @@ const App = () => {
       <Route element={<SiteLayout />}>
         <Route path="/" element={<Home />} />
         <Route path="/players" element={<ComingSoon />} />
-        <Route path="/profiles" element={<PlayerProfileView />} />
+        <Route path="/profiles" element={<ComingSoon />} />
         <Route path="/rankings" element={<QBRankingsHome />} />
         <Route path="/rankings/:rankingId" element={<QBRankingsPage />} />
         <Route path="/personal-rankings" element={<PersonalRankingsPage />} />
-        <Route path="/wall-of-fame" element={<WallOfFamePage />} />
+        <Route path="/wall-of-fame" element={<ComingSoon />} />
         <Route path="/lists" element={<ComingSoon />} />
         <Route path="/lists/:listId" element={<ComingSoon />} />
         <Route path="/list-presentation" element={<ComingSoon />} />
@@ -42,9 +42,9 @@ const App = () => {
         <Route path="/tier-maker/:tierListId?" element={<ComingSoon />} />
 
         {/* Backup QBs Routes */}
-        <Route path="/backup-qbs" element={<BackupQBsHome />} />
-        <Route path="/backup-qbs/tournament" element={<BackupQBTournament />} />
-        <Route path="/backup-qbs/hall-of-fame" element={<BackupQBHallOfFame />} />
+        <Route path="/backup-qbs" element={<ComingSoon />} />
+        <Route path="/backup-qbs/tournament" element={<ComingSoon />} />
+        <Route path="/backup-qbs/hall-of-fame" element={<ComingSoon />} />
 
         {/* Ranker Routes */}
         <Route element={<RankerProvider />}>
