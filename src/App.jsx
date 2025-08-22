@@ -14,6 +14,9 @@ import QBRankingsPage from '@/pages/QBRankingsPage';
 import QBRankingsHome from '@/pages/QBRankingsHome';
 import PersonalRankingsPage from '@/pages/PersonalRankingsPage';
 import WallOfFamePage from '@/pages/WallOfFamePage';
+import BackupQBsHome from '@/pages/BackupQBsHome';
+import BackupQBTournament from '@/pages/BackupQBTournament';
+import BackupQBHallOfFame from '@/pages/BackupQBHallOfFame';
 import { RankerProvider } from '@/context/RankerContext';
 import SiteLayout from '@/components/layout/SiteLayout';
 import NotFound from '@/pages/NotFound';
@@ -37,6 +40,11 @@ const App = () => {
         <Route path="/list-presentation" element={<ComingSoon />} />
         <Route path="/tier-lists" element={<ComingSoon />} />
         <Route path="/tier-maker/:tierListId?" element={<ComingSoon />} />
+
+        {/* Backup QBs Routes */}
+        <Route path="/backup-qbs" element={<BackupQBsHome />} />
+        <Route path="/backup-qbs/tournament" element={<BackupQBTournament />} />
+        <Route path="/backup-qbs/hall-of-fame" element={<BackupQBHallOfFame />} />
 
         {/* Ranker Routes */}
         <Route element={<RankerProvider />}>
