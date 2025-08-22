@@ -13,6 +13,7 @@ import RankerResultsPage from '@/pages/RankerResultsPage';
 import QBRankingsPage from '@/pages/QBRankingsPage';
 import QBRankingsHome from '@/pages/QBRankingsHome';
 import PersonalRankingsPage from '@/pages/PersonalRankingsPage';
+import WallOfFamePage from '@/pages/WallOfFamePage';
 import BackupQBsHome from '@/pages/BackupQBsHome';
 import BackupQBTournament from '@/pages/BackupQBTournament';
 import BackupQBHallOfFame from '@/pages/BackupQBHallOfFame';
@@ -33,6 +34,7 @@ const App = () => {
         <Route path="/rankings" element={<QBRankingsHome />} />
         <Route path="/rankings/:rankingId" element={<QBRankingsPage />} />
         <Route path="/personal-rankings" element={<PersonalRankingsPage />} />
+        <Route path="/wall-of-fame" element={<WallOfFamePage />} />
         <Route path="/lists" element={<ComingSoon />} />
         <Route path="/lists/:listId" element={<ComingSoon />} />
         <Route path="/list-presentation" element={<ComingSoon />} />

@@ -100,6 +100,11 @@ const MobileMenu = ({ isOpen, onClose }) => {
             QB Profiles
           </Link>
           <Link
+            to="/wall-of-fame"
+            className="block py-2 text-white/80 hover:text-white"
+            onClick={onClose}
+          >
+            Wall of Fame 🏆
             to="/backup-qbs"
             className="block py-2 text-white/80 hover:text-white"
             onClick={onClose}
@@ -147,6 +152,7 @@ const SiteLayout = () => {
         {/* Desktop Navigation */}
         <nav className="hidden lg:flex gap-6 text-sm text-white/60 items-center">
           <Link to="/profiles" className="text-white/80 hover:text-white">QB Profiles</Link>
+          <Link to="/wall-of-fame" className="text-white/80 hover:text-white">Wall of Fame 🏆</Link>
           <Link to="/backup-qbs" className="text-white/80 hover:text-white">Backup QBs</Link>
           <LockedLink>QB Rankings</LockedLink>
           <LockedLink>QBW 🔮</LockedLink>
