@@ -1,0 +1,37 @@
+// Hardcoded list of backup QBs for the tournament bracket
+// Based on the specific QBs requested in the issue
+
+export const TOURNAMENT_BACKUP_QBS = [
+  { id: 'jacoby-brissett', name: 'Jacoby Brissett', team: 'NE' },
+  { id: 'cooper-rush', name: 'Cooper Rush', team: 'DAL' },
+  { id: 'mitch-trubisky', name: 'Mitch Trubisky', team: 'BUF' },
+  { id: 'tyson-bagent', name: 'Tyson Bagent', team: 'CHI' },
+  { id: 'case-keenum', name: 'Case Keenum', team: 'HOU' },
+  { id: 'jake-browning', name: 'Jake Browning', team: 'CIN' },
+  { id: 'desmond-ridder', name: 'Desmond Ridder', team: 'ATL' },
+  { id: 'kenny-pickett', name: 'Kenny Pickett', team: 'PHI' },
+  { id: 'tyler-huntley', name: 'Tyler Huntley', team: 'MIA' },
+  { id: 'joe-milton-iii', name: 'Joe Milton III', team: 'NE' },
+  { id: 'jarrett-stidham', name: 'Jarrett Stidham', team: 'DEN' },
+  { id: 'kyle-allen', name: 'Kyle Allen', team: 'PIT' },
+  { id: 'malik-willis', name: 'Malik Willis', team: 'GB' },
+  { id: 'davis-mills', name: 'Davis Mills', team: 'HOU' },
+  { id: 'nick-mullens', name: 'Nick Mullens', team: 'MIN' },
+  { id: 'gardner-minshew', name: 'Gardner Minshew', team: 'LV' },
+  { id: 'bailey-zappe', name: 'Bailey Zappe', team: 'NE' },
+  { id: 'aidan-oconnell', name: 'Aidan O\'Connell', team: 'LV' },
+  { id: 'taylor-heinicke', name: 'Taylor Heinicke', team: 'LAC' },
+  { id: 'jimmy-garoppolo', name: 'Jimmy Garoppolo', team: 'LAR' },
+  { id: 'joshua-dobbs', name: 'Joshua Dobbs', team: 'SF' },
+  { id: 'jake-haener', name: 'Jake Haener', team: 'NO' },
+  { id: 'tyrod-taylor', name: 'Tyrod Taylor', team: 'NYJ' },
+  { id: 'tanner-mckee', name: 'Tanner McKee', team: 'PHI' },
+  { id: 'mason-rudolph', name: 'Mason Rudolph', team: 'TEN' },
+  { id: 'mac-jones', name: 'Mac Jones', team: 'JAX' },
+  { id: 'drew-lock', name: 'Drew Lock', team: 'NYG' },
+  { id: 'kyle-trask', name: 'Kyle Trask', team: 'TB' },
+  { id: 'teddy-bridgewater', name: 'Teddy Bridgewater', team: 'DET' },
+  { id: 'brandon-allen', name: 'Brandon Allen', team: 'SF' },
+  { id: 'marcus-mariota', name: 'Marcus Mariota', team: 'WAS' },
+  { id: 'josh-johnson', name: 'Josh Johnson', team: 'BAL' }
+];

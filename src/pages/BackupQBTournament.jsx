@@ -1,18 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeftIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
-import usePlayerData from '@/hooks/usePlayerData';
-import { filterBackupQBs } from '@/utils/backupQBs/backupQBClassification';
+import { TOURNAMENT_BACKUP_QBS } from '@/utils/backupQBs/tournamentQBs';
 
 const BackupQBTournament = () => {
-  const { players, loading } = usePlayerData();
   const [bracket, setBracket] = useState([]);
   const [currentRound, setCurrentRound] = useState(0);
   const [roundNames] = useState(['First Round', 'Quarterfinals', 'Semifinals', 'Final', 'Champion']);
   const [isGenerating, setIsGenerating] = useState(false);
 
-  // Get backup QBs from the player data
-  const backupQBs = filterBackupQBs(players);
+  // Use the hardcoded tournament backup QBs
+  const backupQBs = TOURNAMENT_BACKUP_QBS;
 
   // Generate initial tournament bracket
   const generateTournament = () => {
@@ -21,11 +19,10 @@ const BackupQBTournament = () => {
     // Shuffle the backup QBs randomly
     const shuffledQBs = [...backupQBs].sort(() => Math.random() - 0.5);
     
-    // Take first 16 QBs for a proper bracket (or adjust based on available QBs)
-    const tournamentSize = Math.min(16, shuffledQBs.length);
-    const tournamentQBs = shuffledQBs.slice(0, tournamentSize);
+    // Use all 32 QBs for the tournament bracket
+    const tournamentQBs = [...shuffledQBs];
     
-    // Pad with byes if needed to make a power of 2
+    // Pad with byes if needed to make a power of 2 (32 is already a power of 2)
     const nextPowerOf2 = Math.pow(2, Math.ceil(Math.log2(tournamentQBs.length)));
     while (tournamentQBs.length < nextPowerOf2) {
       tournamentQBs.push({ id: 'bye', name: 'BYE', team: '' });
@@ -99,9 +96,9 @@ const BackupQBTournament = () => {
     if (backupQBs.length > 0 && bracket.length === 0) {
       generateTournament();
     }
-  }, [backupQBs]);
+  }, []);
 
-  if (loading) {
+  if (false) { // Remove loading dependency since we use hardcoded data
     return (
       <div className="min-h-screen bg-neutral-900 text-white flex items-center justify-center">
         <div className="text-white/60 text-lg">Loading backup QBs...</div>
@@ -220,7 +217,7 @@ const BackupQBTournament = () => {
         )}
 
         {/* Empty State */}
-        {bracket.length === 0 && !loading && (
+        {bracket.length === 0 && (
           <div className="text-center py-12">
             <div className="text-white/40 text-lg mb-4">
               No backup QBs found. Generate a tournament to get started!
