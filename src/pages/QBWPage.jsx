@@ -1,6 +1,7 @@
 import React from 'react';
 import Shelf from '@/features/qbw/Shelf';
 import TakeBoard from '@/features/qbw/TakeBoard';
+import CrystalBall from '@/features/qbw/CrystalBall';
 
 const QBWPage = () => {
   // Sample data for crystal ball QBs (successful predictions)
@@ -136,8 +137,58 @@ const QBWPage = () => {
       <div className="relative overflow-hidden bg-gradient-to-br from-purple-900/20 via-blue-900/20 to-neutral-900 border-b border-white/10">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%20xmlns%3D%22http://www.w3.org/2000/svg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cg%20fill%3D%22%23ffffff%22%20fill-opacity%3D%220.03%22%3E%3Ccircle%20cx%3D%2230%22%20cy%3D%2230%22%20r%3D%222%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-50"></div>
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
-          <div className="mb-6">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+          {/* Background Floating Shelf Display */}
+          <div className="absolute top-16 left-1/2 transform -translate-x-1/2 w-full max-w-5xl pointer-events-none z-0">
+            {/* Wall background area */}
+            <div className="absolute inset-0 bg-gradient-to-b from-neutral-800/10 to-neutral-900/15 rounded-2xl blur-sm scale-110"></div>
+
+            {/* Simple floating shelf */}
+            <div className="relative mt-6">
+              {/* Shelf mounting brackets - properly hidden behind shelf */}
+              <div className="absolute top-2 left-12 w-1 h-6 bg-neutral-500/30"></div>
+              <div className="absolute top-2 right-12 w-1 h-6 bg-neutral-500/30"></div>
+
+              {/* Clean wooden shelf surface with 3D effect */}
+              <div className="relative h-4 bg-gradient-to-b from-amber-700/50 to-amber-800/70 rounded-sm shadow-lg border-t border-amber-600/40">
+                {/* Subtle wood texture */}
+                <div className="absolute inset-0 bg-gradient-to-r from-amber-800/20 via-transparent to-amber-800/20 rounded-sm"></div>
+
+                {/* 3D shelf front edge */}
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-b from-amber-600/60 to-amber-900/80 rounded-b-sm"></div>
+              </div>
+
+              {/* 3D shadow underneath shelf - makes it stick out from wall */}
+              <div className="absolute top-5 left-1 right-1 h-3 bg-gradient-to-b from-black/30 to-transparent rounded-sm blur-md"></div>
+
+              {/* Crystal balls on shelf - positioned more naturally */}
+              <div className="absolute -top-[60px] left-0 right-0 flex justify-center gap-8 px-12">
+                {[...successfulPredictions, ...breakoutPredictions].map(
+                  (qb, index) => (
+                    <div
+                      key={qb.id || index}
+                      className="transform transition-all duration-500 hover:scale-105"
+                      style={{
+                        filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))',
+                      }}
+                    >
+                      <CrystalBall qb={qb} size="sm" />
+                    </div>
+                  )
+                )}
+              </div>
+            </div>
+
+            {/* Optional subtle label */}
+            <div className="text-center mt-4">
+              <span className="text-xs text-neutral-400/60 font-light tracking-wide">
+                Successful Predictions
+              </span>
+            </div>
+          </div>
+
+          {/* Main hero content - with proper spacing */}
+          <div className="text-center mb-12 relative z-10 mt-40">
             <div className="text-8xl mb-4">🔮</div>
             <h1 className="text-5xl sm:text-6xl font-bold bg-gradient-to-r from-purple-400 via-blue-400 to-cyan-400 bg-clip-text text-transparent mb-4">
               QBW
@@ -148,7 +199,8 @@ const QBWPage = () => {
             </p>
           </div>
 
-          <div className="flex justify-center items-center gap-8 text-white/50">
+          {/* Stats row */}
+          <div className="flex justify-center items-center gap-8 text-white/50 relative z-10">
             <div className="text-center">
               <div className="text-2xl font-bold text-purple-400">
                 {takes.filter((t) => t.status === 'correct').length}
