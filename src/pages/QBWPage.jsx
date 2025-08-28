@@ -136,7 +136,7 @@ const QBWPage = () => {
           <div className="absolute top-20 left-1/2 transform -translate-x-1/2 w-full max-w-5xl pointer-events-none z-0 opacity-30">
             <div className="relative">
               {/* Left Shelf - Good Predictions (Subtle) */}
-              <div className="absolute left-0 top-0 w-2/5">
+              <div className="absolute left-0 top-4 w-2/5">
                 <div className="relative">
                   {/* Simple shelf */}
                   <div className="relative h-2 bg-gradient-to-b from-amber-700/30 to-amber-800/40 rounded-sm shadow-md">
@@ -144,7 +144,7 @@ const QBWPage = () => {
                   </div>
 
                   {/* Small crystal balls on shelf */}
-                  <div className="absolute -top-[40px] left-0 right-0 flex justify-center gap-4 px-6">
+                  <div className="absolute -top-[70px] left-0 right-0 flex justify-center gap-2 px-6">
                     {[...successfulPredictions, ...breakoutPredictions].map(
                       (qb, index) => (
                         <div
@@ -159,45 +159,6 @@ const QBWPage = () => {
                       )
                     )}
                   </div>
-                </div>
-              </div>
-
-              {/* Toilet - Bad Predictions (Bottom Right) */}
-              <div className="absolute right-0 top-[120px] w-1/3">
-                <div className="relative">
-                  {/* Toilet Bowl */}
-                  <div className="relative w-16 h-12 bg-gradient-to-b from-white/20 to-white/10 rounded-full border border-white/15 shadow-lg">
-                    {/* Toilet water */}
-                    <div className="absolute top-2 left-2 right-2 bottom-2 bg-gradient-to-b from-blue-400/20 to-blue-600/30 rounded-full"></div>
-                  </div>
-
-                  {/* Toilet Tank */}
-                  <div className="absolute -top-6 left-1 right-1 h-8 bg-gradient-to-b from-white/25 to-white/15 rounded-t-lg border border-white/15">
-                    {/* Tank lid line */}
-                    <div className="absolute top-5 left-1 right-1 h-px bg-white/20"></div>
-                    {/* Flush handle */}
-                    <div className="absolute top-2 -right-1 w-2 h-1 bg-white/30 rounded-sm"></div>
-                  </div>
-
-                  {/* Crystal balls stacked on toilet */}
-                  <div className="absolute -top-[50px] left-1/2 transform -translate-x-1/2 flex flex-col gap-1">
-                    {badPredictions.map((qb, index) => (
-                      <div
-                        key={qb.id || index}
-                        className="transform"
-                        style={{
-                          filter:
-                            'drop-shadow(0 1px 2px rgba(0,0,0,0.3)) grayscale(60%) brightness(60%)',
-                          transform: `scale(0.6) ${index === 1 ? 'translateY(-8px)' : ''}`,
-                        }}
-                      >
-                        <CrystalBall qb={qb} size="sm" />
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Optional toilet paper roll */}
-                  <div className="absolute -left-4 top-1 w-3 h-4 bg-white/15 rounded-full border border-white/10"></div>
                 </div>
               </div>
             </div>
@@ -243,6 +204,20 @@ const QBWPage = () => {
               <div className="text-sm">Accuracy Rate</div>
             </div>
           </div>
+        </div>
+        {/* Bad Crystal Balls on Divider */}
+        <div className="absolute bottom-6 right-16 transform translate-y-1/4 translate-x-1/4 flex gap-0">
+          {badPredictions.map((qb) => (
+            <div
+              key={qb.id}
+              className="transform"
+              style={{
+                filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))',
+              }}
+            >
+              <CrystalBall qb={qb} size="sm" />
+            </div>
+          ))}
         </div>
       </div>
 
