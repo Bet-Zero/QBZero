@@ -130,35 +130,32 @@ const QBWPage = () => {
         <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%20xmlns%3D%22http://www.w3.org/2000/svg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cg%20fill%3D%22%23ffffff%22%20fill-opacity%3D%220.03%22%3E%3Ccircle%20cx%3D%2230%22%20cy%3D%2230%22%20r%3D%222%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-50"></div>
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-          {/* Background Decorative Elements */}
-          <div className="absolute top-16 left-1/2 transform -translate-x-1/2 w-full max-w-6xl pointer-events-none z-0 opacity-60">
+          {/* Background Wall Decorations - Room Perspective */}
+          <div className="absolute top-8 left-1/2 transform -translate-x-1/2 w-full max-w-7xl pointer-events-none z-0 opacity-15">
             <div className="relative">
-              {/* Left Shelf - Good Predictions */}
-              <div className="absolute left-12 top-0 w-2/5">
+              {/* Left Wall Shelf - Good Predictions */}
+              <div className="absolute left-4 top-8 w-1/3 transform rotate-y-3d perspective-wall">
                 <div className="relative">
-                  {/* Enhanced 3D shelf */}
-                  <div className="relative h-4 bg-gradient-to-b from-amber-600/80 to-amber-800/90 rounded-lg shadow-xl border border-amber-700/60">
-                    {/* Top surface */}
-                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-b from-amber-400/90 to-amber-500/80 rounded-t-lg"></div>
-                    {/* Front edge */}
-                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-b from-amber-800/90 to-amber-900/95 rounded-b-lg"></div>
-                    {/* Side shadow */}
-                    <div className="absolute right-0 top-0 bottom-0 w-1 bg-gradient-to-b from-amber-900/60 to-black/40 rounded-r-lg"></div>
+                  {/* Wall-mounted shelf with depth */}
+                  <div className="relative h-2 bg-gradient-to-r from-amber-700/30 to-amber-900/40 rounded-sm shadow-2xl transform skew-y-1">
+                    {/* Wall shadow to create depth */}
+                    <div className="absolute -bottom-2 -right-2 left-2 h-2 bg-black/20 rounded-sm -z-10 blur-sm"></div>
+                    <div className="absolute top-0 left-0 right-0 h-px bg-amber-500/25"></div>
                   </div>
 
-                  {/* Shelf brackets */}
-                  <div className="absolute -bottom-1 left-6 w-1 h-6 bg-gradient-to-r from-gray-600/70 to-gray-700/80 rounded-sm shadow-lg"></div>
-                  <div className="absolute -bottom-1 right-6 w-1 h-6 bg-gradient-to-r from-gray-600/70 to-gray-700/80 rounded-sm shadow-lg"></div>
+                  {/* Minimal wall brackets */}
+                  <div className="absolute -bottom-1 left-2 w-0.5 h-3 bg-gray-600/30 rounded-full"></div>
+                  <div className="absolute -bottom-1 right-2 w-0.5 h-3 bg-gray-600/30 rounded-full"></div>
 
-                  {/* Crystal balls on shelf */}
-                  <div className="absolute -top-[45px] left-0 right-0 flex justify-center gap-3 px-4">
-                    {[...successfulPredictions, ...breakoutPredictions].map(
+                  {/* Crystal balls on shelf - very subtle */}
+                  <div className="absolute -top-[30px] left-0 right-0 flex justify-center gap-1 px-2">
+                    {[...successfulPredictions, ...breakoutPredictions].slice(0, 4).map(
                       (qb, index) => (
                         <div
                           key={qb.id || index}
-                          className="transform hover:scale-105 transition-transform duration-200"
+                          className="transform scale-50"
                           style={{
-                            filter: 'drop-shadow(0 3px 6px rgba(0,0,0,0.4))',
+                            filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2)) brightness(0.7) blur(0.5px)',
                           }}
                         >
                           <CrystalBall qb={qb} size="sm" />
@@ -169,59 +166,42 @@ const QBWPage = () => {
                 </div>
               </div>
 
-              {/* Toilet - Bad Predictions */}
-              <div className="absolute right-12 top-[100px] w-1/4">
-                <div className="relative flex justify-center">
-                  {/* Toilet Bowl - centered and larger */}
-                  <div className="relative w-20 h-14 bg-gradient-to-b from-white/30 to-white/20 rounded-full border border-white/25 shadow-xl">
-                    {/* Toilet water */}
-                    <div className="absolute top-3 left-3 right-3 bottom-3 bg-gradient-to-b from-blue-400/30 to-blue-600/40 rounded-full"></div>
-                    {/* Toilet rim highlight */}
-                    <div className="absolute top-1 left-2 right-2 h-1 bg-gradient-to-b from-white/40 to-white/20 rounded-full"></div>
+              {/* Right Wall Display - Simple and Clean */}
+              <div className="absolute right-4 top-12 w-1/4 transform rotate-y-3d-reverse perspective-wall">
+                <div className="relative">
+                  {/* Simple wall mounted display for bad predictions */}
+                  <div className="relative h-1.5 bg-gradient-to-r from-gray-600/20 to-gray-800/30 rounded-sm shadow-lg transform skew-y-1">
+                    <div className="absolute -bottom-1 -right-1 left-1 h-1.5 bg-black/15 rounded-sm -z-10 blur-sm"></div>
                   </div>
 
-                  {/* Toilet Tank */}
-                  <div className="absolute -top-8 left-2 right-2 h-10 bg-gradient-to-b from-white/35 to-white/25 rounded-t-xl border border-white/20 shadow-lg">
-                    {/* Tank lid line */}
-                    <div className="absolute top-6 left-2 right-2 h-px bg-white/30"></div>
-                    {/* Flush handle */}
-                    <div className="absolute top-3 -right-1 w-3 h-2 bg-white/40 rounded-sm shadow-md"></div>
-                    {/* Tank lid bolts */}
-                    <div className="absolute top-2 left-4 w-1 h-1 bg-white/50 rounded-full"></div>
-                    <div className="absolute top-2 right-4 w-1 h-1 bg-white/50 rounded-full"></div>
-                  </div>
-
-                  {/* Crystal balls stacked on toilet */}
-                  <div className="absolute -top-[60px] left-1/2 transform -translate-x-1/2 flex flex-col gap-1">
-                    {badPredictions.map((qb, index) => (
+                  {/* Bad predictions - very subtle and small */}
+                  <div className="absolute -top-[25px] left-1/2 transform -translate-x-1/2 flex gap-0.5">
+                    {badPredictions.slice(0, 2).map((qb, index) => (
                       <div
                         key={qb.id || index}
-                        className="transform hover:scale-105 transition-transform duration-200"
+                        className="transform scale-40"
                         style={{
                           filter:
-                            'drop-shadow(0 2px 4px rgba(0,0,0,0.4)) grayscale(40%) brightness(70%)',
-                          transform: `scale(0.7) ${index === 1 ? 'translateY(-6px)' : ''}`,
+                            'drop-shadow(0 1px 1px rgba(0,0,0,0.1)) grayscale(70%) brightness(50%) blur(0.5px)',
                         }}
                       >
                         <CrystalBall qb={qb} size="sm" />
                       </div>
                     ))}
                   </div>
-
-                  {/* Toilet paper roll - enhanced */}
-                  <div className="absolute -left-6 top-2 w-4 h-5 bg-white/20 rounded-full border border-white/15 shadow-md">
-                    {/* Paper roll texture lines */}
-                    <div className="absolute top-1 left-1 right-1 h-px bg-white/25"></div>
-                    <div className="absolute top-2 left-1 right-1 h-px bg-white/20"></div>
-                    <div className="absolute top-3 left-1 right-1 h-px bg-white/25"></div>
-                  </div>
                 </div>
+              </div>
+
+              {/* Optional: Subtle wall texture/lines to enhance room feeling */}
+              <div className="absolute left-0 top-0 w-full h-32 opacity-5">
+                <div className="absolute left-8 top-16 w-0.5 h-16 bg-white/20 transform rotate-12"></div>
+                <div className="absolute right-8 top-20 w-0.5 h-12 bg-white/20 transform -rotate-12"></div>
               </div>
             </div>
           </div>
 
-          {/* Main hero content - with proper spacing */}
-          <div className="text-center mb-12 relative z-10 mt-32">
+          {/* Main hero content - with proper spacing from background */}
+          <div className="text-center mb-12 relative z-10 mt-24">
             <div className="text-8xl mb-4">🔮</div>
             <h1 className="text-5xl sm:text-6xl font-bold bg-gradient-to-r from-purple-400 via-blue-400 to-cyan-400 bg-clip-text text-transparent mb-4">
               QBW
