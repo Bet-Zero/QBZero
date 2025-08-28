@@ -103,8 +103,6 @@ const QBWPage = () => {
       description: 'Predicted his regression when OC left',
       qbName: 'Mac Jones',
       date: 'Jan 2022',
-      qbName: 'Russell Wilson',
-      date: 'March 2022',
       status: 'wrong',
     },
     {
