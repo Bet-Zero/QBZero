@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeftIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { TOURNAMENT_BACKUP_QBS } from '@/utils/backupQBs/tournamentQBs';
+import TournamentBracket from '@/components/shared/TournamentBracket';
 
 const BackupQBTournament = () => {
   const [bracket, setBracket] = useState([]);
@@ -166,53 +167,14 @@ const BackupQBTournament = () => {
           </div>
         )}
 
-        {/* Current Round Matches */}
-        {!champion && currentMatches.length > 0 && (
+        {/* Tournament Bracket */}
+        {bracket.length > 0 && (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-center">
-              {roundNames[currentRound] || `Round ${currentRound + 1}`}
-            </h2>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {currentMatches.map((match) => (
-                <div key={match.id} className="bg-neutral-800 rounded-lg border border-white/10 p-6">
-                  <div className="space-y-4">
-                    {/* QB 1 */}
-                    <button
-                      onClick={() => selectWinner(match.id, match.qb1)}
-                      disabled={match.winner || match.qb1.id === 'bye'}
-                      className={`w-full p-4 rounded-lg border-2 transition-all ${
-                        match.winner?.id === match.qb1.id
-                          ? 'border-green-500 bg-green-500/20'
-                          : match.qb1.id === 'bye'
-                          ? 'border-gray-500 bg-gray-500/20 cursor-not-allowed'
-                          : 'border-white/20 hover:border-blue-400 hover:bg-blue-400/10'
-                      }`}
-                    >
-                      <div className="font-semibold">{match.qb1.name}</div>
-                      <div className="text-sm text-white/60">{match.qb1.team}</div>
-                    </button>
-
-                    <div className="text-center text-white/40 font-bold">VS</div>
-
-                    {/* QB 2 */}
-                    <button
-                      onClick={() => selectWinner(match.id, match.qb2)}
-                      disabled={match.winner || match.qb2.id === 'bye'}
-                      className={`w-full p-4 rounded-lg border-2 transition-all ${
-                        match.winner?.id === match.qb2.id
-                          ? 'border-green-500 bg-green-500/20'
-                          : match.qb2.id === 'bye'
-                          ? 'border-gray-500 bg-gray-500/20 cursor-not-allowed'
-                          : 'border-white/20 hover:border-blue-400 hover:bg-blue-400/10'
-                      }`}
-                    >
-                      <div className="font-semibold">{match.qb2.name}</div>
-                      <div className="text-sm text-white/60">{match.qb2.team}</div>
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <TournamentBracket
+              bracket={bracket}
+              selectWinner={selectWinner}
+              roundNames={roundNames}
+            />
           </div>
         )}
 
