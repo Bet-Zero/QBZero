@@ -8,42 +8,52 @@ const QBWPage = () => {
   const successfulPredictions = [
     {
       id: '1',
-      name: 'Josh Allen',
-      imageUrl: '/assets/headshots/josh-allen.png',
-      predictionText: 'Future MVP candidate',
+      name: 'Baker Mayfield',
+      imageUrl: '/assets/crystal-balls/good/Baker.png',
+      predictionText: 'Comeback Player of the Year',
     },
     {
       id: '2',
-      name: 'Justin Herbert',
-      imageUrl: '/assets/headshots/justin-herbert.png',
-      predictionText: 'Rookie sensation',
+      name: 'Sam Darnold',
+      imageUrl: '/assets/crystal-balls/good/Darnold.png',
+      predictionText: 'Breakout season in Minnesota',
     },
     {
       id: '3',
-      name: 'Joe Burrow',
-      imageUrl: '/assets/headshots/joe-burrow.png',
-      predictionText: 'Championship QB',
+      name: 'Geno Smith',
+      imageUrl: '/assets/crystal-balls/good/Geno.png',
+      predictionText: 'Veteran resurgence',
     },
     {
       id: '4',
-      name: 'Lamar Jackson',
-      imageUrl: '/assets/headshots/lamar-jackson.png',
-      predictionText: 'Revolutionary dual-threat',
+      name: 'Jared Goff',
+      imageUrl: '/assets/crystal-balls/good/Goff.png',
+      predictionText: 'Elite',
     },
   ];
 
   const breakoutPredictions = [
     {
       id: '5',
-      name: 'Dak Prescott',
-      imageUrl: '/assets/headshots/dak-prescott.png',
-      predictionText: 'Elite pocket passer',
+      name: 'Matthew Stafford',
+      imageUrl: '/assets/crystal-balls/good/Stafford.png',
+      predictionText: 'Super Bowl champion',
     },
+  ];
+
+  // Bad predictions (incorrect calls)
+  const badPredictions = [
     {
       id: '6',
-      name: 'Kyler Murray',
-      imageUrl: '/assets/headshots/kyler-murray.png',
-      predictionText: 'Dynamic playmaker',
+      name: 'Kirk Cousins',
+      imageUrl: '/assets/crystal-balls/bad/Cousins.png',
+      predictionText: 'Playoff breakthrough',
+    },
+    {
+      id: '7',
+      name: 'Russell Wilson',
+      imageUrl: '/assets/crystal-balls/bad/Russ.png',
+      predictionText: 'MVP season in Denver',
     },
   ];
 
@@ -93,22 +103,6 @@ const QBWPage = () => {
       description: 'Predicted his regression when OC left',
       qbName: 'Mac Jones',
       date: 'Jan 2022',
-      proofDate: '2022 Season',
-      status: 'correct',
-    },
-    {
-      id: '6',
-      title: 'Trey Lance will be a bust',
-      description: 'Early call on his NFL struggles',
-      qbName: 'Trey Lance',
-      date: '2021 Draft',
-      proofDate: '2022-2023',
-      status: 'correct',
-    },
-    {
-      id: '7',
-      title: 'Russell Wilson MVP season in Denver',
-      description: 'Thought he would thrive in new system',
       qbName: 'Russell Wilson',
       date: 'March 2022',
       status: 'wrong',
@@ -138,57 +132,79 @@ const QBWPage = () => {
         <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%20xmlns%3D%22http://www.w3.org/2000/svg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cg%20fill%3D%22%23ffffff%22%20fill-opacity%3D%220.03%22%3E%3Ccircle%20cx%3D%2230%22%20cy%3D%2230%22%20r%3D%222%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-50"></div>
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-          {/* Background Floating Shelf Display */}
-          <div className="absolute top-16 left-1/2 transform -translate-x-1/2 w-full max-w-5xl pointer-events-none z-0">
-            {/* Wall background area */}
-            <div className="absolute inset-0 bg-gradient-to-b from-neutral-800/10 to-neutral-900/15 rounded-2xl blur-sm scale-110"></div>
+          {/* Subtle Background Shelves */}
+          <div className="absolute top-20 left-1/2 transform -translate-x-1/2 w-full max-w-5xl pointer-events-none z-0 opacity-30">
+            <div className="relative">
+              {/* Left Shelf - Good Predictions (Subtle) */}
+              <div className="absolute left-0 top-0 w-2/5">
+                <div className="relative">
+                  {/* Simple shelf */}
+                  <div className="relative h-2 bg-gradient-to-b from-amber-700/30 to-amber-800/40 rounded-sm shadow-md">
+                    <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-b from-amber-600/30 to-amber-900/50"></div>
+                  </div>
 
-            {/* Simple floating shelf */}
-            <div className="relative mt-6">
-              {/* Shelf mounting brackets - properly hidden behind shelf */}
-              <div className="absolute top-2 left-12 w-1 h-6 bg-neutral-500/30"></div>
-              <div className="absolute top-2 right-12 w-1 h-6 bg-neutral-500/30"></div>
-
-              {/* Clean wooden shelf surface with 3D effect */}
-              <div className="relative h-4 bg-gradient-to-b from-amber-700/50 to-amber-800/70 rounded-sm shadow-lg border-t border-amber-600/40">
-                {/* Subtle wood texture */}
-                <div className="absolute inset-0 bg-gradient-to-r from-amber-800/20 via-transparent to-amber-800/20 rounded-sm"></div>
-
-                {/* 3D shelf front edge */}
-                <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-b from-amber-600/60 to-amber-900/80 rounded-b-sm"></div>
+                  {/* Small crystal balls on shelf */}
+                  <div className="absolute -top-[40px] left-0 right-0 flex justify-center gap-4 px-6">
+                    {[...successfulPredictions, ...breakoutPredictions].map(
+                      (qb, index) => (
+                        <div
+                          key={qb.id || index}
+                          className="transform"
+                          style={{
+                            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))',
+                          }}
+                        >
+                          <CrystalBall qb={qb} size="sm" />
+                        </div>
+                      )
+                    )}
+                  </div>
+                </div>
               </div>
 
-              {/* 3D shadow underneath shelf - makes it stick out from wall */}
-              <div className="absolute top-5 left-1 right-1 h-3 bg-gradient-to-b from-black/30 to-transparent rounded-sm blur-md"></div>
+              {/* Toilet - Bad Predictions (Bottom Right) */}
+              <div className="absolute right-0 top-[120px] w-1/3">
+                <div className="relative">
+                  {/* Toilet Bowl */}
+                  <div className="relative w-16 h-12 bg-gradient-to-b from-white/20 to-white/10 rounded-full border border-white/15 shadow-lg">
+                    {/* Toilet water */}
+                    <div className="absolute top-2 left-2 right-2 bottom-2 bg-gradient-to-b from-blue-400/20 to-blue-600/30 rounded-full"></div>
+                  </div>
 
-              {/* Crystal balls on shelf - positioned more naturally */}
-              <div className="absolute -top-[60px] left-0 right-0 flex justify-center gap-8 px-12">
-                {[...successfulPredictions, ...breakoutPredictions].map(
-                  (qb, index) => (
-                    <div
-                      key={qb.id || index}
-                      className="transform transition-all duration-500 hover:scale-105"
-                      style={{
-                        filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))',
-                      }}
-                    >
-                      <CrystalBall qb={qb} size="sm" />
-                    </div>
-                  )
-                )}
+                  {/* Toilet Tank */}
+                  <div className="absolute -top-6 left-1 right-1 h-8 bg-gradient-to-b from-white/25 to-white/15 rounded-t-lg border border-white/15">
+                    {/* Tank lid line */}
+                    <div className="absolute top-5 left-1 right-1 h-px bg-white/20"></div>
+                    {/* Flush handle */}
+                    <div className="absolute top-2 -right-1 w-2 h-1 bg-white/30 rounded-sm"></div>
+                  </div>
+
+                  {/* Crystal balls stacked on toilet */}
+                  <div className="absolute -top-[50px] left-1/2 transform -translate-x-1/2 flex flex-col gap-1">
+                    {badPredictions.map((qb, index) => (
+                      <div
+                        key={qb.id || index}
+                        className="transform"
+                        style={{
+                          filter:
+                            'drop-shadow(0 1px 2px rgba(0,0,0,0.3)) grayscale(60%) brightness(60%)',
+                          transform: `scale(0.6) ${index === 1 ? 'translateY(-8px)' : ''}`,
+                        }}
+                      >
+                        <CrystalBall qb={qb} size="sm" />
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Optional toilet paper roll */}
+                  <div className="absolute -left-4 top-1 w-3 h-4 bg-white/15 rounded-full border border-white/10"></div>
+                </div>
               </div>
-            </div>
-
-            {/* Optional subtle label */}
-            <div className="text-center mt-4">
-              <span className="text-xs text-neutral-400/60 font-light tracking-wide">
-                Successful Predictions
-              </span>
             </div>
           </div>
 
           {/* Main hero content - with proper spacing */}
-          <div className="text-center mb-12 relative z-10 mt-40">
+          <div className="text-center mb-12 relative z-10 mt-32">
             <div className="text-8xl mb-4">🔮</div>
             <h1 className="text-5xl sm:text-6xl font-bold bg-gradient-to-r from-purple-400 via-blue-400 to-cyan-400 bg-clip-text text-transparent mb-4">
               QBW
