@@ -47,11 +47,18 @@ const BackupQBTournament = () => {
     setTimeout(() => setIsGenerating(false), 500);
   };
 
-  // Handle match winner selection
+  // Handle match winner selection with deselection support
   const selectWinner = (matchId, winner) => {
     const updatedBracket = [...bracket];
     const match = updatedBracket.find(m => m.id === matchId);
     if (match) {
+      // If winner is null, deselect current winner
+      if (winner === null) {
+        match.winner = null;
+        setBracket(updatedBracket);
+        return;
+      }
+      
       match.winner = winner;
     }
     setBracket(updatedBracket);

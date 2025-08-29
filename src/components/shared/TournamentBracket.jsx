@@ -3,6 +3,8 @@ import React, { useState, useEffect } from 'react';
 const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
   const [showCompactView, setShowCompactView] = useState(false);
   const [containerWidth, setContainerWidth] = useState(1200); // Default to a reasonable width
+  const [currentRegion, setCurrentRegion] = useState(0);
+  const [showRegionView, setShowRegionView] = useState(true); // Default to new region-based view
 
   // Group matches by round
   const getMatchesByRound = () => {
@@ -19,15 +21,122 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
   const roundsData = getMatchesByRound();
   const totalRounds = Object.keys(roundsData).length;
 
-  // Calculate match positioning for proper bracket layout
-  const getMatchPosition = (roundIndex, matchIndex, totalMatches) => {
-    const baseHeight = 100; // Height per match including spacing
-    const matchHeight = 80; // Actual match card height
+  // Region-based logic for better navigation
+  const REGIONS = 4; // 4 regions for 32 QBs
+  const QBS_PER_REGION = 8; // 8 QBs per region (4 matches)
+  const MATCHES_PER_REGION = 4; // 4 matches per region
+
+  // Get matches for specific region and round
+  const getRegionMatches = (round, region) => {
+    const roundMatches = roundsData[round] || [];
     
-    // For first round, position matches normally with some spacing
+    // For first round, divide into regions
+    if (round === 0) {
+      const startIndex = region * MATCHES_PER_REGION;
+      const endIndex = startIndex + MATCHES_PER_REGION;
+      return roundMatches.slice(startIndex, endIndex);
+    }
+    
+    // For subsequent rounds, calculate which matches belong to this region
+    // Each subsequent round has fewer matches, so we need to map them properly
+    const matchesInRound = Math.max(1, 16 / Math.pow(2, round)); // 16, 8, 4, 2, 1
+    const matchesPerRegion = Math.max(1, matchesInRound / REGIONS);
+    
+    if (matchesInRound <= 4) {
+      // Final 4 or fewer - show all matches
+      return roundMatches;
+    }
+    
+    const startIndex = Math.floor(region * matchesPerRegion);
+    const endIndex = Math.min(roundMatches.length, Math.ceil((region + 1) * matchesPerRegion));
+    return roundMatches.slice(startIndex, endIndex);
+  };
+
+  // Get current active round (first round with incomplete matches)
+  const getCurrentActiveRound = () => {
+    return Object.keys(roundsData)
+      .map(Number)
+      .find(round => {
+        const matches = roundsData[round] || [];
+        return matches.some(m => !m.winner);
+      }) || 0;
+  };
+
+  // Check if current region is complete
+  const isRegionComplete = (round, region) => {
+    const regionMatches = getRegionMatches(round, region);
+    return regionMatches.length > 0 && regionMatches.every(m => m.winner);
+  };
+
+  // Auto-advance to next region when current is complete
+  const getNextRegion = (round, region) => {
+    const activeRound = getCurrentActiveRound();
+    
+    // If we're not on the active round, don't auto-advance
+    if (round !== activeRound) return region;
+    
+    // Check if current region is complete
+    if (isRegionComplete(round, region)) {
+      // For Final 4 or fewer, stay on region 0
+      const roundMatches = roundsData[round] || [];
+      if (roundMatches.length <= 4) {
+        return 0;
+      }
+      
+      // Move to next region, wrap around to 0 if needed
+      const nextRegion = (region + 1) % REGIONS;
+      
+      // If we've completed all regions in this round, advance to next round
+      let checkRegion = nextRegion;
+      let regionsChecked = 0;
+      while (regionsChecked < REGIONS) {
+        if (!isRegionComplete(round, checkRegion)) {
+          return checkRegion;
+        }
+        checkRegion = (checkRegion + 1) % REGIONS;
+        regionsChecked++;
+      }
+      
+      // All regions complete, move to region 0 for next round
+      return 0;
+    }
+    
+    return region;
+  };
+
+  // Enhanced winner selection with deselection capability
+  const handleWinnerSelection = (matchId, selectedQB) => {
+    const match = bracket.find(m => m.id === matchId);
+    if (!match) return;
+    
+    // If the same QB is clicked and is already the winner, deselect
+    if (match.winner && match.winner.id === selectedQB.id) {
+      selectWinner(matchId, null); // Deselect by passing null
+      return;
+    }
+    
+    // Otherwise, select the new winner
+    selectWinner(matchId, selectedQB);
+    
+    // Auto-advance region if needed
+    setTimeout(() => {
+      const activeRound = getCurrentActiveRound();
+      const nextRegion = getNextRegion(activeRound, currentRegion);
+      if (nextRegion !== currentRegion) {
+        setCurrentRegion(nextRegion);
+      }
+    }, 500); // Small delay to show the selection before advancing
+  };
+
+  // Calculate match positioning for proper bracket layout (fixed spacing)
+  const getMatchPosition = (roundIndex, matchIndex, totalMatches) => {
+    const baseHeight = 120; // Increased height per match to prevent overlap
+    const matchHeight = 100; // Actual match card height
+    
+    // For first round, position matches with adequate spacing
     if (roundIndex === 0) {
       return {
-        top: matchIndex * baseHeight + 20,
+        top: matchIndex * baseHeight + 40, // Increased base spacing
       };
     }
     
@@ -52,7 +161,7 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
     }
     
     return {
-      top: matchIndex * baseSpacing + 20,
+      top: matchIndex * baseSpacing + 40, // Increased base spacing
     };
   };
 
@@ -147,7 +256,7 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
     return lines;
   };
 
-  // Render a single match card
+  // Render a single match card with deselection capability
   const renderMatch = (match, roundIndex, matchIndex, totalMatches) => {
     const position = getMatchPosition(roundIndex, matchIndex, totalMatches);
     
@@ -163,15 +272,16 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
         <div className="p-3 space-y-2">
           {/* QB 1 */}
           <button
-            onClick={() => selectWinner(match.id, match.qb1)}
-            disabled={match.winner || match.qb1.id === 'bye'}
+            onClick={() => handleWinnerSelection(match.id, match.qb1)}
+            disabled={match.qb1.id === 'bye'}
             className={`w-full p-2.5 rounded-lg border-2 transition-all text-sm relative ${
               match.winner?.id === match.qb1.id
-                ? 'border-green-500 bg-green-500/20 text-green-300'
+                ? 'border-green-500 bg-green-500/20 text-green-300 hover:border-red-400 hover:bg-red-400/10'
                 : match.qb1.id === 'bye'
                 ? 'border-gray-500 bg-gray-500/20 cursor-not-allowed'
                 : 'border-white/20 hover:border-blue-400 hover:bg-blue-400/10 cursor-pointer'
             }`}
+            title={match.winner?.id === match.qb1.id ? 'Click to deselect' : ''}
           >
             <div className="font-semibold truncate">{match.qb1.name}</div>
             <div className="text-xs text-white/60">{match.qb1.team}</div>
@@ -186,15 +296,16 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
 
           {/* QB 2 */}
           <button
-            onClick={() => selectWinner(match.id, match.qb2)}
-            disabled={match.winner || match.qb2.id === 'bye'}
+            onClick={() => handleWinnerSelection(match.id, match.qb2)}
+            disabled={match.qb2.id === 'bye'}
             className={`w-full p-2.5 rounded-lg border-2 transition-all text-sm relative ${
               match.winner?.id === match.qb2.id
-                ? 'border-green-500 bg-green-500/20 text-green-300'
+                ? 'border-green-500 bg-green-500/20 text-green-300 hover:border-red-400 hover:bg-red-400/10'
                 : match.qb2.id === 'bye'
                 ? 'border-gray-500 bg-gray-500/20 cursor-not-allowed'
                 : 'border-white/20 hover:border-blue-400 hover:bg-blue-400/10 cursor-pointer'
             }`}
+            title={match.winner?.id === match.qb2.id ? 'Click to deselect' : ''}
           >
             <div className="font-semibold truncate">{match.qb2.name}</div>
             <div className="text-xs text-white/60">{match.qb2.team}</div>
@@ -347,23 +458,201 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
     );
   };
 
-  // Render compact view for smaller screens
-  const renderCompactView = () => {
-    // Show the first round that has incomplete matches, or first round if all complete
-    const currentActiveRound = Object.keys(roundsData)
-      .map(Number)
-      .find(round => {
-        const matches = roundsData[round];
-        return matches.some(m => !m.winner);
-      }) || 0;
+  // Render region-based view for better navigation
+  const renderRegionView = () => {
+    const activeRound = getCurrentActiveRound();
+    const regionMatches = getRegionMatches(activeRound, currentRegion);
+    
+    if (regionMatches.length === 0) {
+      return (
+        <div className="text-center text-white/60 py-8">
+          No matches available for this region
+        </div>
+      );
+    }
 
-    const matches = roundsData[currentActiveRound] || [];
+    // Check if this is Final 4 or fewer
+    const totalMatches = roundsData[activeRound]?.length || 0;
+    const isFinalFour = totalMatches <= 4;
+    
+    return (
+      <div className="space-y-6">
+        {/* Region Header */}
+        <div className="text-center mb-6">
+          <h3 className="text-2xl font-bold text-white mb-2">
+            {isFinalFour ? 'Final Four' : `Region ${currentRegion + 1}`}
+          </h3>
+          <div className="text-white/60 text-sm mb-2">
+            {roundNames[activeRound] || `Round ${activeRound + 1}`}
+          </div>
+          <div className="text-white/50 text-sm">
+            {regionMatches.filter(m => m.winner).length} / {regionMatches.length} matches complete
+          </div>
+        </div>
+
+        {/* Region Navigation */}
+        {!isFinalFour && (
+          <div className="flex justify-center gap-2 mb-6">
+            {Array.from({ length: REGIONS }, (_, i) => {
+              const regionRoundMatches = getRegionMatches(activeRound, i);
+              const isComplete = isRegionComplete(activeRound, i);
+              const hasMatches = regionRoundMatches.length > 0;
+              
+              return (
+                <button
+                  key={i}
+                  onClick={() => setCurrentRegion(i)}
+                  disabled={!hasMatches}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    currentRegion === i
+                      ? 'bg-blue-600 text-white'
+                      : isComplete
+                      ? 'bg-green-600/50 text-green-300 hover:bg-green-600/70'
+                      : hasMatches
+                      ? 'bg-neutral-700 text-white/70 hover:bg-neutral-600'
+                      : 'bg-neutral-800/50 text-white/30 cursor-not-allowed'
+                  }`}
+                >
+                  Region {i + 1}
+                  {isComplete && ' ✓'}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Matches Grid */}
+        <div className={`grid gap-6 max-w-4xl mx-auto ${
+          isFinalFour && regionMatches.length === 4 
+            ? 'grid-cols-2' // Traditional Final 4 layout
+            : regionMatches.length === 2
+            ? 'grid-cols-1 max-w-2xl' // Championship/Semifinal
+            : regionMatches.length === 1
+            ? 'grid-cols-1 max-w-md' // Final
+            : 'grid-cols-1 sm:grid-cols-2' // Normal region layout
+        }`}>
+          {regionMatches.map((match) => (
+            <div
+              key={match.id}
+              className="bg-neutral-800 rounded-lg border border-white/10 p-4 shadow-lg hover:shadow-xl transition-shadow"
+            >
+              <div className="space-y-3">
+                {/* QB 1 */}
+                <button
+                  onClick={() => handleWinnerSelection(match.id, match.qb1)}
+                  disabled={match.qb1.id === 'bye'}
+                  className={`w-full p-3 rounded-lg border-2 transition-all text-sm relative ${
+                    match.winner?.id === match.qb1.id
+                      ? 'border-green-500 bg-green-500/20 text-green-300 hover:border-red-400 hover:bg-red-400/10'
+                      : match.qb1.id === 'bye'
+                      ? 'border-gray-500 bg-gray-500/20 cursor-not-allowed'
+                      : 'border-white/20 hover:border-blue-400 hover:bg-blue-400/10 cursor-pointer'
+                  }`}
+                  title={match.winner?.id === match.qb1.id ? 'Click to deselect' : ''}
+                >
+                  <div className="font-semibold">{match.qb1.name}</div>
+                  <div className="text-xs text-white/60">{match.qb1.team}</div>
+                  {match.winner?.id === match.qb1.id && (
+                    <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-green-400 text-lg">
+                      ✓
+                    </div>
+                  )}
+                </button>
+
+                <div className="text-center text-white/40 text-xs font-bold py-1">VS</div>
+
+                {/* QB 2 */}
+                <button
+                  onClick={() => handleWinnerSelection(match.id, match.qb2)}
+                  disabled={match.qb2.id === 'bye'}
+                  className={`w-full p-3 rounded-lg border-2 transition-all text-sm relative ${
+                    match.winner?.id === match.qb2.id
+                      ? 'border-green-500 bg-green-500/20 text-green-300 hover:border-red-400 hover:bg-red-400/10'
+                      : match.qb2.id === 'bye'
+                      ? 'border-gray-500 bg-gray-500/20 cursor-not-allowed'
+                      : 'border-white/20 hover:border-blue-400 hover:bg-blue-400/10 cursor-pointer'
+                  }`}
+                  title={match.winner?.id === match.qb2.id ? 'Click to deselect' : ''}
+                >
+                  <div className="font-semibold">{match.qb2.name}</div>
+                  <div className="text-xs text-white/60">{match.qb2.team}</div>
+                  {match.winner?.id === match.qb2.id && (
+                    <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-green-400 text-lg">
+                      ✓
+                    </div>
+                  )}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Auto-advance indicator */}
+        {!isFinalFour && isRegionComplete(activeRound, currentRegion) && (
+          <div className="text-center mt-6 p-4 bg-green-600/20 border border-green-500/30 rounded-lg">
+            <div className="text-green-400 font-medium">
+              ✓ Region {currentRegion + 1} Complete!
+            </div>
+            <div className="text-green-300/80 text-sm mt-1">
+              Moving to next region...
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // View toggle controls with new region view
+  const renderViewControls = () => {
+    // Always show controls when there are matches to display
+    if (Object.keys(roundsData).length === 0) return null;
+
+    return (
+      <div className="flex justify-center mb-6 gap-2">
+        <button
+          onClick={() => { setShowRegionView(true); setShowCompactView(false); }}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            showRegionView
+              ? 'bg-blue-600 text-white'
+              : 'bg-neutral-700 text-white/70 hover:bg-neutral-600'
+          }`}
+        >
+          Region View
+        </button>
+        <button
+          onClick={() => { setShowRegionView(false); setShowCompactView(false); }}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            !showRegionView && !showCompactView
+              ? 'bg-blue-600 text-white'
+              : 'bg-neutral-700 text-white/70 hover:bg-neutral-600'
+          }`}
+        >
+          Bracket View
+        </button>
+        <button
+          onClick={() => { setShowRegionView(false); setShowCompactView(true); }}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            showCompactView
+              ? 'bg-blue-600 text-white'
+              : 'bg-neutral-700 text-white/70 hover:bg-neutral-600'
+          }`}
+        >
+          Compact View
+        </button>
+      </div>
+    );
+  };
+
+  // Render compact view (updated to use new selection handler)
+  const renderCompactView = () => {
+    const activeRound = getCurrentActiveRound();
+    const matches = roundsData[activeRound] || [];
     
     return (
       <div className="space-y-4">
         <div className="text-center mb-6">
           <h3 className="text-xl font-bold text-white mb-2">
-            {roundNames[currentActiveRound] || `Round ${currentActiveRound + 1}`}
+            {roundNames[activeRound] || `Round ${activeRound + 1}`}
           </h3>
           <div className="text-white/60 text-sm">
             {matches.filter(m => m.winner).length} / {matches.length} matches complete
@@ -379,15 +668,16 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
               <div className="space-y-3">
                 {/* QB 1 */}
                 <button
-                  onClick={() => selectWinner(match.id, match.qb1)}
-                  disabled={match.winner || match.qb1.id === 'bye'}
+                  onClick={() => handleWinnerSelection(match.id, match.qb1)}
+                  disabled={match.qb1.id === 'bye'}
                   className={`w-full p-3 rounded-lg border-2 transition-all text-sm relative ${
                     match.winner?.id === match.qb1.id
-                      ? 'border-green-500 bg-green-500/20 text-green-300'
+                      ? 'border-green-500 bg-green-500/20 text-green-300 hover:border-red-400 hover:bg-red-400/10'
                       : match.qb1.id === 'bye'
                       ? 'border-gray-500 bg-gray-500/20 cursor-not-allowed'
                       : 'border-white/20 hover:border-blue-400 hover:bg-blue-400/10 cursor-pointer'
                   }`}
+                  title={match.winner?.id === match.qb1.id ? 'Click to deselect' : ''}
                 >
                   <div className="font-semibold">{match.qb1.name}</div>
                   <div className="text-xs text-white/60">{match.qb1.team}</div>
@@ -402,15 +692,16 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
 
                 {/* QB 2 */}
                 <button
-                  onClick={() => selectWinner(match.id, match.qb2)}
-                  disabled={match.winner || match.qb2.id === 'bye'}
+                  onClick={() => handleWinnerSelection(match.id, match.qb2)}
+                  disabled={match.qb2.id === 'bye'}
                   className={`w-full p-3 rounded-lg border-2 transition-all text-sm relative ${
                     match.winner?.id === match.qb2.id
-                      ? 'border-green-500 bg-green-500/20 text-green-300'
+                      ? 'border-green-500 bg-green-500/20 text-green-300 hover:border-red-400 hover:bg-red-400/10'
                       : match.qb2.id === 'bye'
                       ? 'border-gray-500 bg-gray-500/20 cursor-not-allowed'
                       : 'border-white/20 hover:border-blue-400 hover:bg-blue-400/10 cursor-pointer'
                   }`}
+                  title={match.winner?.id === match.qb2.id ? 'Click to deselect' : ''}
                 >
                   <div className="font-semibold">{match.qb2.name}</div>
                   <div className="text-xs text-white/60">{match.qb2.team}</div>
@@ -428,38 +719,7 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
     );
   };
 
-  // View toggle controls
-  const renderViewControls = () => {
-    // Always show controls when there are matches to display
-    if (Object.keys(roundsData).length === 0) return null;
-
-    return (
-      <div className="flex justify-center mb-6 gap-2">
-        <button
-          onClick={() => setShowCompactView(false)}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-            !showCompactView
-              ? 'bg-blue-600 text-white'
-              : 'bg-neutral-700 text-white/70 hover:bg-neutral-600'
-          }`}
-        >
-          Bracket View
-        </button>
-        <button
-          onClick={() => setShowCompactView(true)}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-            showCompactView
-              ? 'bg-blue-600 text-white'
-              : 'bg-neutral-700 text-white/70 hover:bg-neutral-600'
-          }`}
-        >
-          Compact View
-        </button>
-      </div>
-    );
-  };
-
-  // Effect to monitor container size
+  // Effect to monitor container size and auto-advance regions
   useEffect(() => {
     const updateContainerWidth = () => {
       const container = document.querySelector('.tournament-container');
@@ -473,6 +733,21 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
     return () => window.removeEventListener('resize', updateContainerWidth);
   }, []);
 
+  // Auto-advance region when current region completes
+  useEffect(() => {
+    if (showRegionView) {
+      const activeRound = getCurrentActiveRound();
+      const nextRegion = getNextRegion(activeRound, currentRegion);
+      if (nextRegion !== currentRegion) {
+        // Small delay to show completion before advancing
+        const timer = setTimeout(() => {
+          setCurrentRegion(nextRegion);
+        }, 1000);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [bracket, currentRegion, showRegionView]);
+
   if (Object.keys(roundsData).length === 0) {
     return (
       <div className="text-center text-white/60 py-8">
@@ -485,7 +760,9 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
     <div className="tournament-container">
       {renderViewControls()}
       
-      {showCompactView ? (
+      {showRegionView ? (
+        renderRegionView()
+      ) : showCompactView ? (
         renderCompactView()
       ) : (
         renderFullBracket()
