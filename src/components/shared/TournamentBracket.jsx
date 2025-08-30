@@ -505,31 +505,31 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
 
   // Render a single match in region bracket format
   const renderRegionMatch = (match, roundIndex, matchIndex, isPlaceholder = false) => {
-    const baseHeight = 100;
-    const roundWidth = 260;
+    const baseHeight = 160; // Slightly reduced from 180 for better fit
+    const roundWidth = 260; // Reduced from 280 for better fit
     
     const position = {
-      top: matchIndex * (baseHeight + 20) + 60,
-      left: roundIndex * roundWidth
+      top: matchIndex * baseHeight + 60, 
+      left: roundIndex * roundWidth + 10 // Reduced padding
     };
     
     if (isPlaceholder) {
       return (
         <div
           key={`placeholder-${roundIndex}-${matchIndex}`}
-          className="absolute w-56 bg-neutral-800/30 rounded-lg border border-white/5 shadow-lg"
+          className="absolute w-60 bg-neutral-800/30 rounded-lg border border-white/5 shadow-lg"
           style={{ 
             top: `${position.top}px`,
             left: `${position.left}px`
           }}
         >
           <div className="p-3 space-y-2">
-            <div className="w-full p-2.5 rounded-lg border-2 border-white/10 bg-neutral-700/20 text-sm">
+            <div className="w-full p-3 rounded-lg border-2 border-white/10 bg-neutral-700/20 text-sm">
               <div className="font-semibold text-white/40">TBD</div>
               <div className="text-xs text-white/30">Awaiting winner</div>
             </div>
             <div className="text-center text-white/30 text-xs font-bold py-0.5">VS</div>
-            <div className="w-full p-2.5 rounded-lg border-2 border-white/10 bg-neutral-700/20 text-sm">
+            <div className="w-full p-3 rounded-lg border-2 border-white/10 bg-neutral-700/20 text-sm">
               <div className="font-semibold text-white/40">TBD</div>
               <div className="text-xs text-white/30">Awaiting winner</div>
             </div>
@@ -541,7 +541,7 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
     return (
       <div
         key={match.id}
-        className="absolute w-56 bg-neutral-800 rounded-lg border border-white/10 shadow-lg hover:shadow-xl transition-shadow"
+        className="absolute w-60 bg-neutral-800 rounded-lg border border-white/10 shadow-lg hover:shadow-xl transition-shadow"
         style={{ 
           top: `${position.top}px`,
           left: `${position.left}px`
@@ -552,7 +552,7 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
           <button
             onClick={() => handleWinnerSelection(match.id, match.qb1)}
             disabled={match.qb1.id === 'bye'}
-            className={`w-full p-2.5 rounded-lg border-2 transition-all text-sm relative ${
+            className={`w-full p-3 rounded-lg border-2 transition-all text-sm relative ${
               match.winner?.id === match.qb1.id
                 ? 'border-green-500 bg-green-500/20 text-green-300 hover:border-red-400 hover:bg-red-400/10'
                 : match.qb1.id === 'bye'
@@ -576,7 +576,7 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
           <button
             onClick={() => handleWinnerSelection(match.id, match.qb2)}
             disabled={match.qb2.id === 'bye'}
-            className={`w-full p-2.5 rounded-lg border-2 transition-all text-sm relative ${
+            className={`w-full p-3 rounded-lg border-2 transition-all text-sm relative ${
               match.winner?.id === match.qb2.id
                 ? 'border-green-500 bg-green-500/20 text-green-300 hover:border-red-400 hover:bg-red-400/10'
                 : match.qb2.id === 'bye'
@@ -601,8 +601,8 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
   // Render connecting lines between rounds in region bracket
   const renderRegionBracketLines = (structure) => {
     const lines = [];
-    const baseHeight = 100;
-    const roundWidth = 260;
+    const baseHeight = 160; // Match the new baseHeight
+    const roundWidth = 260; // Match the new roundWidth
     
     for (let roundIndex = 0; roundIndex < structure.length - 1; roundIndex++) {
       const currentRound = structure[roundIndex];
@@ -617,15 +617,15 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
         
         if (!match1) continue;
         
-        const match1Y = i * (baseHeight + 20) + 60 + 40; // Center of first match
-        const match2Y = match2 ? (i + 1) * (baseHeight + 20) + 60 + 40 : match1Y; // Center of second match
+        const match1Y = i * baseHeight + 60 + 70; // Center of first match (60 top + 70 for center)
+        const match2Y = match2 ? (i + 1) * baseHeight + 60 + 70 : match1Y; // Center of second match
         
         const nextMatchIndex = Math.floor(i / 2);
-        const nextMatchY = nextMatchIndex * (baseHeight + 20) + 60 + 40; // Center of next round match
+        const nextMatchY = nextMatchIndex * baseHeight + 60 + 70; // Center of next round match
         
-        const currentRoundX = roundIndex * roundWidth + 240; // Right edge of current round matches
-        const nextRoundX = (roundIndex + 1) * roundWidth; // Left edge of next round matches
-        const centerX = currentRoundX + 20; // Midpoint for vertical line
+        const currentRoundX = roundIndex * roundWidth + 10 + 240; // Right edge of current round matches (10 padding + 240 width)
+        const nextRoundX = (roundIndex + 1) * roundWidth + 10; // Left edge of next round matches
+        const centerX = currentRoundX + 15; // Midpoint for vertical line
         
         // Horizontal line from first match
         lines.push(
@@ -635,7 +635,7 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
             style={{
               left: `${currentRoundX}px`,
               top: `${match1Y}px`,
-              width: '20px'
+              width: '15px'
             }}
           />
         );
@@ -649,7 +649,7 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
               style={{
                 left: `${currentRoundX}px`,
                 top: `${match2Y}px`,
-                width: '20px'
+                width: '15px'
               }}
             />
           );
@@ -679,7 +679,7 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
               style={{
                 left: `${centerX}px`,
                 top: `${nextMatchY}px`,
-                width: '20px'
+                width: '15px'
               }}
             />
           );
@@ -712,8 +712,8 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
     
     // Calculate container dimensions
     const maxMatches = Math.max(...regionStructure.map(r => r.matches?.length || r.expectedMatches || 0));
-    const containerHeight = Math.max(300, maxMatches * 120 + 100);
-    const containerWidth = Math.max(600, regionStructure.length * 260 + 100);
+    const containerHeight = Math.max(400, maxMatches * 160 + 120); // Account for new spacing
+    const containerWidth = Math.max(700, regionStructure.length * 260 + 60); // Account for new width
     
     return (
       <div className="space-y-6">
@@ -760,12 +760,13 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
         </div>
 
         {/* Region Bracket */}
-        <div className="overflow-x-auto overflow-y-hidden pb-8">
+        <div className="overflow-hidden pb-4"> {/* Remove overflow-x-auto to prevent horizontal scrolling */}
           <div 
             className="relative mx-auto"
             style={{ 
               width: `${containerWidth}px`,
               height: `${containerHeight}px`,
+              maxWidth: '100vw', // Ensure it doesn't exceed viewport width
               paddingTop: '60px'
             }}
           >
@@ -775,7 +776,7 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
                 key={`header-${roundStructure.round}`}
                 className="absolute text-center"
                 style={{
-                  left: `${roundIndex * 260}px`,
+                  left: `${roundIndex * 260 + 10}px`,
                   top: '-40px',
                   width: '240px'
                 }}
