@@ -1,10 +1,10 @@
 import React from 'react';
 import Shelf from '@/features/qbw/Shelf';
 import TakeBoard from '@/features/qbw/TakeBoard';
-import CrystalBall from '@/features/qbw/CrystalBall';
 
 const QBWPage = () => {
   // Sample data for crystal ball QBs (successful predictions)
+  // All 5 good crystal balls go to Elite Tier Predictions
   const successfulPredictions = [
     {
       id: '1',
@@ -30,9 +30,6 @@ const QBWPage = () => {
       imageUrl: '/assets/crystal-balls/good/Goff.png',
       predictionText: 'Elite',
     },
-  ];
-
-  const breakoutPredictions = [
     {
       id: '5',
       name: 'Matthew Stafford',
@@ -41,8 +38,8 @@ const QBWPage = () => {
     },
   ];
 
-  // Bad predictions (incorrect calls)
-  const badPredictions = [
+  // Bad predictions as placeholders for Breakout Star Calls
+  const breakoutPredictions = [
     {
       id: '6',
       name: 'Kirk Cousins',
@@ -103,8 +100,6 @@ const QBWPage = () => {
       description: 'Predicted his regression when OC left',
       qbName: 'Mac Jones',
       date: 'Jan 2022',
-      qbName: 'Russell Wilson',
-      date: 'March 2022',
       status: 'wrong',
     },
     {
@@ -132,40 +127,8 @@ const QBWPage = () => {
         <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%20xmlns%3D%22http://www.w3.org/2000/svg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cg%20fill%3D%22%23ffffff%22%20fill-opacity%3D%220.03%22%3E%3Ccircle%20cx%3D%2230%22%20cy%3D%2230%22%20r%3D%222%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-50"></div>
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-          {/* Subtle Background Shelves */}
-          <div className="absolute top-20 left-1/2 transform -translate-x-1/2 w-full max-w-5xl pointer-events-none z-0 opacity-30">
-            <div className="relative">
-              {/* Left Shelf - Good Predictions (Subtle) */}
-              <div className="absolute left-0 top-4 w-2/5">
-                <div className="relative">
-                  {/* Simple shelf */}
-                  <div className="relative h-2 bg-gradient-to-b from-amber-700/30 to-amber-800/40 rounded-sm shadow-md">
-                    <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-b from-amber-600/30 to-amber-900/50"></div>
-                  </div>
-
-                  {/* Small crystal balls on shelf */}
-                  <div className="absolute -top-[70px] left-0 right-0 flex justify-center gap-2 px-6">
-                    {[...successfulPredictions, ...breakoutPredictions].map(
-                      (qb, index) => (
-                        <div
-                          key={qb.id || index}
-                          className="transform"
-                          style={{
-                            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))',
-                          }}
-                        >
-                          <CrystalBall qb={qb} size="sm" />
-                        </div>
-                      )
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Main hero content - with proper spacing */}
-          <div className="text-center mb-12 relative z-10 mt-32">
+          {/* Main hero content */}
+          <div className="text-center mb-12 relative z-10">
             <div className="text-8xl mb-4">🔮</div>
             <h1 className="text-5xl sm:text-6xl font-bold bg-gradient-to-r from-purple-400 via-blue-400 to-cyan-400 bg-clip-text text-transparent mb-4">
               QBW
@@ -204,20 +167,6 @@ const QBWPage = () => {
               <div className="text-sm">Accuracy Rate</div>
             </div>
           </div>
-        </div>
-        {/* Bad Crystal Balls on Divider */}
-        <div className="absolute bottom-6 right-16 transform translate-y-1/4 translate-x-1/4 flex gap-0">
-          {badPredictions.map((qb) => (
-            <div
-              key={qb.id}
-              className="transform"
-              style={{
-                filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))',
-              }}
-            >
-              <CrystalBall qb={qb} size="sm" />
-            </div>
-          ))}
         </div>
       </div>
 
