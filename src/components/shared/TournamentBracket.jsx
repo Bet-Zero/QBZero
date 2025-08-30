@@ -458,137 +458,363 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
     );
   };
 
-  // Render region-based view for better navigation
+  // Get all rounds that belong to a specific region to show bracket progression
+  const getRegionBracketStructure = (region) => {
+    const structure = [];
+    const maxRounds = Math.max(...Object.keys(roundsData).map(Number)) + 1;
+    
+    // Start with first round for this region
+    const firstRoundMatches = getRegionMatches(0, region);
+    if (firstRoundMatches.length > 0) {
+      structure.push({
+        round: 0,
+        matches: firstRoundMatches,
+        isFinal: false
+      });
+    }
+    
+    // Calculate subsequent rounds for this region
+    let expectedMatchesInNextRound = Math.ceil(firstRoundMatches.length / 2);
+    for (let round = 1; round <= maxRounds && expectedMatchesInNextRound > 0; round++) {
+      const actualMatches = getRegionMatches(round, region);
+      
+      // Check if this round exists in the actual tournament data
+      if (roundsData[round] && roundsData[round].length <= 4) {
+        // Final 4 or fewer - don't show in region view, let it go to full bracket
+        break;
+      }
+      
+      structure.push({
+        round,
+        matches: actualMatches,
+        expectedMatches: expectedMatchesInNextRound,
+        isFinal: false
+      });
+      
+      // Calculate next round expectations
+      expectedMatchesInNextRound = Math.ceil(expectedMatchesInNextRound / 2);
+      
+      // Stop if we have no actual matches and it's beyond the immediate next round
+      if (actualMatches.length === 0 && round > 1) {
+        break;
+      }
+    }
+    
+    return structure;
+  };
+
+  // Render a single match in region bracket format
+  const renderRegionMatch = (match, roundIndex, matchIndex, isPlaceholder = false) => {
+    const baseHeight = 100;
+    const roundWidth = 260;
+    
+    const position = {
+      top: matchIndex * (baseHeight + 20) + 60,
+      left: roundIndex * roundWidth
+    };
+    
+    if (isPlaceholder) {
+      return (
+        <div
+          key={`placeholder-${roundIndex}-${matchIndex}`}
+          className="absolute w-56 bg-neutral-800/30 rounded-lg border border-white/5 shadow-lg"
+          style={{ 
+            top: `${position.top}px`,
+            left: `${position.left}px`
+          }}
+        >
+          <div className="p-3 space-y-2">
+            <div className="w-full p-2.5 rounded-lg border-2 border-white/10 bg-neutral-700/20 text-sm">
+              <div className="font-semibold text-white/40">TBD</div>
+              <div className="text-xs text-white/30">Awaiting winner</div>
+            </div>
+            <div className="text-center text-white/30 text-xs font-bold py-0.5">VS</div>
+            <div className="w-full p-2.5 rounded-lg border-2 border-white/10 bg-neutral-700/20 text-sm">
+              <div className="font-semibold text-white/40">TBD</div>
+              <div className="text-xs text-white/30">Awaiting winner</div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
+    return (
+      <div
+        key={match.id}
+        className="absolute w-56 bg-neutral-800 rounded-lg border border-white/10 shadow-lg hover:shadow-xl transition-shadow"
+        style={{ 
+          top: `${position.top}px`,
+          left: `${position.left}px`
+        }}
+      >
+        <div className="p-3 space-y-2">
+          {/* QB 1 */}
+          <button
+            onClick={() => handleWinnerSelection(match.id, match.qb1)}
+            disabled={match.qb1.id === 'bye'}
+            className={`w-full p-2.5 rounded-lg border-2 transition-all text-sm relative ${
+              match.winner?.id === match.qb1.id
+                ? 'border-green-500 bg-green-500/20 text-green-300 hover:border-red-400 hover:bg-red-400/10'
+                : match.qb1.id === 'bye'
+                ? 'border-gray-500 bg-gray-500/20 cursor-not-allowed'
+                : 'border-white/20 hover:border-blue-400 hover:bg-blue-400/10 cursor-pointer'
+            }`}
+            title={match.winner?.id === match.qb1.id ? 'Click to deselect' : ''}
+          >
+            <div className="font-semibold truncate">{match.qb1.name}</div>
+            <div className="text-xs text-white/60">{match.qb1.team}</div>
+            {match.winner?.id === match.qb1.id && (
+              <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-green-400 text-lg">
+                ✓
+              </div>
+            )}
+          </button>
+
+          <div className="text-center text-white/40 text-xs font-bold py-0.5">VS</div>
+
+          {/* QB 2 */}
+          <button
+            onClick={() => handleWinnerSelection(match.id, match.qb2)}
+            disabled={match.qb2.id === 'bye'}
+            className={`w-full p-2.5 rounded-lg border-2 transition-all text-sm relative ${
+              match.winner?.id === match.qb2.id
+                ? 'border-green-500 bg-green-500/20 text-green-300 hover:border-red-400 hover:bg-red-400/10'
+                : match.qb2.id === 'bye'
+                ? 'border-gray-500 bg-gray-500/20 cursor-not-allowed'
+                : 'border-white/20 hover:border-blue-400 hover:bg-blue-400/10 cursor-pointer'
+            }`}
+            title={match.winner?.id === match.qb2.id ? 'Click to deselect' : ''}
+          >
+            <div className="font-semibold truncate">{match.qb2.name}</div>
+            <div className="text-xs text-white/60">{match.qb2.team}</div>
+            {match.winner?.id === match.qb2.id && (
+              <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-green-400 text-lg">
+                ✓
+              </div>
+            )}
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  // Render connecting lines between rounds in region bracket
+  const renderRegionBracketLines = (structure) => {
+    const lines = [];
+    const baseHeight = 100;
+    const roundWidth = 260;
+    
+    for (let roundIndex = 0; roundIndex < structure.length - 1; roundIndex++) {
+      const currentRound = structure[roundIndex];
+      const nextRound = structure[roundIndex + 1];
+      
+      if (!currentRound.matches || currentRound.matches.length === 0) continue;
+      
+      // Connect every pair of matches in current round to next round
+      for (let i = 0; i < currentRound.matches.length; i += 2) {
+        const match1 = currentRound.matches[i];
+        const match2 = currentRound.matches[i + 1];
+        
+        if (!match1) continue;
+        
+        const match1Y = i * (baseHeight + 20) + 60 + 40; // Center of first match
+        const match2Y = match2 ? (i + 1) * (baseHeight + 20) + 60 + 40 : match1Y; // Center of second match
+        
+        const nextMatchIndex = Math.floor(i / 2);
+        const nextMatchY = nextMatchIndex * (baseHeight + 20) + 60 + 40; // Center of next round match
+        
+        const currentRoundX = roundIndex * roundWidth + 240; // Right edge of current round matches
+        const nextRoundX = (roundIndex + 1) * roundWidth; // Left edge of next round matches
+        const centerX = currentRoundX + 20; // Midpoint for vertical line
+        
+        // Horizontal line from first match
+        lines.push(
+          <div
+            key={`h1-${roundIndex}-${i}`}
+            className="absolute bg-white/30 h-0.5"
+            style={{
+              left: `${currentRoundX}px`,
+              top: `${match1Y}px`,
+              width: '20px'
+            }}
+          />
+        );
+        
+        // Horizontal line from second match (if exists)
+        if (match2) {
+          lines.push(
+            <div
+              key={`h2-${roundIndex}-${i}`}
+              className="absolute bg-white/30 h-0.5"
+              style={{
+                left: `${currentRoundX}px`,
+                top: `${match2Y}px`,
+                width: '20px'
+              }}
+            />
+          );
+        }
+        
+        // Vertical line connecting the horizontal lines
+        if (match2 && Math.abs(match2Y - match1Y) > 5) {
+          lines.push(
+            <div
+              key={`v-${roundIndex}-${i}`}
+              className="absolute bg-white/30 w-0.5"
+              style={{
+                left: `${centerX}px`,
+                top: `${Math.min(match1Y, match2Y)}px`,
+                height: `${Math.abs(match2Y - match1Y)}px`
+              }}
+            />
+          );
+        }
+        
+        // Horizontal line to next round match
+        if (nextRound.matches.length > nextMatchIndex) {
+          lines.push(
+            <div
+              key={`next-${roundIndex}-${i}`}
+              className="absolute bg-white/30 h-0.5"
+              style={{
+                left: `${centerX}px`,
+                top: `${nextMatchY}px`,
+                width: '20px'
+              }}
+            />
+          );
+        }
+      }
+    }
+    
+    return lines;
+  };
+
+  // Render region-based view with bracket format
   const renderRegionView = () => {
     const activeRound = getCurrentActiveRound();
-    const regionMatches = getRegionMatches(activeRound, currentRegion);
+    const totalMatches = roundsData[activeRound]?.length || 0;
     
-    if (regionMatches.length === 0) {
+    // Check if this is Final 4 or fewer - use traditional bracket view
+    if (totalMatches <= 4) {
+      return renderFullBracket();
+    }
+    
+    const regionStructure = getRegionBracketStructure(currentRegion);
+    
+    if (regionStructure.length === 0) {
       return (
         <div className="text-center text-white/60 py-8">
           No matches available for this region
         </div>
       );
     }
-
-    // Check if this is Final 4 or fewer
-    const totalMatches = roundsData[activeRound]?.length || 0;
-    const isFinalFour = totalMatches <= 4;
+    
+    // Calculate container dimensions
+    const maxMatches = Math.max(...regionStructure.map(r => r.matches?.length || r.expectedMatches || 0));
+    const containerHeight = Math.max(300, maxMatches * 120 + 100);
+    const containerWidth = Math.max(600, regionStructure.length * 260 + 100);
     
     return (
       <div className="space-y-6">
         {/* Region Header */}
         <div className="text-center mb-6">
           <h3 className="text-2xl font-bold text-white mb-2">
-            {isFinalFour ? 'Final Four' : `Region ${currentRegion + 1}`}
+            Region {currentRegion + 1}
           </h3>
           <div className="text-white/60 text-sm mb-2">
             {roundNames[activeRound] || `Round ${activeRound + 1}`}
           </div>
           <div className="text-white/50 text-sm">
-            {regionMatches.filter(m => m.winner).length} / {regionMatches.length} matches complete
+            {getRegionMatches(activeRound, currentRegion).filter(m => m.winner).length} / {getRegionMatches(activeRound, currentRegion).length} matches complete
           </div>
         </div>
 
         {/* Region Navigation */}
-        {!isFinalFour && (
-          <div className="flex justify-center gap-2 mb-6">
-            {Array.from({ length: REGIONS }, (_, i) => {
-              const regionRoundMatches = getRegionMatches(activeRound, i);
-              const isComplete = isRegionComplete(activeRound, i);
-              const hasMatches = regionRoundMatches.length > 0;
-              
-              return (
-                <button
-                  key={i}
-                  onClick={() => setCurrentRegion(i)}
-                  disabled={!hasMatches}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    currentRegion === i
-                      ? 'bg-blue-600 text-white'
-                      : isComplete
-                      ? 'bg-green-600/50 text-green-300 hover:bg-green-600/70'
-                      : hasMatches
-                      ? 'bg-neutral-700 text-white/70 hover:bg-neutral-600'
-                      : 'bg-neutral-800/50 text-white/30 cursor-not-allowed'
-                  }`}
-                >
-                  Region {i + 1}
-                  {isComplete && ' ✓'}
-                </button>
-              );
+        <div className="flex justify-center gap-2 mb-6">
+          {Array.from({ length: REGIONS }, (_, i) => {
+            const regionRoundMatches = getRegionMatches(activeRound, i);
+            const isComplete = isRegionComplete(activeRound, i);
+            const hasMatches = regionRoundMatches.length > 0;
+            
+            return (
+              <button
+                key={i}
+                onClick={() => setCurrentRegion(i)}
+                disabled={!hasMatches}
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  currentRegion === i
+                    ? 'bg-blue-600 text-white'
+                    : isComplete
+                    ? 'bg-green-600/50 text-green-300 hover:bg-green-600/70'
+                    : hasMatches
+                    ? 'bg-neutral-700 text-white/70 hover:bg-neutral-600'
+                    : 'bg-neutral-800/50 text-white/30 cursor-not-allowed'
+                }`}
+              >
+                Region {i + 1}
+                {isComplete && ' ✓'}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Region Bracket */}
+        <div className="overflow-x-auto overflow-y-hidden pb-8">
+          <div 
+            className="relative mx-auto"
+            style={{ 
+              width: `${containerWidth}px`,
+              height: `${containerHeight}px`,
+              paddingTop: '60px'
+            }}
+          >
+            {/* Round headers */}
+            {regionStructure.map((roundStructure, roundIndex) => (
+              <div
+                key={`header-${roundStructure.round}`}
+                className="absolute text-center"
+                style={{
+                  left: `${roundIndex * 260}px`,
+                  top: '-40px',
+                  width: '240px'
+                }}
+              >
+                <h4 className="text-sm font-bold text-white bg-gradient-to-r from-blue-600/30 to-purple-600/30 rounded-lg py-1.5 px-3 border border-white/10">
+                  {roundNames[roundStructure.round] || `Round ${roundStructure.round + 1}`}
+                </h4>
+                <div className="text-xs text-white/50 mt-1">
+                  {roundStructure.matches.filter(m => m.winner).length} / {roundStructure.matches.length || roundStructure.expectedMatches || 0} complete
+                </div>
+              </div>
+            ))}
+
+            {/* Bracket connecting lines */}
+            {renderRegionBracketLines(regionStructure)}
+
+            {/* Actual matches */}
+            {regionStructure.map((roundStructure, roundIndex) => 
+              roundStructure.matches.map((match, matchIndex) =>
+                renderRegionMatch(match, roundIndex, matchIndex)
+              )
+            )}
+
+            {/* Placeholder matches for future rounds */}
+            {regionStructure.map((roundStructure, roundIndex) => {
+              if (roundStructure.matches.length === 0 && roundStructure.expectedMatches > 0) {
+                const placeholders = [];
+                for (let i = 0; i < roundStructure.expectedMatches; i++) {
+                  placeholders.push(renderRegionMatch(null, roundIndex, i, true));
+                }
+                return placeholders;
+              }
+              return null;
             })}
           </div>
-        )}
-
-        {/* Matches Grid */}
-        <div className={`grid gap-6 max-w-4xl mx-auto ${
-          isFinalFour && regionMatches.length === 4 
-            ? 'grid-cols-2' // Traditional Final 4 layout
-            : regionMatches.length === 2
-            ? 'grid-cols-1 max-w-2xl' // Championship/Semifinal
-            : regionMatches.length === 1
-            ? 'grid-cols-1 max-w-md' // Final
-            : 'grid-cols-1 sm:grid-cols-2' // Normal region layout
-        }`}>
-          {regionMatches.map((match) => (
-            <div
-              key={match.id}
-              className="bg-neutral-800 rounded-lg border border-white/10 p-4 shadow-lg hover:shadow-xl transition-shadow"
-            >
-              <div className="space-y-3">
-                {/* QB 1 */}
-                <button
-                  onClick={() => handleWinnerSelection(match.id, match.qb1)}
-                  disabled={match.qb1.id === 'bye'}
-                  className={`w-full p-3 rounded-lg border-2 transition-all text-sm relative ${
-                    match.winner?.id === match.qb1.id
-                      ? 'border-green-500 bg-green-500/20 text-green-300 hover:border-red-400 hover:bg-red-400/10'
-                      : match.qb1.id === 'bye'
-                      ? 'border-gray-500 bg-gray-500/20 cursor-not-allowed'
-                      : 'border-white/20 hover:border-blue-400 hover:bg-blue-400/10 cursor-pointer'
-                  }`}
-                  title={match.winner?.id === match.qb1.id ? 'Click to deselect' : ''}
-                >
-                  <div className="font-semibold">{match.qb1.name}</div>
-                  <div className="text-xs text-white/60">{match.qb1.team}</div>
-                  {match.winner?.id === match.qb1.id && (
-                    <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-green-400 text-lg">
-                      ✓
-                    </div>
-                  )}
-                </button>
-
-                <div className="text-center text-white/40 text-xs font-bold py-1">VS</div>
-
-                {/* QB 2 */}
-                <button
-                  onClick={() => handleWinnerSelection(match.id, match.qb2)}
-                  disabled={match.qb2.id === 'bye'}
-                  className={`w-full p-3 rounded-lg border-2 transition-all text-sm relative ${
-                    match.winner?.id === match.qb2.id
-                      ? 'border-green-500 bg-green-500/20 text-green-300 hover:border-red-400 hover:bg-red-400/10'
-                      : match.qb2.id === 'bye'
-                      ? 'border-gray-500 bg-gray-500/20 cursor-not-allowed'
-                      : 'border-white/20 hover:border-blue-400 hover:bg-blue-400/10 cursor-pointer'
-                  }`}
-                  title={match.winner?.id === match.qb2.id ? 'Click to deselect' : ''}
-                >
-                  <div className="font-semibold">{match.qb2.name}</div>
-                  <div className="text-xs text-white/60">{match.qb2.team}</div>
-                  {match.winner?.id === match.qb2.id && (
-                    <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-green-400 text-lg">
-                      ✓
-                    </div>
-                  )}
-                </button>
-              </div>
-            </div>
-          ))}
         </div>
 
         {/* Auto-advance indicator */}
-        {!isFinalFour && isRegionComplete(activeRound, currentRegion) && (
+        {isRegionComplete(activeRound, currentRegion) && (
           <div className="text-center mt-6 p-4 bg-green-600/20 border border-green-500/30 rounded-lg">
             <div className="text-green-400 font-medium">
               ✓ Region {currentRegion + 1} Complete!
