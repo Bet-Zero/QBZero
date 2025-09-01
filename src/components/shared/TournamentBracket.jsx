@@ -6,6 +6,7 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
   const [panX, setPanX] = useState(0);
   const [panY, setPanY] = useState(0);
   const containerRef = useRef(null);
+  const bracketRef = useRef(null);
 
   // Group matches by round
   const getMatchesByRound = () => {
@@ -42,56 +43,33 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
     setFocusRound(activeRound);
   }, [bracket]);
 
-  // Dynamic zoom calculation based on focus round
+  // Fit and center entire bracket within the container
   useEffect(() => {
-    if (!containerRef.current || rounds.length === 0) return;
+    const updateLayout = () => {
+      if (!containerRef.current || !bracketRef.current) return;
 
-    const container = containerRef.current;
-    const containerWidth = container.clientWidth;
-    const containerHeight = container.clientHeight;
+      const container = containerRef.current;
+      const bracketEl = bracketRef.current;
 
-    // Show focused round + 1-2 surrounding rounds
-    const visibleRounds = [];
-    const startRound = Math.max(0, focusRound - 1);
-    const endRound = Math.min(rounds.length - 1, focusRound + 2);
-    
-    for (let i = startRound; i <= endRound; i++) {
-      visibleRounds.push(i);
-    }
+      const containerWidth = container.clientWidth;
+      const containerHeight = container.clientHeight;
 
-    // Calculate dimensions for visible rounds only
-    const baseMatchWidth = 200;
-    const baseGap = 40;
-    const totalWidth = visibleRounds.length * baseMatchWidth + (visibleRounds.length - 1) * baseGap + 80;
+      const bracketWidth = bracketEl.offsetWidth;
+      const bracketHeight = bracketEl.offsetHeight;
 
-    // Calculate height based on the round with most matches in visible area
-    let maxMatches = 0;
-    visibleRounds.forEach(roundIndex => {
-      const roundNum = rounds[roundIndex];
-      const matches = roundsData[roundNum] || [];
-      maxMatches = Math.max(maxMatches, matches.length);
-    });
-
-    const baseMatchHeight = 80;
-    const baseSpacing = 16;
-    const totalHeight = maxMatches * baseMatchHeight + (maxMatches - 1) * baseSpacing + 120;
-
-    // Calculate optimal scale for visible rounds
-      const widthScale = Math.min(1.2, containerWidth / totalWidth);
-      const heightScale = Math.min(1.2, containerHeight / totalHeight);
-      const optimalScale = Math.min(widthScale, heightScale);
+      const widthScale = containerWidth / bracketWidth;
+      const heightScale = containerHeight / bracketHeight;
+      const optimalScale = Math.min(widthScale, heightScale, 1);
 
       setScale(optimalScale);
+      setPanX((containerWidth - bracketWidth * optimalScale) / 2);
+      setPanY((containerHeight - bracketHeight * optimalScale) / 2);
+    };
 
-    // Calculate pan to center the focused round
-    const focusRoundIndex = visibleRounds.indexOf(focusRound);
-    if (focusRoundIndex !== -1) {
-      const targetX = -(focusRoundIndex * (baseMatchWidth + baseGap)) + containerWidth / 2 - baseMatchWidth / 2;
-      setPanX(targetX * optimalScale);
-    }
-    
-    setPanY(0); // Center vertically
-  }, [focusRound, rounds.length, roundsData]);
+    updateLayout();
+    window.addEventListener('resize', updateLayout);
+    return () => window.removeEventListener('resize', updateLayout);
+  }, [bracket]);
 
   // Enhanced winner selection
   const handleWinnerSelection = (matchId, selectedQB) => {
@@ -124,7 +102,7 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
   return (
     <div
       ref={containerRef}
-      className="w-full h-full bg-neutral-900 rounded-lg overflow-hidden relative"
+      className="w-full h-screen bg-neutral-900 rounded-lg overflow-hidden relative"
     >
       {/* Round Navigation */}
       <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-20">
@@ -190,18 +168,15 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
       <div className="h-full w-full overflow-hidden relative">
         <div 
           className="absolute inset-0 transition-transform duration-500 ease-out"
-          style={{ 
+          style={{
             transform: `translate(${panX}px, ${panY}px) scale(${scale})`,
-            transformOrigin: 'center center'
+            transformOrigin: 'top left'
           }}
         >
-          <div className="flex gap-10 items-center justify-center h-full px-8">
+          <div ref={bracketRef} className="flex gap-10 items-center justify-center h-full px-8">
             {rounds.map((roundNum, roundIndex) => {
               const matches = roundsData[roundNum] || [];
-              const isVisible = Math.abs(roundIndex - focusRound) <= 2; // Show focus + 2 rounds on each side
-              
-              if (!isVisible) return null;
-              
+
               return (
                 <div 
                   key={`round-${roundNum}`} 
@@ -224,7 +199,7 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
 
                   {/* Round matches */}
                   <div className="flex flex-col justify-center space-y-4 flex-1">
-                    {matches.map((match, matchIndex) => {
+                    {matches.map((match) => {
                       const isPlaceholder = match.qb1?.name === 'TBD' || match.qb2?.name === 'TBD';
                       const isChampionship = roundIndex === rounds.length - 1;
                       
