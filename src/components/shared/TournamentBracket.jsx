@@ -50,19 +50,13 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
     const containerWidth = container.clientWidth;
     const containerHeight = container.clientHeight;
 
-    // Show focused round + 1-2 surrounding rounds
-    const visibleRounds = [];
-    const startRound = Math.max(0, focusRound - 1);
-    const endRound = Math.min(rounds.length - 1, focusRound + 2);
-    
-    for (let i = startRound; i <= endRound; i++) {
-      visibleRounds.push(i);
-    }
+    // Show only the focused round for maximum clarity and spacing
+    const visibleRounds = [focusRound];
 
     // Calculate dimensions for visible rounds only
-    const baseMatchWidth = 200;
-    const baseGap = 120; // Increased gap for better horizontal spacing
-    const totalWidth = visibleRounds.length * baseMatchWidth + (visibleRounds.length - 1) * baseGap + 160;
+    const baseMatchWidth = 280; // Increased width for better readability
+    const baseGap = 200; // Much larger gap for clear round separation
+    const totalWidth = visibleRounds.length * baseMatchWidth + (visibleRounds.length - 1) * baseGap + 200;
 
     // Calculate height based on the round with most matches in visible area
     let maxMatches = 0;
@@ -72,16 +66,16 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
       maxMatches = Math.max(maxMatches, matches.length);
     });
 
-    const baseMatchHeight = 100; // Increased match height for better spacing
-    const baseSpacing = 24; // Increased spacing between matches
-    const totalHeight = maxMatches * baseMatchHeight + (maxMatches - 1) * baseSpacing + 160;
+    const baseMatchHeight = 120; // Increased match height significantly
+    const baseSpacing = 32; // Increased spacing between matches
+    const totalHeight = maxMatches * baseMatchHeight + (maxMatches - 1) * baseSpacing + 200;
 
-    // Calculate optimal scale for visible rounds
-    const widthScale = Math.min(1.0, containerWidth / totalWidth); // Reduced max scale
-    const heightScale = Math.min(1.0, containerHeight / totalHeight); // Reduced max scale
+    // Calculate optimal scale for visible rounds - prioritize readability over fitting
+    const widthScale = Math.min(1.0, containerWidth / totalWidth);
+    const heightScale = Math.min(1.0, containerHeight / totalHeight);
     const optimalScale = Math.min(widthScale, heightScale);
 
-    setScale(Math.max(0.6, optimalScale)); // Reduced minimum scale for better spacing
+    setScale(Math.max(0.8, optimalScale)); // Higher minimum scale for better readability
 
     // Calculate pan to center the focused round
     const focusRoundIndex = visibleRounds.indexOf(focusRound);
@@ -196,10 +190,10 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
             transformOrigin: 'center center'
           }}
         >
-          <div className="flex gap-20 items-center justify-center h-full px-8"> {/* Increased gap significantly */}
+          <div className="flex gap-32 items-center justify-center h-full px-8"> {/* Much larger gap for clear separation */}
             {rounds.map((roundNum, roundIndex) => {
               const matches = roundsData[roundNum] || [];
-              const isVisible = Math.abs(roundIndex - focusRound) <= 2; // Show focus + 2 rounds on each side
+              const isVisible = roundIndex === focusRound; // Show only the focused round
               
               if (!isVisible) return null;
               
@@ -224,7 +218,7 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
                   </div>
 
                   {/* Round matches */}
-                  <div className="flex flex-col justify-center space-y-6 flex-1"> {/* Increased space between matches */}
+                  <div className="flex flex-col justify-center space-y-8 flex-1"> {/* Much more space between matches */}
                     {matches.map((match, matchIndex) => {
                       const isPlaceholder = match.qb1?.name === 'TBD' || match.qb2?.name === 'TBD';
                       const isChampionship = roundIndex === rounds.length - 1;
@@ -233,7 +227,7 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
                         <div
                           key={match.id}
                           className={`rounded border shadow-lg transition-all ${
-                            isChampionship ? 'w-64' : 'w-52'
+                            isChampionship ? 'w-72' : 'w-64'  /* Increased match width */
                           } ${
                             isPlaceholder 
                               ? 'bg-neutral-700/50 border-white/10' 
@@ -242,8 +236,8 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
                                 : 'bg-neutral-800 border-white/20 hover:shadow-xl hover:border-white/40'
                           }`}
                           style={{
-                            marginTop: roundIndex > 0 ? `${Math.pow(2, roundIndex - 1) * 30}px` : '0px',
-                            marginBottom: roundIndex > 0 ? `${Math.pow(2, roundIndex - 1) * 30}px` : '0px',
+                            marginTop: roundIndex > 0 ? `${Math.pow(2, roundIndex - 1) * 40}px` : '0px',  /* Increased exponential spacing */
+                            marginBottom: roundIndex > 0 ? `${Math.pow(2, roundIndex - 1) * 40}px` : '0px',
                           }}
                         >
                           <div className="h-full flex flex-col">
@@ -251,7 +245,7 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
                             <button
                               onClick={() => handleWinnerSelection(match.id, match.qb1)}
                               disabled={match.qb1?.id === 'bye' || match.qb1?.name === 'TBD'}
-                              className={`flex-1 px-4 py-3 transition-all text-left relative border-b border-white/10 ${
+                              className={`flex-1 px-5 py-4 transition-all text-left relative border-b border-white/10 ${  /* Increased padding */
                                 match.winner?.id === match.qb1?.id
                                   ? 'bg-green-500/30 text-green-300 hover:bg-red-400/20'
                                   : match.qb1?.id === 'bye' || match.qb1?.name === 'TBD'
@@ -280,7 +274,7 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
                             <button
                               onClick={() => handleWinnerSelection(match.id, match.qb2)}
                               disabled={match.qb2?.id === 'bye' || match.qb2?.name === 'TBD'}
-                              className={`flex-1 px-4 py-3 transition-all text-left relative ${
+                              className={`flex-1 px-5 py-4 transition-all text-left relative ${  /* Increased padding */
                                 match.winner?.id === match.qb2?.id
                                   ? 'bg-green-500/30 text-green-300 hover:bg-red-400/20'
                                   : match.qb2?.id === 'bye' || match.qb2?.name === 'TBD'
@@ -312,8 +306,8 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
 
                   {/* Connecting lines */}
                   {roundIndex < rounds.length - 1 && (
-                    <div className="absolute left-full top-1/2 transform -translate-y-1/2 z-0 ml-4">
-                      <div className="w-16 h-0.5 bg-blue-400/60"></div>
+                    <div className="absolute left-full top-1/2 transform -translate-y-1/2 z-0 ml-6">  {/* Increased margin */}
+                      <div className="w-20 h-0.5 bg-blue-400/60"></div>  {/* Increased width */}
                     </div>
                   )}
                 </div>
