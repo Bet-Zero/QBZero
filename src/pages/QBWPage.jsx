@@ -186,7 +186,7 @@ const QBWPage = () => {
           <div className="space-y-8">
             <Shelf title="Elite Tier Predictions" qbs={successfulPredictions} />
 
-            <Shelf title="Breakout Star Calls" qbs={breakoutPredictions} />
+            <Shelf title="Told You He's Garbage" qbs={breakoutPredictions} />
           </div>
         </section>
 
