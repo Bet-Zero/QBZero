@@ -42,6 +42,7 @@ const PlayerDetails = ({
         shootingProfile={shootingProfile}
         setShootingProfile={setShootingProfile}
         onTwoWayChange={(value) => onRoleChange('twoWay', value)}
+        onArmTalentChange={(value) => onRoleChange('armTalent', value)}
         setOpenModal={setOpenModal}
       />
     </div>

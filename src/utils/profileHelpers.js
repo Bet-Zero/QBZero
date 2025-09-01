@@ -18,7 +18,7 @@ export function getModalTitle(key) {
   if (key.startsWith('role_')) return `Role Breakdown: ${key.slice(5)}`;
   if (key.startsWith('subrole_')) return `Sub-Role Breakdown: ${key.slice(8)}`;
   if (key === 'shooting_profile') return 'Shooting Profile Breakdown';
-  if (key === 'two_way_meter') return 'Two-Way Meter Breakdown';
+  if (key === 'arm_talent_meter') return 'Arm Talent Meter Breakdown';
   return 'Breakdown';
 }
 
@@ -28,7 +28,7 @@ export function getBlurbValue(blurbs, key) {
   if (key.startsWith('role_')) return blurbs.roles?.[key.slice(5)] || '';
   if (key.startsWith('subrole_')) return blurbs.subroles?.[key.slice(8)] || '';
   if (key === 'shooting_profile') return blurbs.shootingProfile || '';
-  if (key === 'two_way_meter') return blurbs.twoWayMeter || '';
+  if (key === 'arm_talent_meter') return blurbs.armTalentMeter || '';
   if (key === 'overall') return blurbs.overall || '';
   return '';
 }

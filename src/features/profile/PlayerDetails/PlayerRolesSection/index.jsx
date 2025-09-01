@@ -2,7 +2,7 @@
 import React from 'react';
 import SubRoleSelector from './SubRoleSelector';
 import ShootingProfileSelector from './ShootingProfileSelector';
-import TwoWayMeter from './TwoWayMeter';
+import ArmTalentMeter from './ArmTalentMeter';
 import { NotebookText } from 'lucide-react';
 import { offensiveRoles, defensiveRoles } from '@/utils/roles';
 
@@ -54,7 +54,7 @@ const PlayerRolesSection = ({
   setSubRoles,
   shootingProfile,
   setShootingProfile,
-  onTwoWayChange,
+  onArmTalentChange,
   setOpenModal,
 }) => {
   return (
@@ -129,15 +129,13 @@ const PlayerRolesSection = ({
         </div>
       </div>
 
-      {/* Two-Way Meter */}
-      <div className="mt-6 mb-1 px-2">
-        <CenteredLabelWithIcon
-          label="Two-Way Meter"
-          onClick={setOpenModal}
-          modalKey="two_way_meter"
-        />
-        <TwoWayMeter twoWayValue={roles.twoWay} onChange={onTwoWayChange} />
-      </div>
+      {/* Arm Talent Meter */}
+      <RoleProgressBar
+          id={`${playerId}-armtalent`}
+          label="Arm Talent Meter"
+          value={arm_talent_meter}
+          color="bg-gradient-to-r from-indigo-500 to-purple-500"
+      />
     </div>
   );
 };

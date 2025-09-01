@@ -33,6 +33,7 @@ const createFallbackQBData = () => {
       style1: '',
       style2: '',
       twoWay: 50,
+      armTalent: 50,
     },
     subRoles: {
       offense: [],

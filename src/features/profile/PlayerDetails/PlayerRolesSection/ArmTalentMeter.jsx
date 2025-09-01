@@ -1,7 +1,7 @@
-// components/LayoutPreview/TwoWayMeter.jsx
+// components/LayoutPreview/ArmTalentMeter.jsx
 import React from 'react';
 
-const TwoWayMeter = ({ twoWayValue, onChange }) => {
+const ArmTalentMeter = ({ armTalentValue, onChange }) => {
   return (
     <div className="mt-3">
       <div
@@ -18,7 +18,7 @@ const TwoWayMeter = ({ twoWayValue, onChange }) => {
       >
         <div
           className="absolute top-[-6px] w-[6px] h-[31px] bg-white border border-gray-700 rounded-sm"
-          style={{ left: `${twoWayValue}%`, transform: 'translateX(-50%)' }}
+          style={{ left: `${armTalentValue}%`, transform: 'translateX(-50%)' }}
         />
       </div>
       <div className="flex justify-between text-xs text-white font-medium mt-1">
@@ -29,4 +29,4 @@ const TwoWayMeter = ({ twoWayValue, onChange }) => {
   );
 };
 
-export default React.memo(TwoWayMeter);
+export default React.memo(ArmTalentMeter);
