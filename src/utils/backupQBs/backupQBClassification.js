@@ -4,7 +4,7 @@
 export const BACKUP_QBS = [
   // Veteran backups who are known for the backup role
   'joe-flacco',
-  'jameis-winston', 
+  'jameis-winston',
   'tyrod-taylor',
   'sam-howell',
   'jacoby-brissett',
@@ -19,7 +19,7 @@ export const BACKUP_QBS = [
   'teddy-bridgewater',
   'marcus-mariota',
   'josh-johnson',
-  
+
   // Young/developmental backups
   'jake-haener',
   'spencer-rattler',
@@ -44,21 +44,21 @@ export const BACKUP_QBS = [
   'bailey-zappe',
   'aidan-oconnell',
   'tanner-mckee',
-  
+
   // Rookies likely to be backups initially
   'bo-nix',
   'michael-penix-jr',
   'j-j-mccarthy',
-  
+
   // QBs in backup/transition roles
   'justin-fields',
   'russell-wilson',
-  'sam-darnold'
+  'sam-darnold',
 ];
 
 export const STARTER_QBS = [
   'patrick-mahomes',
-  'josh-allen', 
+  'josh-allen',
   'lamar-jackson',
   'joe-burrow',
   'jalen-hurts',
@@ -81,7 +81,7 @@ export const STARTER_QBS = [
   'anthony-richardson',
   'drake-maye',
   'bryce-young',
-  'daniel-jones'
+  'daniel-jones',
 ];
 
 // Function to determine if a QB is considered a backup
@@ -91,7 +91,7 @@ export const isBackupQB = (qbId) => {
 
 // Function to get all backup QBs from a list of QBs
 export const filterBackupQBs = (qbs) => {
-  return qbs.filter(qb => isBackupQB(qb.id || qb.player_id));
+  return qbs.filter((qb) => isBackupQB(qb.id || qb.player_id));
 };
 
 // Hall of Fame worthy backup QBs (legendary career backups)
@@ -104,32 +104,34 @@ export const BACKUP_QB_HALL_OF_FAME = [
       'Super Bowl XLVII Champion & MVP',
       'Master of the backup QB role',
       'Clutch playoff performer',
-      'Veteran leadership'
+      'Veteran leadership',
     ],
-    blurb: 'The ultimate backup QB who can step in and lead a team to victory when called upon.'
+    blurb:
+      'The ultimate backup QB who can step in and lead a team to victory when called upon.',
   },
   {
-    id: 'jameis-winston', 
+    id: 'jameis-winston',
     name: 'Jameis Winston',
     team: 'NYG',
     accomplishments: [
       '5,000 yard passer',
       'High-risk, high-reward style',
       'Proven starter experience',
-      'Team chemistry builder'
+      'Team chemistry builder',
     ],
-    blurb: 'A former starter who brings elite arm talent and experience to the backup role.'
+    blurb:
+      'A former starter who brings elite arm talent and experience to the backup role.',
   },
   {
     id: 'tyrod-taylor',
-    name: 'Tyrod Taylor', 
+    name: 'Tyrod Taylor',
     team: 'NYJ',
     accomplishments: [
       'Mobile backup specialist',
       'Playoff experience',
       'Veteran mentor',
-      'Dual-threat capability'
+      'Dual-threat capability',
     ],
-    blurb: 'The mobile backup who can change the game plan when he enters.'
-  }
+    blurb: 'The mobile backup who can change the game plan when he enters.',
+  },
 ];
