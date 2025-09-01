@@ -21,7 +21,7 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
   // Enhanced winner selection with deselection capability
   const handleWinnerSelection = (matchId, selectedQB) => {
     const match = bracket.find((m) => m.id === matchId);
-    if (!match) return;
+    if (!match || selectedQB.id === 'placeholder' || selectedQB.name === 'TBD') return;
 
     // If the same QB is clicked and is already the winner, deselect
     if (match.winner && match.winner.id === selectedQB.id) {
@@ -41,16 +41,27 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
     );
   }
 
-  // Calculate bracket dimensions that fit on screen
-  const MATCH_WIDTH = 180;
-  const MATCH_HEIGHT = 80;
-  const ROUND_GAP = 100;
-  const MATCH_GAP = 20;
+  // Calculate responsive bracket dimensions that fit on screen
+  const MATCH_WIDTH = 160;
+  const MATCH_HEIGHT = 60;
+  const ROUND_GAP = 60;
+  const MATCH_GAP = 8;
 
-  // Calculate total width and ensure it fits within viewport
+  // Get viewport dimensions
+  const viewportWidth = typeof window !== 'undefined' ? window.innerWidth - 100 : 1200;
+  const viewportHeight = typeof window !== 'undefined' ? window.innerHeight - 200 : 800;
+
+  // Calculate total width needed and scale if necessary
   const totalWidth = rounds.length * (MATCH_WIDTH + ROUND_GAP);
-  const maxViewportWidth = typeof window !== 'undefined' ? window.innerWidth - 100 : 1200;
-  const scale = Math.min(1, maxViewportWidth / totalWidth);
+  const widthScale = Math.min(1, viewportWidth / totalWidth);
+  
+  // Calculate height scale based on first round matches
+  const firstRoundMatchCount = roundsData[0]?.length || 16;
+  const totalHeight = firstRoundMatchCount * (MATCH_HEIGHT + MATCH_GAP);
+  const heightScale = Math.min(1, viewportHeight / totalHeight);
+  
+  // Use the smaller scale to ensure everything fits
+  const scale = Math.min(widthScale, heightScale, 0.9);
 
   const scaledMatchWidth = MATCH_WIDTH * scale;
   const scaledMatchHeight = MATCH_HEIGHT * scale;
@@ -80,26 +91,108 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
     
     return {
       x,
-      y: (firstParentPos.y + lastParentPos.y) / 2
+      y: (firstParentPos.y + lastParentPos.y) / 2 + (scaledMatchHeight / 2)
     };
   };
 
   // Calculate bracket container dimensions
-  const firstRoundMatches = roundsData[0]?.length || 0;
-  const bracketHeight = Math.max(400, firstRoundMatches * (scaledMatchHeight + scaledMatchGap) + 100);
-  const bracketWidth = totalWidth * scale + 50;
+  const bracketHeight = Math.max(400, firstRoundMatchCount * (scaledMatchHeight + scaledMatchGap) + 100);
+  const bracketWidth = totalWidth * scale + 100;
 
   return (
-    <div className="w-full bg-neutral-900 rounded-lg">
-      <div className="p-4 overflow-auto">
+    <div className="w-full bg-neutral-900 rounded-lg overflow-hidden">
+      <div className="p-4">
         <div 
-          className="relative mx-auto"
+          className="relative mx-auto bg-neutral-800/50 rounded-lg p-4"
           style={{ 
-            width: `${bracketWidth}px`,
-            height: `${bracketHeight}px`,
-            minWidth: '100%'
+            width: `${Math.min(bracketWidth, viewportWidth)}px`,
+            height: `${Math.min(bracketHeight, viewportHeight)}px`,
+            overflow: 'hidden'
           }}
         >
+          {/* Render bracket lines first (behind matches) */}
+          {rounds.map((roundNum, roundIndex) => {
+            if (roundIndex >= rounds.length - 1) return null; // No lines from final round
+            
+            const matches = roundsData[roundNum] || [];
+            
+            return (
+              <div key={`lines-${roundNum}`}>
+                {matches.map((match, matchIndex) => {
+                  // Only draw lines for pairs of matches
+                  if (matchIndex % 2 !== 0) return null;
+                  
+                  const nextRoundMatches = roundsData[roundIndex + 1] || [];
+                  const nextMatchIndex = Math.floor(matchIndex / 2);
+                  
+                  if (nextMatchIndex >= nextRoundMatches.length) return null;
+                  
+                  const match1Pos = getMatchPosition(roundIndex, matchIndex);
+                  const match2Pos = matchIndex + 1 < matches.length 
+                    ? getMatchPosition(roundIndex, matchIndex + 1)
+                    : match1Pos;
+                  const nextMatchPos = getMatchPosition(roundIndex + 1, nextMatchIndex);
+                  
+                  const lineStartX = match1Pos.x + scaledMatchWidth;
+                  const lineEndX = nextMatchPos.x;
+                  const centerX = (lineStartX + lineEndX) / 2;
+                  
+                  const match1CenterY = match1Pos.y + scaledMatchHeight / 2;
+                  const match2CenterY = match2Pos.y + scaledMatchHeight / 2;
+                  const nextMatchCenterY = nextMatchPos.y + scaledMatchHeight / 2;
+                  
+                  return (
+                    <div key={`line-${roundIndex}-${matchIndex}`}>
+                      {/* Horizontal line from match 1 */}
+                      <div
+                        className="absolute bg-blue-400/60 h-0.5"
+                        style={{
+                          left: `${lineStartX}px`,
+                          top: `${match1CenterY}px`,
+                          width: `${centerX - lineStartX}px`,
+                        }}
+                      />
+                      
+                      {/* Horizontal line from match 2 (if exists) */}
+                      {matchIndex + 1 < matches.length && (
+                        <div
+                          className="absolute bg-blue-400/60 h-0.5"
+                          style={{
+                            left: `${lineStartX}px`,
+                            top: `${match2CenterY}px`,
+                            width: `${centerX - lineStartX}px`,
+                          }}
+                        />
+                      )}
+                      
+                      {/* Vertical connecting line */}
+                      {matchIndex + 1 < matches.length && (
+                        <div
+                          className="absolute bg-blue-400/60 w-0.5"
+                          style={{
+                            left: `${centerX}px`,
+                            top: `${Math.min(match1CenterY, match2CenterY)}px`,
+                            height: `${Math.abs(match2CenterY - match1CenterY)}px`,
+                          }}
+                        />
+                      )}
+                      
+                      {/* Horizontal line to next match */}
+                      <div
+                        className="absolute bg-blue-400/60 h-0.5"
+                        style={{
+                          left: `${centerX}px`,
+                          top: `${nextMatchCenterY}px`,
+                          width: `${lineEndX - centerX}px`,
+                        }}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+
           {/* Render each round */}
           {rounds.map((roundNum, roundIndex) => {
             const matches = roundsData[roundNum] || [];
@@ -108,38 +201,37 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
               <div key={`round-${roundNum}`}>
                 {/* Round header */}
                 <div
-                  className="absolute text-center"
+                  className="absolute text-center z-10"
                   style={{
                     left: `${roundIndex * (scaledMatchWidth + scaledRoundGap)}px`,
-                    top: '10px',
+                    top: '-30px',
                     width: `${scaledMatchWidth}px`,
                   }}
                 >
                   <h3 
-                    className="text-sm font-bold text-white bg-gradient-to-r from-blue-600/30 to-purple-600/30 rounded-lg py-1 px-2 border border-white/10"
-                    style={{ fontSize: `${12 * scale}px` }}
+                    className="text-xs font-bold text-white bg-gradient-to-r from-blue-600/30 to-purple-600/30 rounded-lg py-1 px-2 border border-white/10"
+                    style={{ fontSize: `${Math.max(10, 10 * scale)}px` }}
                   >
                     {roundNames[roundNum] || `Round ${roundNum + 1}`}
                   </h3>
-                  <div 
-                    className="text-white/50 mt-1"
-                    style={{ fontSize: `${10 * scale}px` }}
-                  >
-                    {matches.filter((m) => m.winner).length} / {matches.length} complete
-                  </div>
                 </div>
 
                 {/* Round matches */}
                 {matches.map((match, matchIndex) => {
                   const position = getMatchPosition(roundIndex, matchIndex);
+                  const isPlaceholder = match.qb1?.name === 'TBD' || match.qb2?.name === 'TBD';
                   
                   return (
                     <div
                       key={match.id}
-                      className="absolute bg-neutral-800 rounded border border-white/20 shadow-lg hover:shadow-xl transition-all hover:border-white/40"
+                      className={`absolute rounded border shadow-lg transition-all z-20 ${
+                        isPlaceholder 
+                          ? 'bg-neutral-700/50 border-white/10' 
+                          : 'bg-neutral-800 border-white/20 hover:shadow-xl hover:border-white/40'
+                      }`}
                       style={{
-                        left: `${position.x + 25}px`,
-                        top: `${position.y + 60}px`,
+                        left: `${position.x}px`,
+                        top: `${position.y}px`,
                         width: `${scaledMatchWidth}px`,
                         height: `${scaledMatchHeight}px`,
                       }}
@@ -148,32 +240,32 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
                         {/* QB 1 */}
                         <button
                           onClick={() => handleWinnerSelection(match.id, match.qb1)}
-                          disabled={match.qb1.id === 'bye'}
-                          className={`flex-1 px-2 py-1 transition-all text-left relative border-b border-white/10 ${
-                            match.winner?.id === match.qb1.id
+                          disabled={match.qb1?.id === 'bye' || match.qb1?.name === 'TBD'}
+                          className={`flex-1 px-2 py-1 transition-all text-left relative border-b border-white/10 text-xs ${
+                            match.winner?.id === match.qb1?.id
                               ? 'bg-green-500/30 text-green-300 hover:bg-red-400/20'
-                              : match.qb1.id === 'bye'
+                              : match.qb1?.id === 'bye' || match.qb1?.name === 'TBD'
                                 ? 'bg-gray-500/20 cursor-not-allowed text-gray-400'
-                                : 'hover:bg-blue-400/20 cursor-pointer'
+                                : 'hover:bg-blue-400/20 cursor-pointer text-white'
                           }`}
-                          title={match.winner?.id === match.qb1.id ? 'Click to deselect' : ''}
+                          title={match.winner?.id === match.qb1?.id ? 'Click to deselect' : ''}
                         >
                           <div 
-                            className="font-semibold truncate"
-                            style={{ fontSize: `${11 * scale}px` }}
+                            className="font-semibold truncate leading-tight"
+                            style={{ fontSize: `${Math.max(8, 9 * scale)}px` }}
                           >
-                            {match.qb1.name}
+                            {match.qb1?.name || 'TBD'}
                           </div>
                           <div 
-                            className="text-white/60 truncate"
-                            style={{ fontSize: `${9 * scale}px` }}
+                            className="text-white/60 truncate leading-tight"
+                            style={{ fontSize: `${Math.max(7, 7 * scale)}px` }}
                           >
-                            {match.qb1.team}
+                            {match.qb1?.team || ''}
                           </div>
-                          {match.winner?.id === match.qb1.id && (
+                          {match.winner?.id === match.qb1?.id && (
                             <div 
                               className="absolute right-1 top-1/2 transform -translate-y-1/2 text-green-400"
-                              style={{ fontSize: `${14 * scale}px` }}
+                              style={{ fontSize: `${Math.max(10, 12 * scale)}px` }}
                             >
                               ✓
                             </div>
@@ -183,32 +275,32 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
                         {/* QB 2 */}
                         <button
                           onClick={() => handleWinnerSelection(match.id, match.qb2)}
-                          disabled={match.qb2.id === 'bye'}
-                          className={`flex-1 px-2 py-1 transition-all text-left relative ${
-                            match.winner?.id === match.qb2.id
+                          disabled={match.qb2?.id === 'bye' || match.qb2?.name === 'TBD'}
+                          className={`flex-1 px-2 py-1 transition-all text-left relative text-xs ${
+                            match.winner?.id === match.qb2?.id
                               ? 'bg-green-500/30 text-green-300 hover:bg-red-400/20'
-                              : match.qb2.id === 'bye'
+                              : match.qb2?.id === 'bye' || match.qb2?.name === 'TBD'
                                 ? 'bg-gray-500/20 cursor-not-allowed text-gray-400'
-                                : 'hover:bg-blue-400/20 cursor-pointer'
+                                : 'hover:bg-blue-400/20 cursor-pointer text-white'
                           }`}
-                          title={match.winner?.id === match.qb2.id ? 'Click to deselect' : ''}
+                          title={match.winner?.id === match.qb2?.id ? 'Click to deselect' : ''}
                         >
                           <div 
-                            className="font-semibold truncate"
-                            style={{ fontSize: `${11 * scale}px` }}
+                            className="font-semibold truncate leading-tight"
+                            style={{ fontSize: `${Math.max(8, 9 * scale)}px` }}
                           >
-                            {match.qb2.name}
+                            {match.qb2?.name || 'TBD'}
                           </div>
                           <div 
-                            className="text-white/60 truncate"
-                            style={{ fontSize: `${9 * scale}px` }}
+                            className="text-white/60 truncate leading-tight"
+                            style={{ fontSize: `${Math.max(7, 7 * scale)}px` }}
                           >
-                            {match.qb2.team}
+                            {match.qb2?.team || ''}
                           </div>
-                          {match.winner?.id === match.qb2.id && (
+                          {match.winner?.id === match.qb2?.id && (
                             <div 
                               className="absolute right-1 top-1/2 transform -translate-y-1/2 text-green-400"
-                              style={{ fontSize: `${14 * scale}px` }}
+                              style={{ fontSize: `${Math.max(10, 12 * scale)}px` }}
                             >
                               ✓
                             </div>
@@ -218,83 +310,6 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
                     </div>
                   );
                 })}
-
-                {/* Connecting lines to next round */}
-                {roundIndex < rounds.length - 1 && (
-                  <div>
-                    {matches.map((match, matchIndex) => {
-                      // Only draw lines for pairs of matches
-                      if (matchIndex % 2 !== 0) return null;
-                      
-                      const nextRoundMatches = roundsData[roundIndex + 1] || [];
-                      const nextMatchIndex = Math.floor(matchIndex / 2);
-                      
-                      if (nextMatchIndex >= nextRoundMatches.length) return null;
-                      
-                      const match1Pos = getMatchPosition(roundIndex, matchIndex);
-                      const match2Pos = matchIndex + 1 < matches.length 
-                        ? getMatchPosition(roundIndex, matchIndex + 1)
-                        : match1Pos;
-                      const nextMatchPos = getMatchPosition(roundIndex + 1, nextMatchIndex);
-                      
-                      const lineStartX = match1Pos.x + scaledMatchWidth + 25;
-                      const lineEndX = nextMatchPos.x + 25;
-                      const centerX = (lineStartX + lineEndX) / 2;
-                      
-                      const match1CenterY = match1Pos.y + scaledMatchHeight / 2 + 60;
-                      const match2CenterY = match2Pos.y + scaledMatchHeight / 2 + 60;
-                      const nextMatchCenterY = nextMatchPos.y + scaledMatchHeight / 2 + 60;
-                      
-                      return (
-                        <div key={`line-${roundIndex}-${matchIndex}`}>
-                          {/* Horizontal line from match 1 */}
-                          <div
-                            className="absolute bg-white/30 h-0.5"
-                            style={{
-                              left: `${lineStartX}px`,
-                              top: `${match1CenterY}px`,
-                              width: `${centerX - lineStartX}px`,
-                            }}
-                          />
-                          
-                          {/* Horizontal line from match 2 (if exists) */}
-                          {matchIndex + 1 < matches.length && (
-                            <div
-                              className="absolute bg-white/30 h-0.5"
-                              style={{
-                                left: `${lineStartX}px`,
-                                top: `${match2CenterY}px`,
-                                width: `${centerX - lineStartX}px`,
-                              }}
-                            />
-                          )}
-                          
-                          {/* Vertical connecting line */}
-                          {matchIndex + 1 < matches.length && (
-                            <div
-                              className="absolute bg-white/30 w-0.5"
-                              style={{
-                                left: `${centerX}px`,
-                                top: `${Math.min(match1CenterY, match2CenterY)}px`,
-                                height: `${Math.abs(match2CenterY - match1CenterY)}px`,
-                              }}
-                            />
-                          )}
-                          
-                          {/* Horizontal line to next match */}
-                          <div
-                            className="absolute bg-white/30 h-0.5"
-                            style={{
-                              left: `${centerX}px`,
-                              top: `${nextMatchCenterY}px`,
-                              width: `${lineEndX - centerX}px`,
-                            }}
-                          />
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
               </div>
             );
           })}

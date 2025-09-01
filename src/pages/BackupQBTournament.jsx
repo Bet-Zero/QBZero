@@ -13,7 +13,7 @@ const BackupQBTournament = () => {
   // Use the hardcoded tournament backup QBs
   const backupQBs = TOURNAMENT_BACKUP_QBS;
 
-  // Generate initial tournament bracket
+  // Generate initial tournament bracket with full structure
   const generateTournament = () => {
     setIsGenerating(true);
     
@@ -29,62 +29,129 @@ const BackupQBTournament = () => {
       tournamentQBs.push({ id: 'bye', name: 'BYE', team: '' });
     }
 
-    // Create bracket structure
-    const initialBracket = [];
-    for (let i = 0; i < tournamentQBs.length; i += 2) {
-      initialBracket.push({
-        id: `match-${i/2}`,
-        qb1: tournamentQBs[i],
-        qb2: tournamentQBs[i + 1],
-        winner: null,
-        round: 0
-      });
+    // Create full bracket structure for all rounds
+    const fullBracket = [];
+    let currentRoundQBs = [...tournamentQBs];
+    let round = 0;
+    
+    // Generate all rounds upfront
+    while (currentRoundQBs.length > 1) {
+      const roundMatches = [];
+      
+      // Create matches for current round
+      for (let i = 0; i < currentRoundQBs.length; i += 2) {
+        roundMatches.push({
+          id: `match-${round}-${i/2}`,
+          qb1: currentRoundQBs[i],
+          qb2: currentRoundQBs[i + 1],
+          winner: null,
+          round: round
+        });
+      }
+      
+      fullBracket.push(...roundMatches);
+      
+      // Prepare next round with placeholder QBs
+      const nextRoundQBs = [];
+      for (let i = 0; i < roundMatches.length; i++) {
+        nextRoundQBs.push({
+          id: `placeholder-${round + 1}-${i}`,
+          name: 'TBD',
+          team: ''
+        });
+      }
+      
+      currentRoundQBs = nextRoundQBs;
+      round++;
     }
 
-    setBracket(initialBracket);
+    setBracket(fullBracket);
     setCurrentRound(0);
     
     setTimeout(() => setIsGenerating(false), 500);
   };
 
-  // Handle match winner selection with deselection support
+  // Handle match winner selection with real-time bracket updates
   const selectWinner = (matchId, winner) => {
     const updatedBracket = [...bracket];
     const match = updatedBracket.find(m => m.id === matchId);
-    if (match) {
-      // If winner is null, deselect current winner
-      if (winner === null) {
-        match.winner = null;
-        setBracket(updatedBracket);
-        return;
+    if (!match) return;
+    
+    // If winner is null, deselect current winner
+    if (winner === null) {
+      match.winner = null;
+      
+      // Also clear any dependent matches in next rounds
+      const clearDependentMatches = (currentMatch) => {
+        const matchRound = currentMatch.round;
+        const matchIndexInRound = parseInt(currentMatch.id.split('-')[2]);
+        const nextRoundMatchIndex = Math.floor(matchIndexInRound / 2);
+        const nextRoundMatch = updatedBracket.find(m => 
+          m.round === matchRound + 1 && 
+          m.id === `match-${matchRound + 1}-${nextRoundMatchIndex}`
+        );
+        
+        if (nextRoundMatch) {
+          // Determine which QB slot to clear (qb1 or qb2)
+          const isFirstSlot = matchIndexInRound % 2 === 0;
+          const placeholderQB = {
+            id: `placeholder-${matchRound + 1}-${nextRoundMatchIndex}`,
+            name: 'TBD',
+            team: ''
+          };
+          
+          if (isFirstSlot) {
+            nextRoundMatch.qb1 = placeholderQB;
+          } else {
+            nextRoundMatch.qb2 = placeholderQB;
+          }
+          
+          // If this was the winner, clear it and recurse
+          if (nextRoundMatch.winner && 
+              (nextRoundMatch.winner.id === currentMatch.winner?.id)) {
+            nextRoundMatch.winner = null;
+            clearDependentMatches(nextRoundMatch);
+          }
+        }
+      };
+      
+      if (match.winner) {
+        clearDependentMatches(match);
       }
       
-      match.winner = winner;
+      setBracket(updatedBracket);
+      return;
     }
+    
+    match.winner = winner;
+    
+    // Update next round match in real-time
+    const matchRound = match.round;
+    const matchIndexInRound = parseInt(match.id.split('-')[2]);
+    const nextRoundMatchIndex = Math.floor(matchIndexInRound / 2);
+    const nextRoundMatch = updatedBracket.find(m => 
+      m.round === matchRound + 1 && 
+      m.id === `match-${matchRound + 1}-${nextRoundMatchIndex}`
+    );
+    
+    if (nextRoundMatch) {
+      // Determine which QB slot to update (qb1 or qb2)
+      const isFirstSlot = matchIndexInRound % 2 === 0;
+      
+      if (isFirstSlot) {
+        nextRoundMatch.qb1 = winner;
+      } else {
+        nextRoundMatch.qb2 = winner;
+      }
+    }
+    
     setBracket(updatedBracket);
 
-    // Check if round is complete
+    // Check if current round is complete to advance
     const currentRoundMatches = updatedBracket.filter(m => m.round === currentRound);
     const completedMatches = currentRoundMatches.filter(m => m.winner);
     
     if (completedMatches.length === currentRoundMatches.length && currentRoundMatches.length > 1) {
-      // Advance to next round
-      const winners = completedMatches.map(m => m.winner);
-      const nextRoundMatches = [];
-      
-      for (let i = 0; i < winners.length; i += 2) {
-        if (winners[i + 1]) {
-          nextRoundMatches.push({
-            id: `match-${currentRound + 1}-${i/2}`,
-            qb1: winners[i],
-            qb2: winners[i + 1],
-            winner: null,
-            round: currentRound + 1
-          });
-        }
-      }
-      
-      setBracket([...updatedBracket, ...nextRoundMatches]);
       setCurrentRound(currentRound + 1);
     }
   };
