@@ -29,15 +29,19 @@ const TakeCard = ({ take }) => {
   };
 
   return (
-    <div className={`p-4 rounded-lg border ${getStatusColor()} transition-all duration-200 hover:scale-[1.02]`}>
-      <div className="flex items-start gap-3">
-        <div className="flex-shrink-0 mt-1">
-          {getStatusIcon()}
-        </div>
-        <div className="flex-1">
-          <div className="text-white/90 font-medium mb-1">{take.title}</div>
-          <div className="text-white/70 text-sm mb-2">{take.description}</div>
-          <div className="flex items-center gap-2 text-xs text-white/50">
+    <div
+      className={`p-4 rounded-lg border ${getStatusColor()} transition-all duration-200 hover:scale-[1.02] h-[180px] flex flex-col`}
+    >
+      <div className="flex items-start gap-3 h-full">
+        <div className="flex-shrink-0 mt-1">{getStatusIcon()}</div>
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="text-white/90 font-medium mb-1 line-clamp-2">
+            {take.title}
+          </div>
+          <div className="text-white/70 text-sm mb-2 flex-1 line-clamp-3">
+            {take.description}
+          </div>
+          <div className="flex items-center gap-2 text-xs text-white/50 mt-auto">
             <span>QB: {take.qbName}</span>
             <span>•</span>
             <span>{take.date}</span>
@@ -56,10 +60,18 @@ const TakeCard = ({ take }) => {
 
 const TakeBoard = ({ takes = [] }) => {
   const [filter, setFilter] = useState('all');
+  const [search, setSearch] = useState('');
 
-  const filteredTakes = takes.filter(take => {
-    if (filter === 'all') return true;
-    return take.status === filter;
+  const filteredTakes = takes.filter((take) => {
+    // First apply status filter
+    if (filter !== 'all' && take.status !== filter) return false;
+
+    // Then apply search filter if there is a search term
+    if (search.trim()) {
+      return take.qbName.toLowerCase().includes(search.toLowerCase());
+    }
+
+    return true;
   });
 
   const statusCounts = takes.reduce((acc, take) => {
@@ -69,8 +81,9 @@ const TakeBoard = ({ takes = [] }) => {
 
   const getFilterButtonClass = (filterType) => {
     const isActive = filter === filterType;
-    const baseClass = "px-3 py-1.5 text-sm rounded-md transition-all duration-200";
-    
+    const baseClass =
+      'px-3 py-1.5 text-sm rounded-md transition-all duration-200';
+
     if (isActive) {
       switch (filterType) {
         case 'correct':
@@ -83,7 +96,7 @@ const TakeBoard = ({ takes = [] }) => {
           return `${baseClass} bg-blue-600 text-white`;
       }
     }
-    
+
     return `${baseClass} bg-white/10 text-white/70 hover:bg-white/20`;
   };
 
@@ -95,8 +108,9 @@ const TakeBoard = ({ takes = [] }) => {
         <p className="text-white/60">My QB predictions and hot takes</p>
       </div>
 
-      {/* Filter Buttons */}
-      <div className="flex flex-wrap gap-2 justify-center">
+      {/* Filter Buttons and Search Bar Container */}
+      <div className="flex flex-wrap items-center justify-center gap-2">
+        {/* Filter Buttons */}
         <button
           onClick={() => setFilter('all')}
           className={getFilterButtonClass('all')}
@@ -121,10 +135,29 @@ const TakeBoard = ({ takes = [] }) => {
         >
           ⏳ Pending ({statusCounts.pending || 0})
         </button>
+
+        {/* Search Bar */}
+        <div className="relative w-[200px]">
+          <input
+            type="text"
+            placeholder="Search QB..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full px-3 py-1.5 bg-white/10 border border-white/20 rounded-md text-sm text-white placeholder-white/40 focus:outline-none focus:border-blue-500 transition-colors"
+          />
+          {search && (
+            <button
+              onClick={() => setSearch('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/60"
+            >
+              ×
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Takes Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 min-h-[500px]">
         {filteredTakes.length > 0 ? (
           filteredTakes.map((take, index) => (
             <TakeCard key={take.id || index} take={take} />
@@ -132,7 +165,9 @@ const TakeBoard = ({ takes = [] }) => {
         ) : (
           <div className="col-span-full text-center py-12">
             <div className="text-6xl mb-4">🎯</div>
-            <div className="text-white/40 text-lg">No takes match your filter</div>
+            <div className="text-white/40 text-lg">
+              No takes match your filter
+            </div>
           </div>
         )}
       </div>

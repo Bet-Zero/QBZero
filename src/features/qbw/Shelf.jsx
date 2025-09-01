@@ -44,7 +44,7 @@ const Shelf = ({ title, qbs = [], className = '' }) => {
           <div className="absolute -bottom-3 left-2 right-2 h-4 bg-gradient-to-b from-black/40 to-transparent rounded-xl blur-lg transform rotateX-3"></div>
 
           {/* Crystal balls positioned ON TOP of the shelf surface */}
-          <div className="absolute -top-20 left-0 right-0 flex flex-wrap gap-6 justify-center px-6 z-20">
+          <div className="absolute -top-24 left-0 right-0 flex flex-wrap gap-8 justify-center px-6 z-20">
             {qbs.length > 0 ? (
               qbs.map((qb, index) => (
                 <div
@@ -55,10 +55,7 @@ const Shelf = ({ title, qbs = [], className = '' }) => {
                 </div>
               ))
             ) : (
-              <div className="text-white/40 text-center py-8">
-                <div className="text-4xl mb-2">🔮</div>
-                <div className="text-sm">No predictions yet</div>
-              </div>
+              <div className="text-white/40 text-center py-8">Empty shelf</div>
             )}
           </div>
         </div>

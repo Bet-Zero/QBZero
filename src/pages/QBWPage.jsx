@@ -177,18 +177,23 @@ const QBWPage = () => {
             <h2 className="text-3xl font-bold text-white/90 mb-4">
               🔮 Crystal Ball Collection
             </h2>
-            <p className="text-white/60 max-w-2xl mx-auto">
+            <p className="text-white/60 max-w-2xl mx-auto mb-20">
               Quarterbacks I had strong predictions about that came true. Each
               crystal ball represents a successful call.
             </p>
           </div>
 
-          <div className="space-y-8">
+          <div className="space-y-20">
             <Shelf title="Elite Tier Predictions" qbs={successfulPredictions} />
 
             <Shelf title="Told You He's Garbage" qbs={breakoutPredictions} />
           </div>
         </section>
+
+        {/* Subtle gradient divider */}
+        <div className="w-full max-w-2xl mx-auto mb-12 mt-20">
+          <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+        </div>
 
         {/* Take Board */}
         <section>
