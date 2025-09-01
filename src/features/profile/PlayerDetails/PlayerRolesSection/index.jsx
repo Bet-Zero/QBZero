@@ -130,12 +130,17 @@ const PlayerRolesSection = ({
       </div>
 
       {/* Arm Talent Meter */}
-      <RoleProgressBar
-        id={`${playerId}-armtalent`}
-        label="Arm Talent Meter"
-        value={arm_talent_meter}
-        color="bg-gradient-to-r from-indigo-500 to-purple-500"
-      />
+      <div className="px-2">
+        <CenteredLabelWithIcon
+          label="Arm Talent"
+          onClick={setOpenModal}
+          modalKey="arm_talent"
+        />
+        <ArmTalentMeter
+          armTalentValue={roles.armTalent || 50}
+          onChange={onArmTalentChange}
+        />
+      </div>
     </div>
   );
 };
