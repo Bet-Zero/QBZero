@@ -50,7 +50,7 @@ const createFallbackQBData = () => {
     },
     throwingProfile: '',
     system: {
-      stats: {}
+      stats: {},
     },
     contract: {},
     contract_summary: {},
@@ -65,17 +65,17 @@ const usePlayerData = () => {
   const players = useMemo(() => {
     // If Firebase data is available and has QB data, use it
     const firebaseQBs = data.filter((p) => p.bio?.Position === 'QB');
-    
+
     if (firebaseQBs.length > 0) {
       return firebaseQBs.map(normalizePlayerData);
     }
-    
+
     // Otherwise, use fallback data when Firebase is not available or empty
     if (error || data.length === 0) {
       console.log('Using fallback QB data');
       return createFallbackQBData().map(normalizePlayerData);
     }
-    
+
     return [];
   }, [data, error]);
 

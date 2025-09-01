@@ -131,10 +131,10 @@ const PlayerRolesSection = ({
 
       {/* Arm Talent Meter */}
       <RoleProgressBar
-          id={`${playerId}-armtalent`}
-          label="Arm Talent Meter"
-          value={arm_talent_meter}
-          color="bg-gradient-to-r from-indigo-500 to-purple-500"
+        id={`${playerId}-armtalent`}
+        label="Arm Talent Meter"
+        value={arm_talent_meter}
+        color="bg-gradient-to-r from-indigo-500 to-purple-500"
       />
     </div>
   );
