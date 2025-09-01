@@ -1,19 +1,20 @@
 import React from 'react';
 
 const statLabels = [
-  { label: 'FG%', key: 'FG%' },
-  { label: '3PT%', key: '3P%' },
-  { label: 'FT%', key: 'FT%' },
-  { label: 'eFG%', key: 'eFG%' },
-  { label: '', key: 'SPACER' }, // spacer line
-  { label: 'MIN', key: 'MP' },
-  { label: 'G', key: 'G' },
+  { label: 'CMP', key: 'CMP' },
+  { label: 'ATT', key: 'ATT' },
+  { label: 'YDS', key: 'YDS' },
+  { label: 'TD', key: 'TD' },
+  { label: '', key: 'SPACER' },
+  { label: 'CMP%', key: 'CMP%' },
+  { label: 'RTG', key: 'RTG' },
+  { label: 'QBR', key: 'QBR' },
 ];
 
 const formatStat = (value, key) => {
   if (value === undefined || value === null || key === 'SPACER') return null;
-  if (typeof value === 'number' && value < 1 && value > 0) {
-    return (value * 100).toFixed(1); // no % symbol
+  if (key === 'CMP%' && typeof value === 'number' && value < 1) {
+    return (value * 100).toFixed(1);
   }
   if (typeof value === 'number' && Number.isInteger(value)) {
     return value;

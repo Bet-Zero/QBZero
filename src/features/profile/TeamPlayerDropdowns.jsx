@@ -20,8 +20,18 @@ const TeamPlayerDropdowns = ({
       setSelectedPlayer('');
       return;
     }
-    const filtered = getPlayersForTeam(playersData, selectedTeam);
+
+    // Get all QBs for the selected team
+    const filtered = Object.keys(playersData).filter((key) => {
+      const player = playersData[key];
+      const playerTeam = player?.bio?.Team || player?.team;
+      const isQB = player?.bio?.Position === 'QB';
+      return playerTeam === selectedTeam && isQB;
+    });
+
     setFilteredKeys(filtered);
+
+    // Auto-select first QB if current selection is invalid
     if (!filtered.includes(selectedPlayer)) {
       setSelectedPlayer(filtered[0] || '');
     }
@@ -41,8 +51,8 @@ const TeamPlayerDropdowns = ({
         className={styles.select}
       >
         <option value="">Select Team</option>
-        {teams.map((team, index) => (
-          <option key={`team-${index}-${team}`} value={team}>
+        {teams.map((team) => (
+          <option key={team} value={team}>
             {team}
           </option>
         ))}
@@ -55,8 +65,8 @@ const TeamPlayerDropdowns = ({
         disabled={!selectedTeam}
       >
         <option value="">Select Player</option>
-        {filteredKeys.map((key, index) => (
-          <option key={`player-${index}-${key}`} value={key}>
+        {filteredKeys.map((key) => (
+          <option key={key} value={key}>
             {playersData[key]?.display_name || playersData[key]?.name || key}
           </option>
         ))}

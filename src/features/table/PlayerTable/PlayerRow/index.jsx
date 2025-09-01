@@ -124,9 +124,9 @@ const PlayerRow = ({ player, ranking = '—' }) => {
         <div className="flex items-center">
           <div className="w-28 h-10 rounded-md bg-[#2a2a2a] flex items-center">
             {[
-              { label: 'PPG', value: player.PPG },
-              { label: 'RPG', value: player.RPG },
-              { label: 'APG', value: player.APG },
+              { label: 'CMP%', value: player['CMP%'] },
+              { label: 'YDS', value: player.YDS },
+              { label: 'TD', value: player.TD },
             ].map(({ label, value }) => (
               <div
                 key={label}

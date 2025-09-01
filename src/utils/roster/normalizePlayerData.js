@@ -48,9 +48,14 @@ export function normalizePlayerData(playerData) {
     traits: playerData.traits || {},
     badges: playerData.badges || [],
     salaryByYear: salaryMap,
-    PPG: playerData.system?.stats?.PTS ?? null,
-    RPG: playerData.system?.stats?.TRB ?? null,
-    APG: playerData.system?.stats?.AST ?? null,
+    CMP: playerData.system?.stats?.CMP ?? null,
+    ATT: playerData.system?.stats?.ATT ?? null,
+    YDS: playerData.system?.stats?.YDS ?? null,
+    TD: playerData.system?.stats?.TD ?? null,
+    INT: playerData.system?.stats?.INT ?? null,
+    'CMP%': playerData.system?.stats?.['CMP%'] ?? null,
+    RTG: playerData.system?.stats?.RTG ?? null,
+    QBR: playerData.system?.stats?.QBR ?? null,
     ...playerData.system?.stats,
   };
 }

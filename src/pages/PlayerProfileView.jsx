@@ -25,9 +25,7 @@ const defaultTraits = {
 const defaultRoles = {
   offense1: '',
   offense2: '',
-  style1: '',
-  style2: '',
-  twoWay: 50,
+  armTalent: 50,
 };
 
 const defaultBlurbs = {
@@ -62,10 +60,16 @@ const PlayerProfileView = () => {
     const teamSet = new Set();
     fetchedPlayers.forEach((p) => {
       data[p.id] = p;
-      if (p.bio?.Team) teamSet.add(p.bio.Team);
+      // Check both bio.Team and team fields
+      const team = p.bio?.Team || p.team;
+      if (team) teamSet.add(team);
     });
     setPlayersData(data);
-    setTeams(Array.from(teamSet).sort());
+    // Convert to array, filter out empty/null values, and sort
+    const sortedTeams = Array.from(teamSet)
+      .filter(Boolean)
+      .sort((a, b) => a.localeCompare(b));
+    setTeams(sortedTeams);
   }, [fetchedPlayers]);
 
   useEffect(() => {

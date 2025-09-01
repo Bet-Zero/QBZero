@@ -60,24 +60,48 @@ const createFallbackQBData = () => {
 };
 
 const usePlayerData = () => {
-  const { data, loading, error } = useFirebaseQuery('players');
+  const { data: firestoreData, loading, error } = useFirebaseQuery('players');
 
   const players = useMemo(() => {
-    // If Firebase data is available and has QB data, use it
-    const firebaseQBs = data.filter((p) => p.bio?.Position === 'QB');
+    // Create map of fallback data first
+    const fallbackQBs = createFallbackQBData().map(normalizePlayerData);
+    const fallbackMap = {};
+    fallbackQBs.forEach((qb) => {
+      if (qb?.id) {
+        fallbackMap[qb.id] = qb;
+      }
+    });
 
-    if (firebaseQBs.length > 0) {
-      return firebaseQBs.map(normalizePlayerData);
+    // Handle loading case
+    if (!firestoreData && loading) return fallbackQBs;
+
+    // If we have Firestore data, merge it with fallback data
+    if (firestoreData && firestoreData.length > 0) {
+      const mergedPlayers = [...fallbackQBs];
+
+      firestoreData.forEach((fbPlayer) => {
+        if (fbPlayer?.bio?.Position === 'QB') {
+          const normalizedPlayer = normalizePlayerData(fbPlayer);
+          const existingIndex = mergedPlayers.findIndex(
+            (p) => p.id === normalizedPlayer.id
+          );
+
+          if (existingIndex >= 0) {
+            // Update existing player with Firestore data
+            mergedPlayers[existingIndex] = normalizedPlayer;
+          } else {
+            // Add new player from Firestore
+            mergedPlayers.push(normalizedPlayer);
+          }
+        }
+      });
+
+      return mergedPlayers;
     }
 
-    // Otherwise, use fallback data when Firebase is not available or empty
-    if (error || data.length === 0) {
-      console.log('Using fallback QB data');
-      return createFallbackQBData().map(normalizePlayerData);
-    }
-
-    return [];
-  }, [data, error]);
+    // If no Firestore data or error, return fallback data
+    return fallbackQBs;
+  }, [firestoreData, loading, error]);
 
   return { players, loading, error };
 };
