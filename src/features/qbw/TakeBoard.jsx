@@ -1,5 +1,13 @@
-import React, { useState } from 'react';
-import { CheckCircle, XCircle, Clock, Eye } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { CheckCircle, XCircle, Clock, Eye, Plus, User } from 'lucide-react';
+import {
+  fetchAllTakes,
+  fetchAuthorTakes,
+  createTake,
+} from '@/firebase/takeHelpers';
+import { quarterbacks } from '@/features/ranker/quarterbacks';
+import { toast } from 'react-hot-toast';
+import TakeAuthorModal from './TakeAuthorModal';
 
 const TakeCard = ({ take }) => {
   const getStatusIcon = () => {
@@ -35,8 +43,13 @@ const TakeCard = ({ take }) => {
       <div className="flex items-start gap-3 h-full">
         <div className="flex-shrink-0 mt-1">{getStatusIcon()}</div>
         <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="text-white/90 font-medium mb-1 line-clamp-2">
-            {take.title}
+          <div className="flex items-center justify-between gap-2 mb-1">
+            <div className="text-white/90 font-medium line-clamp-2 flex-1">
+              {take.title}
+            </div>
+            <div className="text-xs text-white/40 whitespace-nowrap">
+              by {take.authorName}
+            </div>
           </div>
           <div className="text-white/70 text-sm mb-2 flex-1 line-clamp-3">
             {take.description}
@@ -58,19 +71,102 @@ const TakeCard = ({ take }) => {
   );
 };
 
-const TakeBoard = ({ takes = [] }) => {
+const TakeBoard = () => {
+  const [takes, setTakes] = useState([]);
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
+  const [showForm, setShowForm] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [author, setAuthor] = useState(null);
+  const [showAuthorModal, setShowAuthorModal] = useState(false);
+  const [viewingAuthorId, setViewingAuthorId] = useState(null); // null means viewing all takes
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    qbName: '',
+    date: new Date().toLocaleDateString(),
+    proofDate: '',
+    status: 'pending',
+  });
+
+  // QB Search state
+  const [qbSearch, setQbSearch] = useState('');
+
+  // Filter QBs based on search
+  const filteredQBs = useMemo(() => {
+    return quarterbacks.filter((qb) =>
+      qb.name.toLowerCase().includes(qbSearch.toLowerCase())
+    );
+  }, [qbSearch]);
+
+  useEffect(() => {
+    if (author) {
+      loadTakes();
+    }
+  }, [author, viewingAuthorId]);
+
+  const loadTakes = async () => {
+    try {
+      const takesData = viewingAuthorId
+        ? await fetchAuthorTakes(viewingAuthorId)
+        : await fetchAllTakes();
+      setTakes(takesData);
+    } catch (error) {
+      console.error('Error loading takes:', error);
+      toast.error('Failed to load takes');
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!author) {
+      setShowAuthorModal(true);
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      await createTake(formData, author.id, author.name);
+      toast.success('Take added successfully!');
+      setFormData({
+        title: '',
+        description: '',
+        qbName: '',
+        date: new Date().toLocaleDateString(),
+        proofDate: '',
+        status: 'pending',
+      });
+      setQbSearch('');
+      setShowForm(false);
+      loadTakes();
+    } catch (error) {
+      console.error('Error creating take:', error);
+      toast.error('Failed to create take');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleLogin = (authorData) => {
+    setAuthor(authorData);
+    setShowAuthorModal(false);
+    localStorage.setItem('takeAuthor', JSON.stringify(authorData));
+  };
+
+  // Load author from localStorage on mount
+  useEffect(() => {
+    const savedAuthor = localStorage.getItem('takeAuthor');
+    if (savedAuthor) {
+      setAuthor(JSON.parse(savedAuthor));
+    }
+  }, []);
 
   const filteredTakes = takes.filter((take) => {
-    // First apply status filter
     if (filter !== 'all' && take.status !== filter) return false;
-
-    // Then apply search filter if there is a search term
     if (search.trim()) {
       return take.qbName.toLowerCase().includes(search.toLowerCase());
     }
-
     return true;
   });
 
@@ -103,14 +199,188 @@ const TakeBoard = ({ takes = [] }) => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="text-center">
-        <h2 className="text-2xl font-bold text-white/90 mb-2">🎯 Take Board</h2>
-        <p className="text-white/60">My QB predictions and hot takes</p>
+      <div className="relative mb-14 md:mb-0">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-white/90 mb-2">
+            🎯 Take Board
+          </h2>
+          <p className="text-white/60">QB predictions and hot takes</p>
+        </div>
+
+        {/* Author Controls - Positioned Absolute Right */}
+        <div className="absolute md:right-0 right-1/2 md:translate-x-0 translate-x-1/2 md:top-1/2 top-[calc(100%+0.5rem)] md:-translate-y-1/2 translate-y-0 flex md:flex-row flex-col items-center gap-3">
+          {!author ? (
+            <button
+              onClick={() => setShowAuthorModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600/80 hover:bg-blue-700 rounded-lg text-white text-sm font-medium transition-all whitespace-nowrap"
+            >
+              <User size={16} />
+              Login to Add Takes
+            </button>
+          ) : (
+            <>
+              <div className="flex items-center gap-2 px-4 py-2 bg-white/10 rounded-lg whitespace-nowrap">
+                <User size={16} className="text-white/60" />
+                <span className="text-white text-sm font-medium">
+                  {author.name}
+                </span>
+              </div>
+
+              <button
+                onClick={() => setShowForm(!showForm)}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600/80 hover:bg-blue-700 rounded-lg text-white text-sm font-medium transition-all whitespace-nowrap"
+              >
+                <Plus size={16} />
+                Add Take
+              </button>
+
+              <select
+                value={viewingAuthorId || ''}
+                onChange={(e) => setViewingAuthorId(e.target.value || null)}
+                className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500 whitespace-nowrap"
+              >
+                <option value="">All Takes</option>
+                <option value={author.id}>My Takes Only</option>
+              </select>
+            </>
+          )}
+        </div>
       </div>
 
-      {/* Filter Buttons and Search Bar Container */}
+      {/* Take Creation Form */}
+      {showForm && (
+        <div className="bg-[#1a1a1a] rounded-xl border border-white/20 p-6">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-white/80 font-medium mb-2">
+                Take Title *
+              </label>
+              <input
+                type="text"
+                value={formData.title}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, title: e.target.value }))
+                }
+                placeholder="e.g., Josh Allen will be a top 3 QB"
+                required
+                className="w-full p-3 bg-neutral-700 border border-white/20 rounded-lg text-white placeholder-white/40 focus:border-blue-500 focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-white/80 font-medium mb-2">
+                Description *
+              </label>
+              <textarea
+                value={formData.description}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    description: e.target.value,
+                  }))
+                }
+                placeholder="Explain your prediction..."
+                required
+                rows={3}
+                className="w-full p-3 bg-neutral-700 border border-white/20 rounded-lg text-white placeholder-white/40 focus:border-blue-500 focus:outline-none resize-none"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-white/80 font-medium mb-2">
+                  QB Name *
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={qbSearch}
+                    onChange={(e) => setQbSearch(e.target.value)}
+                    placeholder="Search QB..."
+                    className="w-full p-3 bg-neutral-700 border border-white/20 rounded-lg text-white placeholder-white/40 focus:border-blue-500 focus:outline-none"
+                  />
+                  {qbSearch && filteredQBs.length > 0 && (
+                    <div className="absolute z-10 mt-1 w-full bg-neutral-800 border border-white/20 rounded-lg max-h-48 overflow-y-auto">
+                      {filteredQBs.map((qb) => (
+                        <button
+                          key={qb.id}
+                          type="button"
+                          onClick={() => {
+                            setFormData((prev) => ({
+                              ...prev,
+                              qbName: qb.name,
+                            }));
+                            setQbSearch(qb.name);
+                          }}
+                          className="w-full px-3 py-2 text-left hover:bg-white/10 text-white text-sm"
+                        >
+                          {qb.name} ({qb.team})
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-white/80 font-medium mb-2">
+                  Status *
+                </label>
+                <select
+                  value={formData.status}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, status: e.target.value }))
+                  }
+                  required
+                  className="w-full p-3 bg-neutral-700 border border-white/20 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                >
+                  <option value="pending">Pending</option>
+                  <option value="correct">Correct</option>
+                  <option value="wrong">Wrong</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-white/80 font-medium mb-2">
+                Proof Date
+              </label>
+              <input
+                type="text"
+                value={formData.proofDate}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    proofDate: e.target.value,
+                  }))
+                }
+                placeholder="e.g., 2024 Season"
+                className="w-full p-3 bg-neutral-700 border border-white/20 rounded-lg text-white placeholder-white/40 focus:border-blue-500 focus:outline-none"
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4">
+              <button
+                type="button"
+                onClick={() => setShowForm(false)}
+                className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white text-sm font-medium transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:opacity-50 rounded-lg text-white text-sm font-medium transition-all"
+              >
+                {isSubmitting ? 'Adding...' : 'Add Take'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Filter Buttons and Search */}
       <div className="flex flex-wrap items-center justify-center gap-2">
-        {/* Filter Buttons */}
         <button
           onClick={() => setFilter('all')}
           className={getFilterButtonClass('all')}
@@ -136,7 +406,6 @@ const TakeBoard = ({ takes = [] }) => {
           ⏳ Pending ({statusCounts.pending || 0})
         </button>
 
-        {/* Search Bar */}
         <div className="relative w-[200px]">
           <input
             type="text"
@@ -159,9 +428,7 @@ const TakeBoard = ({ takes = [] }) => {
       {/* Takes Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 min-h-[500px]">
         {filteredTakes.length > 0 ? (
-          filteredTakes.map((take, index) => (
-            <TakeCard key={take.id || index} take={take} />
-          ))
+          filteredTakes.map((take) => <TakeCard key={take.id} take={take} />)
         ) : (
           <div className="col-span-full text-center py-12">
             <div className="text-6xl mb-4">🎯</div>
@@ -171,6 +438,15 @@ const TakeBoard = ({ takes = [] }) => {
           </div>
         )}
       </div>
+
+      {/* Author Modal */}
+      {showAuthorModal && (
+        <TakeAuthorModal
+          onClose={() => setShowAuthorModal(false)}
+          onLogin={handleLogin}
+          currentAuthor={author}
+        />
+      )}
     </div>
   );
 };

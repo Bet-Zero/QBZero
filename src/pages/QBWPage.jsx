@@ -184,21 +184,20 @@ const QBWPage = () => {
           </div>
 
           <div className="space-y-20">
-            <Shelf title="Elite Tier Predictions" qbs={successfulPredictions} />
+            <Shelf title="The Whisperer" qbs={successfulPredictions} />
 
             <Shelf title="Told You He's Garbage" qbs={breakoutPredictions} />
           </div>
         </section>
+      </div>
 
-        {/* Subtle gradient divider */}
-        <div className="w-full max-w-2xl mx-auto mb-12 mt-20">
-          <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+      {/* Take Board Section with distinct background */}
+      <div className="bg-gradient-to-b from-neutral-900 via-[#141429] to-[#1a1a2e] border-t border-white/5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <section>
+            <TakeBoard takes={takes} />
+          </section>
         </div>
-
-        {/* Take Board */}
-        <section>
-          <TakeBoard takes={takes} />
-        </section>
       </div>
     </div>
   );
