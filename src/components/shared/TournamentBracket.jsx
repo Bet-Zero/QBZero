@@ -77,11 +77,11 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
     const totalHeight = maxMatches * baseMatchHeight + (maxMatches - 1) * baseSpacing + 120;
 
     // Calculate optimal scale for visible rounds
-    const widthScale = Math.min(1.2, containerWidth / totalWidth);
-    const heightScale = Math.min(1.2, containerHeight / totalHeight);
-    const optimalScale = Math.min(widthScale, heightScale);
+      const widthScale = Math.min(1.2, containerWidth / totalWidth);
+      const heightScale = Math.min(1.2, containerHeight / totalHeight);
+      const optimalScale = Math.min(widthScale, heightScale);
 
-    setScale(Math.max(0.8, optimalScale));
+      setScale(optimalScale);
 
     // Calculate pan to center the focused round
     const focusRoundIndex = visibleRounds.indexOf(focusRound);
@@ -122,10 +122,9 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
   const activeRound = getCurrentActiveRound();
 
   return (
-    <div 
+    <div
       ref={containerRef}
-      className="w-full bg-neutral-900 rounded-lg overflow-hidden relative"
-      style={{ height: 'calc(100vh - 280px)', minHeight: '600px' }}
+      className="w-full h-full bg-neutral-900 rounded-lg overflow-hidden relative"
     >
       {/* Round Navigation */}
       <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-20">
