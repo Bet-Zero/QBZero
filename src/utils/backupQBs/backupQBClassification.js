@@ -7,6 +7,18 @@ export const BACKUP_QBS = [
   'jameis-winston', 
   'tyrod-taylor',
   'sam-howell',
+  'jacoby-brissett',
+  'cooper-rush',
+  'mitch-trubisky',
+  'case-keenum',
+  'jake-browning',
+  'gardner-minshew',
+  'taylor-heinicke',
+  'jimmy-garoppolo',
+  'joshua-dobbs',
+  'teddy-bridgewater',
+  'marcus-mariota',
+  'josh-johnson',
   
   // Young/developmental backups
   'jake-haener',
@@ -14,16 +26,34 @@ export const BACKUP_QBS = [
   'tyler-shough',
   'jaxson-dart',
   'cameron-ward',
+  'mason-rudolph',
+  'mac-jones',
+  'drew-lock',
+  'kyle-trask',
+  'brandon-allen',
+  'tyson-bagent',
+  'desmond-ridder',
+  'kenny-pickett',
+  'tyler-huntley',
+  'joe-milton-iii',
+  'jarrett-stidham',
+  'kyle-allen',
+  'malik-willis',
+  'davis-mills',
+  'nick-mullens',
+  'bailey-zappe',
+  'aidan-oconnell',
+  'tanner-mckee',
   
   // Rookies likely to be backups initially
-  'bo-nix', // might be starter but often backup role
+  'bo-nix',
   'michael-penix-jr',
   'j-j-mccarthy',
   
   // QBs in backup/transition roles
-  'justin-fields', // moved to backup role
-  'russell-wilson', // veteran in backup/competition
-  'sam-darnold', // often backup role
+  'justin-fields',
+  'russell-wilson',
+  'sam-darnold'
 ];
 
 export const STARTER_QBS = [
@@ -51,7 +81,7 @@ export const STARTER_QBS = [
   'anthony-richardson',
   'drake-maye',
   'bryce-young',
-  'daniel-jones',
+  'daniel-jones'
 ];
 
 // Function to determine if a QB is considered a backup

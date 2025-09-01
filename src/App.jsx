@@ -15,7 +15,6 @@ import QBRankingsHome from '@/pages/QBRankingsHome';
 import PersonalRankingsPage from '@/pages/PersonalRankingsPage';
 import QBWPage from '@/pages/QBWPage';
 import BackupQBsHome from '@/pages/BackupQBsHome';
-import BackupQBTournament from '@/pages/BackupQBTournament';
 import BackupQBHallOfFame from '@/pages/BackupQBHallOfFame';
 import { RankerProvider } from '@/context/RankerContext';
 import SiteLayout from '@/components/layout/SiteLayout';
@@ -43,7 +42,6 @@ const App = () => {
 
         {/* Backup QBs Routes */}
         <Route path="/backup-qbs" element={<BackupQBsHome />} />
-        <Route path="/backup-qbs/tournament" element={<BackupQBTournament />} />
         <Route
           path="/backup-qbs/hall-of-fame"
           element={<BackupQBHallOfFame />}
