@@ -173,7 +173,7 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
             transformOrigin: 'top left'
           }}
         >
-          <div ref={bracketRef} className="flex gap-10 items-center justify-center h-full px-8">
+          <div ref={bracketRef} className="inline-flex gap-10 items-center justify-center px-8">
             {rounds.map((roundNum, roundIndex) => {
               const matches = roundsData[roundNum] || [];
 
