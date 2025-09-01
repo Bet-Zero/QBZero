@@ -27,7 +27,7 @@ const ListPlayerRow = ({
       player.headshotUrl || `/assets/headshots/${player.player_id}.png`,
     offenseRole: player.roles?.offense1 || player.offenseRole || '—',
     defenseRole: player.roles?.defense1 || player.defenseRole || '—',
-    shootingProfile: player.shootingProfile || '—',
+    runningProfile: player.runningProfile || '—',
     PPG: player.PPG ?? player.system?.stats?.PTS ?? null,
     RPG: player.RPG ?? player.system?.stats?.TRB ?? null,
     APG: player.APG ?? player.system?.stats?.AST ?? null,

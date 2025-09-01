@@ -8,30 +8,34 @@ const useAutoSavePlayer = ({
   roles,
   subRoles,
   badges,
-  shootingProfile,
+  runningProfile,
   overallGrade,
   blurbs,
   hasChanges,
   setHasChanges,
 }) => {
   useEffect(() => {
-    if (!playerId || !player || !hasChanges) return;
+    if (!hasChanges || !playerId || !player) return;
 
-    const saveData = async () => {
-      await savePlayerData(playerId, {
-        ...player,
-        traits,
-        roles,
-        subRoles,
-        badges,
-        shootingProfile,
-        overall_grade: overallGrade,
-        blurbs,
-      });
-      setHasChanges(false);
-    };
+    const timer = setTimeout(async () => {
+      try {
+        await savePlayerData(playerId, {
+          ...player,
+          traits,
+          roles,
+          subRoles,
+          badges,
+          runningProfile,
+          overall_grade: overallGrade,
+          blurbs,
+        });
+        setHasChanges(false);
+      } catch (error) {
+        console.error('Error auto-saving player:', error);
+      }
+    }, 1500);
 
-    saveData();
+    return () => clearTimeout(timer);
   }, [
     playerId,
     player,
@@ -39,7 +43,7 @@ const useAutoSavePlayer = ({
     roles,
     subRoles,
     badges,
-    shootingProfile,
+    runningProfile,
     overallGrade,
     blurbs,
     hasChanges,

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import PlayerNameMini from '@/features/table/PlayerTable/PlayerRow/PlayerNameMini';
-import ShootingProfileMini from '@/features/table/PlayerTable/PlayerRow/ShootingProfileMini';
+import RunningProfileMini from '@/features/table/PlayerTable/PlayerRow/RunningProfileMini';
 import RolePill from '@/features/table/PlayerTable/PlayerRow/RolePill';
 import OverallGradeBlock from '@/components/shared/ui/grades/OverallGradeBlock';
 import PlayerDrawer from '@/features/table/PlayerTable/PlayerRow/PlayerDrawer';
@@ -144,9 +144,9 @@ const PlayerRow = ({ player, ranking = '—' }) => {
         {/* Divider */}
         <div className="h-4/5 w-px bg-[#444444] ml-3"></div>
 
-        {/* Shooting Profile */}
+        {/* Running Profile */}
         <div className="flex items-center justify-center ml-3">
-          <ShootingProfileMini value={player.shootingProfile} />
+          <RunningProfileMini value={player.runningProfile} />
         </div>
 
         {/* Divider */}

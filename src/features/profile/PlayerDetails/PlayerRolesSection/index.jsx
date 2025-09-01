@@ -1,10 +1,10 @@
 // components/PlayerRolesSection.jsx
 import React from 'react';
 import SubRoleSelector from './SubRoleSelector';
-import ShootingProfileSelector from './ShootingProfileSelector';
+import RunningProfileSelector from './RunningProfileSelector';
 import ArmTalentMeter from './ArmTalentMeter';
 import { NotebookText } from 'lucide-react';
-import { offensiveRoles, defensiveRoles } from '@/utils/roles';
+import { offensiveRoles } from '@/utils/roles';
 
 const RoleSelect = ({ value, onChange, setOpenModal, options, roleKey }) => (
   <div className="relative w-full mb-2">
@@ -52,8 +52,9 @@ const PlayerRolesSection = ({
   onRoleChange,
   subRoles,
   setSubRoles,
-  shootingProfile,
-  setShootingProfile,
+  runningProfile,
+  setRunningProfile,
+  onTwoWayChange,
   onArmTalentChange,
   setOpenModal,
 }) => {
@@ -63,11 +64,11 @@ const PlayerRolesSection = ({
       style={{ width: '500px', height: '460px' }}
     >
       <div className="flex flex-col gap-4">
-        <div className="flex justify-between gap-4">
+        <div className="flex justify-between">
           {/* Offense Roles */}
-          <div className="w-1/2 flex flex-col items-center">
+          <div className="w-full flex flex-col items-center">
             <div className="text-lg font-bold mb-2 text-center underline">
-              Offense
+              Playstyle
             </div>
             <RoleSelect
               value={roles.offense1}
@@ -84,27 +85,6 @@ const PlayerRolesSection = ({
               roleKey="offense2"
             />
           </div>
-
-          {/* Defense Roles */}
-          <div className="w-1/2 flex flex-col items-center">
-            <div className="text-lg font-bold mb-2 text-center underline">
-              Defense
-            </div>
-            <RoleSelect
-              value={roles.defense1}
-              onChange={(val) => onRoleChange('defense1', val)}
-              setOpenModal={setOpenModal}
-              options={defensiveRoles}
-              roleKey="defense1"
-            />
-            <RoleSelect
-              value={roles.defense2}
-              onChange={(val) => onRoleChange('defense2', val)}
-              setOpenModal={setOpenModal}
-              options={defensiveRoles}
-              roleKey="defense2"
-            />
-          </div>
         </div>
 
         <SubRoleSelector
@@ -115,31 +95,31 @@ const PlayerRolesSection = ({
 
         <div className="border-t border-neutral-600 my-2"></div>
 
-        {/* Throwing Profile */}
+        {/* Running Profile */}
         <div className="px-2 -mt-1.5">
           <CenteredLabelWithIcon
-            label="Throwing Profile"
+            label="Running Profile"
             onClick={setOpenModal}
-            modalKey="throwing_profile"
+            modalKey="running_profile"
           />
-          <ShootingProfileSelector
-            value={shootingProfile}
-            onChange={setShootingProfile}
+          <RunningProfileSelector
+            value={runningProfile}
+            onChange={setRunningProfile}
           />
         </div>
-      </div>
 
-      {/* Arm Talent Meter */}
-      <div className="px-2">
-        <CenteredLabelWithIcon
-          label="Arm Talent"
-          onClick={setOpenModal}
-          modalKey="arm_talent"
-        />
-        <ArmTalentMeter
-          armTalentValue={roles.armTalent || 50}
-          onChange={onArmTalentChange}
-        />
+        {/* Arm Talent Meter */}
+        <div className="px-2">
+          <CenteredLabelWithIcon
+            label="Arm Talent"
+            onClick={setOpenModal}
+            modalKey="arm_talent"
+          />
+          <ArmTalentMeter
+            armTalentValue={roles.armTalent || 50}
+            onChange={onArmTalentChange}
+          />
+        </div>
       </div>
     </div>
   );

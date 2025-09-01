@@ -1,13 +1,25 @@
-export const getDefaultAddPlayerFilters = () => ({
+export const defaultFilters = {
   team: '',
   position: '',
-  offenseRole: '',
-  defenseRole: '',
-  subRoles: { offense: [], defense: [] },
-  shootingProfile: '',
+  runningProfile: '',
   badges: [],
-  minSalary: undefined,
-  maxSalary: undefined,
-  freeAgentYear: '',
-  freeAgentType: '',
-});
+};
+
+export function getDefaultAddPlayerFilters() {
+  return {
+    team: '',
+    position: '',
+    runningProfile: '',
+    offenseRole: '',
+    defenseRole: '',
+    subRoles: {
+      offense: [],
+      defense: [],
+    },
+    badges: [],
+    minSalary: undefined,
+    maxSalary: undefined,
+    freeAgentYear: '',
+    freeAgentType: '',
+  };
+}

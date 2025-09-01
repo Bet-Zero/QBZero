@@ -6,7 +6,7 @@ import { TeamListFull } from '@/constants/teamList';
 import {
   offensiveRoles,
   defensiveRoles,
-  shootingProfileTiers,
+  runningProfileTiers,
 } from '@/utils/roles';
 
 const FilterPanelCondensed = ({ filters, setFilters }) => {
@@ -57,10 +57,10 @@ const FilterPanelCondensed = ({ filters, setFilters }) => {
         />
 
         <MultiSelectFilter
-          value={filters.shootingProfile || ''}
-          options={shootingProfileTiers}
-          onChange={(val) => update('shootingProfile', val)}
-          allLabel="Shooting Profile"
+          value={filters.runningProfile || ''}
+          options={runningProfileTiers}
+          onChange={(val) => update('runningProfile', val)}
+          allLabel="Running Profile"
           containerClass="shrink-0"
           selectClass={selectClass}
         />

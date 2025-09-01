@@ -1,139 +1,116 @@
 export const SubRoleMasterList = [
-  // ===== OFFENSE =====
-  // -- Positive Playmaking --
+  // ===== STRENGTHS =====
+  // -- Arm Talent --
   {
-    name: 'Primary Initiator',
+    name: 'Elite Arm Strength',
     type: 'offense',
     isPositive: true,
-    group: 'Playmaking',
+    group: 'Arm Talent',
   },
   {
-    name: 'Secondary Playmaker',
+    name: 'Precision Passer',
     type: 'offense',
     isPositive: true,
-    group: 'Playmaking',
+    group: 'Arm Talent',
   },
   {
-    name: 'Quick Decision Maker',
+    name: 'Touch Thrower',
     type: 'offense',
     isPositive: true,
-    group: 'Playmaking',
+    group: 'Arm Talent',
   },
   {
-    name: 'Elite Ball Security',
+    name: 'Ball Placement',
     type: 'offense',
     isPositive: true,
-    group: 'Playmaking',
-  },
-
-  // -- Positive Scoring --
-  {
-    name: 'Three-Level Threat',
-    type: 'offense',
-    isPositive: true,
-    group: 'Scoring',
-  },
-  {
-    name: 'Tough Shot Maker',
-    type: 'offense',
-    isPositive: true,
-    group: 'Scoring',
-  },
-  {
-    name: 'Crafty Scorer',
-    type: 'offense',
-    isPositive: true,
-    group: 'Scoring',
-  },
-  {
-    name: 'First Step Weapon',
-    type: 'offense',
-    isPositive: true,
-    group: 'Scoring',
+    group: 'Arm Talent',
   },
 
-  // -- Positive Shooting --
+  // -- Processing --
   {
-    name: 'Knockdown Catch Shooter',
+    name: 'Quick Processor',
     type: 'offense',
     isPositive: true,
-    group: 'Shooting',
+    group: 'Processing',
   },
   {
-    name: 'Deep Range Threat',
+    name: 'Reads Full Field',
     type: 'offense',
     isPositive: true,
-    group: 'Shooting',
+    group: 'Processing',
   },
   {
-    name: 'Movement Shooter',
+    name: 'Defensive Recognition',
     type: 'offense',
     isPositive: true,
-    group: 'Shooting',
+    group: 'Processing',
   },
   {
-    name: 'Pick & Popper',
+    name: 'Anticipatory Thrower',
     type: 'offense',
     isPositive: true,
-    group: 'Shooting',
-  },
-
-  // -- Positive Finishing --
-  {
-    name: 'Slasher & Finisher',
-    type: 'offense',
-    isPositive: true,
-    group: 'Finishing',
-  },
-  {
-    name: 'Elite Rim Pressure',
-    type: 'offense',
-    isPositive: true,
-    group: 'Finishing',
-  },
-  { name: 'Lob Threat', type: 'offense', isPositive: true, group: 'Finishing' },
-  {
-    name: 'Vertical Finisher',
-    type: 'offense',
-    isPositive: true,
-    group: 'Finishing',
+    group: 'Processing',
   },
 
-  // -- Positive Off-Ball --
+  // -- Mobility --
   {
-    name: 'Off-Ball Mover',
+    name: 'Escape Artist',
     type: 'offense',
     isPositive: true,
-    group: 'Off-Ball',
+    group: 'Mobility',
   },
   {
-    name: 'Cutter & Relocator',
+    name: 'Extends Plays',
     type: 'offense',
     isPositive: true,
-    group: 'Off-Ball',
+    group: 'Mobility',
   },
   {
-    name: 'Decoy Gravity',
+    name: 'Running Threat',
     type: 'offense',
     isPositive: true,
-    group: 'Off-Ball',
-  },
-
-  // -- Positive Rebounding --
-  {
-    name: 'Offensive Rebounder',
-    type: 'offense',
-    isPositive: true,
-    group: 'Rebounding',
+    group: 'Mobility',
   },
   {
-    name: 'Crash Specialist',
+    name: 'Creative Off-Script',
     type: 'offense',
     isPositive: true,
-    group: 'Rebounding',
+    group: 'Mobility',
   },
 
-  // -- Positive Intangibles --
+  // -- Pocket --
+  {
+    name: 'Pocket Presence',
+    type: 'offense',
+    isPositive: true,
+    group: 'Pocket',
+  },
+  {
+    name: 'Steps Up Clean',
+    type: 'offense',
+    isPositive: true,
+    group: 'Pocket',
+  },
+  {
+    name: 'Navigates Traffic',
+    type: 'offense',
+    isPositive: true,
+    group: 'Pocket',
+  },
+  {
+    name: 'Throws Under Pressure',
+    type: 'offense',
+    isPositive: true,
+    group: 'Pocket',
+  },
+
+  // -- Intangibles --
+  {
+    name: 'Leader',
+    type: 'offense',
+    isPositive: true,
+    group: 'Intangibles',
+  },
   {
     name: 'Clutch Performer',
     type: 'offense',
@@ -147,121 +124,126 @@ export const SubRoleMasterList = [
     group: 'Intangibles',
   },
   {
-    name: 'Excellent Motor',
+    name: 'Competitive Toughness',
     type: 'offense',
     isPositive: true,
     group: 'Intangibles',
   },
 
-  // -- Negative Playmaking --
+  // ===== WEAKNESSES =====
+  // -- Arm Talent --
   {
-    name: 'Hesitant Initiator',
+    name: 'Limited Arm Strength',
     type: 'offense',
     isPositive: false,
-    group: 'Playmaking',
+    group: 'Arm Talent',
   },
   {
-    name: 'Over-Dribbler',
+    name: 'Inconsistent Accuracy',
     type: 'offense',
     isPositive: false,
-    group: 'Playmaking',
+    group: 'Arm Talent',
   },
   {
-    name: 'Turnover Prone',
+    name: 'Erratic Ball Placement',
     type: 'offense',
     isPositive: false,
-    group: 'Playmaking',
+    group: 'Arm Talent',
   },
   {
-    name: 'Tunnel Vision',
+    name: 'Long Wind-Up',
     type: 'offense',
     isPositive: false,
-    group: 'Playmaking',
-  },
-
-  // -- Negative Shooting --
-  {
-    name: 'Non-Shooter',
-    type: 'offense',
-    isPositive: false,
-    group: 'Shooting',
-  },
-  {
-    name: 'Hesitant Shooter',
-    type: 'offense',
-    isPositive: false,
-    group: 'Shooting',
-  },
-  {
-    name: 'Poor Shot Selection',
-    type: 'offense',
-    isPositive: false,
-    group: 'Shooting',
-  },
-  {
-    name: 'Long Load-Up',
-    type: 'offense',
-    isPositive: false,
-    group: 'Shooting',
+    group: 'Arm Talent',
   },
 
-  // -- Negative Finishing --
+  // -- Processing --
   {
-    name: 'Below the Rim Finisher',
+    name: 'Slow Processor',
     type: 'offense',
     isPositive: false,
-    group: 'Finishing',
+    group: 'Processing',
   },
   {
-    name: 'Contact-Averse',
+    name: 'One-Read QB',
     type: 'offense',
     isPositive: false,
-    group: 'Finishing',
+    group: 'Processing',
   },
   {
-    name: 'Gets Blocked Often',
+    name: 'Misses Open Receivers',
     type: 'offense',
     isPositive: false,
-    group: 'Finishing',
-  },
-
-  // -- Negative Off-Ball --
-  {
-    name: 'Stationary Off-Ball',
-    type: 'offense',
-    isPositive: false,
-    group: 'Off-Ball',
+    group: 'Processing',
   },
   {
-    name: 'Fails to Relocate',
+    name: 'Forces Into Coverage',
     type: 'offense',
     isPositive: false,
-    group: 'Off-Ball',
-  },
-  {
-    name: 'Minimal Gravity',
-    type: 'offense',
-    isPositive: false,
-    group: 'Off-Ball',
+    group: 'Processing',
   },
 
-  // -- Negative Rebounding --
+  // -- Mobility --
   {
-    name: 'Poor Offensive Rebounder',
+    name: 'Limited Athlete',
     type: 'offense',
     isPositive: false,
-    group: 'Rebounding',
+    group: 'Mobility',
   },
   {
-    name: 'No Crash Effort',
+    name: 'Struggles Off-Platform',
     type: 'offense',
     isPositive: false,
-    group: 'Rebounding',
+    group: 'Mobility',
+  },
+  {
+    name: 'Mechanical Runner',
+    type: 'offense',
+    isPositive: false,
+    group: 'Mobility',
+  },
+  {
+    name: 'Ball Security Issues',
+    type: 'offense',
+    isPositive: false,
+    group: 'Mobility',
   },
 
-  // -- Negative Intangibles --
+  // -- Pocket --
   {
-    name: 'Folds Under Pressure',
+    name: 'Poor Pocket Feel',
+    type: 'offense',
+    isPositive: false,
+    group: 'Pocket',
+  },
+  {
+    name: 'Leaves Clean Pockets',
+    type: 'offense',
+    isPositive: false,
+    group: 'Pocket',
+  },
+  {
+    name: 'Panics Under Pressure',
+    type: 'offense',
+    isPositive: false,
+    group: 'Pocket',
+  },
+  {
+    name: 'Takes Bad Sacks',
+    type: 'offense',
+    isPositive: false,
+    group: 'Pocket',
+  },
+
+  // -- Intangibles --
+  {
+    name: 'Inconsistent Mechanics',
+    type: 'offense',
+    isPositive: false,
+    group: 'Intangibles',
+  },
+  {
+    name: 'Decision Making',
     type: 'offense',
     isPositive: false,
     group: 'Intangibles',
@@ -273,185 +255,8 @@ export const SubRoleMasterList = [
     group: 'Intangibles',
   },
   {
-    name: 'Poor Motor',
+    name: 'Injury History',
     type: 'offense',
-    isPositive: false,
-    group: 'Intangibles',
-  },
-
-  // ===== DEFENSE =====
-  // -- Positive Perimeter --
-  {
-    name: 'Disruptive POA',
-    type: 'defense',
-    isPositive: true,
-    group: 'Perimeter',
-  },
-  {
-    name: 'Strong Closeouts',
-    type: 'defense',
-    isPositive: true,
-    group: 'Perimeter',
-  },
-  {
-    name: 'Physical Contests',
-    type: 'defense',
-    isPositive: true,
-    group: 'Perimeter',
-  },
-
-  // -- Positive Interior --
-  {
-    name: 'Shot Alterer',
-    type: 'defense',
-    isPositive: true,
-    group: 'Interior',
-  },
-  {
-    name: 'Blocks Without Fouling',
-    type: 'defense',
-    isPositive: true,
-    group: 'Interior',
-  },
-
-  // -- Positive Rebounding --
-  {
-    name: 'Elite Box Out',
-    type: 'defense',
-    isPositive: true,
-    group: 'Rebounding',
-  },
-  {
-    name: 'Tenacious Rebounder',
-    type: 'defense',
-    isPositive: true,
-    group: 'Rebounding',
-  },
-
-  // -- Positive Team Defense --
-  {
-    name: 'Timely Rotator',
-    type: 'defense',
-    isPositive: true,
-    group: 'Team Defense',
-  },
-  {
-    name: 'Tag-and-Recover',
-    type: 'defense',
-    isPositive: true,
-    group: 'Team Defense',
-  },
-  {
-    name: 'Plays Within Scheme',
-    type: 'defense',
-    isPositive: true,
-    group: 'Team Defense',
-  },
-
-  // -- Positive Intangibles --
-  {
-    name: 'Defensive Leader',
-    type: 'defense',
-    isPositive: true,
-    group: 'Intangibles',
-  },
-  {
-    name: 'High Defensive IQ',
-    type: 'defense',
-    isPositive: true,
-    group: 'Intangibles',
-  },
-  {
-    name: 'Relentless Hustle',
-    type: 'defense',
-    isPositive: true,
-    group: 'Intangibles',
-  },
-
-  // -- Negative Perimeter --
-  {
-    name: "Can't Stay in Front",
-    type: 'defense',
-    isPositive: false,
-    group: 'Perimeter',
-  },
-  {
-    name: 'Dies on Screens',
-    type: 'defense',
-    isPositive: false,
-    group: 'Perimeter',
-  },
-  {
-    name: 'Poor Closeouts',
-    type: 'defense',
-    isPositive: false,
-    group: 'Perimeter',
-  },
-
-  // -- Negative Interior --
-  {
-    name: 'No Rim Protection',
-    type: 'defense',
-    isPositive: false,
-    group: 'Interior',
-  },
-  {
-    name: 'No Vertical Contest',
-    type: 'defense',
-    isPositive: false,
-    group: 'Interior',
-  },
-
-  // -- Negative Rebounding --
-  {
-    name: 'Poor Box Out',
-    type: 'defense',
-    isPositive: false,
-    group: 'Rebounding',
-  },
-  {
-    name: 'Lazy Rebounder',
-    type: 'defense',
-    isPositive: false,
-    group: 'Rebounding',
-  },
-
-  // -- Negative Team Defense --
-  {
-    name: 'Misses Rotations',
-    type: 'defense',
-    isPositive: false,
-    group: 'Team Defense',
-  },
-  {
-    name: 'Ball Watches',
-    type: 'defense',
-    isPositive: false,
-    group: 'Team Defense',
-  },
-  {
-    name: 'Ignores Tag Assignments',
-    type: 'defense',
-    isPositive: false,
-    group: 'Team Defense',
-  },
-
-  // -- Negative Intangibles --
-  {
-    name: 'Defensive Liability',
-    type: 'defense',
-    isPositive: false,
-    group: 'Intangibles',
-  },
-  {
-    name: 'Low Defensive IQ',
-    type: 'defense',
-    isPositive: false,
-    group: 'Intangibles',
-  },
-  {
-    name: 'Poor Effort',
-    type: 'defense',
     isPositive: false,
     group: 'Intangibles',
   },

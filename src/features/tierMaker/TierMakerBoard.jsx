@@ -39,7 +39,7 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
         ],
         offenseSubroles: player.subRoles?.offense || [],
         defenseSubroles: player.subRoles?.defense || [],
-        shootingProfile: (player.shootingProfile || '').toLowerCase(),
+        runningProfile: (player.runningProfile || '').toLowerCase(),
         badges: player.badges || [],
         salary: player.contract?.annual_salaries?.find((s) => s.year === 2025)
           ?.salary,
@@ -332,7 +332,11 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
               <div className="flex items-center gap-1">
                 <select
                   value={selectedTeam?.id || ''}
-                  onChange={(e) => setSelectedTeam(TeamListFull.find((t) => t.id === e.target.value) || null)}
+                  onChange={(e) =>
+                    setSelectedTeam(
+                      TeamListFull.find((t) => t.id === e.target.value) || null
+                    )
+                  }
                   className="bg-[#1a1a1a] text-white text-sm px-2 py-1 rounded border border-white/10"
                 >
                   <option value="">Add Team...</option>

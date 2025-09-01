@@ -28,36 +28,20 @@ const ViewControls = ({ filters, setFilters }) => {
       {/* Sort By Selector */}
       <div className="flex flex-col">
         <select
-          value={filters.sortBy ?? ''}
+          value={filters.sortBy}
           onChange={(e) => update('sortBy', e.target.value)}
-          className={selectClass}
+          className="bg-[#2a2a2a] text-white px-2 py-1 rounded text-sm"
         >
-          <option value="">Default (A-Z)</option>
+          <option value="">Sort By...</option>
           <option value="name">Name</option>
           <option value="height">Height</option>
           <option value="weight">Weight</option>
           <option value="age">Age</option>
+          <option value="runningProfile">Running Profile</option>
           <option value="salary">Salary</option>
-          <option value="PTS">PTS</option>
-          <option value="TRB">TRB</option>
-          <option value="AST">AST</option>
-          <option value="FG%">FG%</option>
-          <option value="3P%">3P%</option>
-          <option value="FT%">FT%</option>
-          <option value="eFG%">eFG%</option>
-          <option value="MP">Minutes</option>
-          <option value="Defense">Defense</option>
-          <option value="Energy">Energy</option>
-          <option value="Feel">Feel</option>
-          <option value="IQ">IQ</option>
-          <option value="Passing">Passing</option>
-          <option value="Playmaking">Playmaking</option>
-          <option value="Rebounding">Rebounding</option>
-          <option value="Shooting">Shooting</option>
-          <option value="shootingProfile">Shooting Profile</option>
           <option value="yearsRemaining">Years Remaining</option>
-          <option value="totalContract">Total Contract Value</option>
-          <option value="overall">Overall Grade</option>
+          <option value="totalContract">Total Contract</option>
+          <option value="overall">Overall</option>
         </select>
       </div>
 

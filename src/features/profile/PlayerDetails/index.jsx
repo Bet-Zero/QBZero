@@ -15,8 +15,8 @@ const PlayerDetails = ({
   onRoleChange,
   subRoles,
   setSubRoles,
-  shootingProfile,
-  setShootingProfile,
+  runningProfile,
+  setRunningProfile,
   badges,
   setBadges,
   editedBlurbs,
@@ -39,8 +39,8 @@ const PlayerDetails = ({
         onRoleChange={onRoleChange}
         subRoles={subRoles}
         setSubRoles={setSubRoles}
-        shootingProfile={shootingProfile}
-        setShootingProfile={setShootingProfile}
+        runningProfile={runningProfile}
+        setRunningProfile={setRunningProfile}
         onTwoWayChange={(value) => onRoleChange('twoWay', value)}
         onArmTalentChange={(value) => onRoleChange('armTalent', value)}
         setOpenModal={setOpenModal}

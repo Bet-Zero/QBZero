@@ -1,18 +1,15 @@
 export const offensiveRoles = [
-  'Primary Playmaker',
-  'Primary Ball Handler',
-  'Secondary Creator',
-  'Scorer',
-  'Shooter',
-  'Floor Spacer',
-  'Off-Ball Scorer',
-  'Off-Ball Mover',
-  'Connector',
-  'Versatile Big',
-  'Post Hub',
-  'Post Scorer',
-  'Stretch Big',
-  'Play Finisher',
+  'Gunslinger',
+  'Game Manager',
+  'Dual-Threat',
+  'Field General',
+  'Pocket Passer',
+  'Improviser',
+  'Rhythm Passer',
+  'Air Raid',
+  'West Coast',
+  'Vertical',
+  'Option',
 ];
 
 export const defensiveRoles = [
@@ -29,7 +26,7 @@ export const defensiveRoles = [
   'Anchor Big',
 ];
 
-export const shootingProfileTiers = [
+export const runningProfileTiers = [
   'Elite',
   'Plus',
   'Capable',

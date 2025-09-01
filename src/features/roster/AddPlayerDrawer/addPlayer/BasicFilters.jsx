@@ -3,7 +3,7 @@ import React from 'react';
 import MultiSelectFilter from '@/components/shared/ui/filters/MultiSelectFilter';
 import BadgeFilterSelect from '@/components/shared/ui/filters/BadgeFilterSelect';
 import { teamOptions } from '@/utils/filtering';
-import { shootingProfileTiers } from '@/utils/roles';
+import { runningProfileTiers } from '@/utils/roles';
 
 const BasicFilters = ({ filters, setFilters }) => {
   return (
@@ -43,24 +43,25 @@ const BasicFilters = ({ filters, setFilters }) => {
           </select>
         </div>
       </div>
-      {/* Second Filter (matches other tabs' single-select structure) */}
+      {/* Running Profile Filter */}
       <div>
-        <label className="block mb-1 text-white/70 text-xs">Shooting</label>
+        <label className="block mb-1 text-white/70 text-xs">Running</label>
         <select
-          value={filters.shootingProfile}
+          value={filters.runningProfile}
           onChange={(e) =>
-            setFilters({ ...filters, shootingProfile: e.target.value })
+            setFilters({ ...filters, runningProfile: e.target.value })
           }
           className="w-full bg-[#2a2a2a] text-white px-2 py-1 rounded text-xs"
         >
           <option value="">All Profiles</option>
-          {shootingProfileTiers.map((tier) => (
+          {runningProfileTiers.map((tier) => (
             <option key={tier} value={tier}>
               {tier}
             </option>
           ))}
         </select>
       </div>
+
       {/* Divider (EXACTLY matches other tabs) */}
       <div className="border-t border-white/10 my-2" />
 

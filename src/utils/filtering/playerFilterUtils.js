@@ -1,6 +1,6 @@
 import { expandPositionGroup } from '@/utils/roles';
 
-const shootingProfileRank = {
+const runningProfileRank = {
   Elite: 6,
   Plus: 5,
   Capable: 4,
@@ -10,14 +10,14 @@ const shootingProfileRank = {
 };
 
 const traitSort = [
-  'Defense',
-  'Energy',
-  'Feel',
+  'Throwing',
+  'Accuracy',
+  'Decision',
+  'Mobility',
+  'Pocket',
   'IQ',
-  'Passing',
-  'Playmaking',
-  'Rebounding',
-  'Shooting',
+  'Leadership',
+  'Durability',
 ];
 
 export function filterPlayers(players = [], filters) {
@@ -105,10 +105,7 @@ export function filterPlayers(players = [], filters) {
       return false;
     }
 
-    if (
-      filters.shootingProfile &&
-      p.shootingProfile !== filters.shootingProfile
-    ) {
+    if (filters.runningProfile && p.runningProfile !== filters.runningProfile) {
       return false;
     }
 
@@ -159,14 +156,14 @@ export function filterPlayers(players = [], filters) {
     };
 
     if (
-      !passesTrait('Defense') ||
-      !passesTrait('Energy') ||
-      !passesTrait('Feel') ||
+      !passesTrait('Throwing') ||
+      !passesTrait('Accuracy') ||
+      !passesTrait('Decision') ||
+      !passesTrait('Mobility') ||
+      !passesTrait('Pocket') ||
       !passesTrait('IQ') ||
-      !passesTrait('Passing') ||
-      !passesTrait('Playmaking') ||
-      !passesTrait('Rebounding') ||
-      !passesTrait('Shooting')
+      !passesTrait('Leadership') ||
+      !passesTrait('Durability')
     ) {
       return false;
     }
@@ -205,8 +202,8 @@ export function sortPlayers(
           return player.age;
         case 'salary':
           return player.salaryByYear?.[salaryYear] ?? -1;
-        case 'shootingProfile':
-          return shootingProfileRank[player.shootingProfile] ?? 0;
+        case 'runningProfile':
+          return runningProfileRank[player.runningProfile] ?? 0;
         case 'yearsRemaining':
           return parseInt(player.free_agency_year) - 2024 || -1;
         case 'totalContract':

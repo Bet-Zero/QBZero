@@ -17,10 +17,10 @@ const AddPlayerDrawer = ({ onClose, allPlayers, onSelect }) => {
     const {
       team,
       position,
+      runningProfile,
       offenseRole,
       defenseRole,
       subRoles,
-      shootingProfile,
       badges,
       minSalary,
       maxSalary,
@@ -57,10 +57,7 @@ const AddPlayerDrawer = ({ onClose, allPlayers, onSelect }) => {
           !subRoles.defense.every((sr) => p.defenseSubroles.includes(sr))
         )
           return false;
-        if (
-          shootingProfile &&
-          p.shootingProfile !== shootingProfile.toLowerCase()
-        )
+        if (runningProfile && p.runningProfile !== runningProfile.toLowerCase())
           return false;
         if (badges.length > 0 && !badges.every((b) => p.badges.includes(b)))
           return false;

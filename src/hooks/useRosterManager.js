@@ -46,7 +46,7 @@ export const useRosterManager = (allPlayers = [], isLoading = false) => {
         ],
         offenseSubroles: player.subRoles?.offense || [],
         defenseSubroles: player.subRoles?.defense || [],
-        shootingProfile: (player.shootingProfile || '').toLowerCase(),
+        runningProfile: (player.runningProfile || '').toLowerCase(),
         badges: player.badges || [],
         salary: player.contract?.annual_salaries?.find((s) => s.year === 2025)
           ?.salary,

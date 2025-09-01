@@ -7,6 +7,8 @@ const calculateHeight = (ht = '0-0') => {
 };
 
 export function normalizePlayerData(playerData) {
+  if (!playerData) return null;
+
   const rawPosition = playerData.bio?.Position;
   const formattedPosition = POSITION_MAP[rawPosition] || rawPosition || '—';
 
@@ -38,7 +40,7 @@ export function normalizePlayerData(playerData) {
     headshotUrl: `/assets/headshots/${playerData.player_id}.png`,
     offenseRole: playerData.roles?.offense1 || '—',
     defenseRole: playerData.roles?.defense1 || '—',
-    shootingProfile: playerData.shootingProfile || '—',
+    runningProfile: playerData.runningProfile || '—',
     subRoles: {
       offense: playerData.subRoles?.offense || [],
       defense: playerData.subRoles?.defense || [],

@@ -22,8 +22,8 @@ const ArmTalentMeter = ({ armTalentValue, onChange }) => {
         />
       </div>
       <div className="flex justify-between text-xs text-white font-medium mt-1">
-        <span>Defense</span>
-        <span>Offense</span>
+        <span>None</span>
+        <span>Elite</span>
       </div>
     </div>
   );

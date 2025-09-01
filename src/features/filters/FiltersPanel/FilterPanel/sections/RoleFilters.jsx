@@ -3,7 +3,7 @@ import { SubRoleMasterList } from '@/constants/SubRoleMasterList';
 import {
   defensiveRoles,
   offensiveRoles,
-  shootingProfileTiers,
+  runningProfileTiers,
 } from '@/utils/roles';
 import { toggleSubroleSelection } from '@/utils/roles';
 
@@ -206,12 +206,10 @@ const RoleFilters = ({ filters, setFilters }) => {
           onChange={(val) => update('defenseRole', val)}
           options={defensiveRoles}
         />
-        <RoleSelect
-          label="Shooting"
-          value={filters.shootingProfile}
-          onChange={(val) => update('shootingProfile', val)}
-          options={shootingProfileTiers}
-          allLabel="All"
+        <RunningProfileSelect
+          value={filters.runningProfile || ''}
+          placeholder="Any Profile"
+          onChange={(val) => update('runningProfile', val)}
         />
       </div>
 

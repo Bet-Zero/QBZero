@@ -34,7 +34,7 @@ const defaultBlurbs = {
   traits: {},
   roles: {},
   subroles: {},
-  throwingProfile: '',
+  runningProfile: '',
   playStyle: '',
   overall: '',
 };
@@ -49,7 +49,7 @@ const PlayerProfileView = () => {
   const [player, setPlayer] = useState(null);
   const [traits, setTraits] = useState(defaultTraits);
   const [roles, setRoles] = useState(defaultRoles);
-  const [throwingProfile, setThrowingProfile] = useState('');
+  const [runningProfile, setRunningProfile] = useState('');
   const [subRoles, setSubRoles] = useState({ offense: [], defense: [] });
   const [badges, setBadges] = useState([]);
   const [openModal, setOpenModal] = useState(null);
@@ -80,7 +80,7 @@ const PlayerProfileView = () => {
     setRoles({ ...defaultRoles, ...(data.roles || {}) });
     setSubRoles(data.subRoles || { offense: [], defense: [] });
     setBadges(data.badges || []);
-    setThrowingProfile(data.throwingProfile || '');
+    setRunningProfile(data.runningProfile || '');
     setEditedBlurbs(data.blurbs || { ...defaultBlurbs });
     setOverallGrade(data.overall_grade || null);
     setHasChanges(false);
@@ -93,7 +93,7 @@ const PlayerProfileView = () => {
     roles,
     subRoles,
     badges,
-    throwingProfile,
+    runningProfile,
     overallGrade,
     blurbs: editedBlurbs,
     hasChanges,
@@ -144,7 +144,7 @@ const PlayerProfileView = () => {
         updated.roles = { ...prev.roles, [key.slice(5)]: value };
       else if (key.startsWith('subrole_'))
         updated.subroles = { ...prev.subroles, [key.slice(8)]: value };
-      else if (key === 'throwing_profile') updated.throwingProfile = value;
+      else if (key === 'running_profile') updated.runningProfile = value;
       else if (key === 'play_style') updated.playStyle = value;
       else if (key === 'overall') updated.overall = value;
       return updated;
@@ -207,8 +207,8 @@ const PlayerProfileView = () => {
             onRoleChange={handleRoleChange}
             subRoles={subRoles}
             setSubRoles={setSubRoles}
-            throwingProfile={throwingProfile}
-            setThrowingProfile={setThrowingProfile}
+            runningProfile={runningProfile}
+            setRunningProfile={setRunningProfile}
             badges={badges}
             setBadges={setBadges}
             editedBlurbs={editedBlurbs}

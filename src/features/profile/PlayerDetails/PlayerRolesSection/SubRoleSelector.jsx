@@ -3,30 +3,16 @@ import { NotebookText } from 'lucide-react';
 import { SubRoleMasterList } from '@/constants/SubRoleMasterList';
 import { isPositiveSubRole } from '@/utils/roles';
 
-const OFFENSIVE_GROUPS = [
-  'Playmaking',
-  'Scoring',
-  'Shooting',
-  'Finishing',
-  'Off-Ball',
-  'Rebounding',
+const PLAYER_TRAIT_GROUPS = [
+  'Arm Talent',
+  'Processing',
+  'Mobility',
+  'Pocket',
   'Intangibles',
 ];
 
-const DEFENSIVE_GROUPS = [
-  'Perimeter',
-  'Interior',
-  'Rebounding',
-  'Team Defense',
-  'Intangibles',
-];
-
-const RoleBadge = ({ role, onEdit, side }) => (
-  <div
-    className={`flex items-center h-6 gap-1 ${
-      side === 'offense' ? 'pl-3' : 'pl-[22px]'
-    }`}
-  >
+const RoleBadge = ({ role, onEdit }) => (
+  <div className="flex items-center h-6 gap-1 pl-3">
     <span
       className={
         isPositiveSubRole(role)
@@ -50,64 +36,63 @@ const RoleBadge = ({ role, onEdit, side }) => (
   </div>
 );
 
-const SelectedRoleList = ({ roles, side, onEdit }) => (
+const SelectedRoleList = ({ roles, onEdit }) => (
   <>
     {roles.length > 0 ? (
-      roles.map((role) => (
-        <RoleBadge key={role} role={role} side={side} onEdit={onEdit} />
-      ))
+      roles.map((role) => <RoleBadge key={role} role={role} onEdit={onEdit} />)
     ) : (
       <div className="h-full flex items-center justify-center text-neutral-500 italic text-[11px]">
-        Click to add
+        Click to add traits
       </div>
     )}
   </>
 );
 
-const RoleGroup = ({ group, type, selected, onToggle }) => {
-  const groupRoles = SubRoleMasterList.filter(
-    (r) => r.type === type && r.group === group
-  );
+const RoleGroup = ({ group, selected, onToggle }) => {
+  const groupRoles = SubRoleMasterList.filter((r) => r.group === group);
   if (groupRoles.length === 0) return null;
+
+  const positiveRoles = groupRoles.filter((r) => r.isPositive);
+  const negativeRoles = groupRoles.filter((r) => !r.isPositive);
 
   return (
     <div className="mb-4">
       <div className="text-sm font-semibold mb-1 pl-3">{group}</div>
-      {groupRoles.map((role) => (
-        <div
-          key={role.name}
-          className={`flex items-center px-3 py-1 mb-1 rounded cursor-pointer text-[11px] ${
-            selected.includes(role.name) ? 'bg-gray-700' : 'bg-neutral-800'
-          }`}
-          onClick={() => onToggle(role.name)}
-        >
-          <span
-            className={`${role.isPositive ? 'text-green-500' : 'text-red-500'} mr-2`}
-          >
-            {role.isPositive ? '✓' : '✗'}
-          </span>
-          {role.name}
+      <div className="flex gap-4">
+        <div className="w-1/2">
+          {positiveRoles.map((role) => (
+            <div
+              key={role.name}
+              className={`flex items-center px-3 py-1 mb-1 rounded cursor-pointer text-[11px] ${
+                selected.includes(role.name) ? 'bg-gray-700' : 'bg-neutral-800'
+              }`}
+              onClick={() => onToggle(role.name)}
+            >
+              <span className="text-green-500 mr-2">✓</span>
+              {role.name}
+            </div>
+          ))}
         </div>
-      ))}
+        <div className="w-1/2">
+          {negativeRoles.map((role) => (
+            <div
+              key={role.name}
+              className={`flex items-center px-3 py-1 mb-1 rounded cursor-pointer text-[11px] ${
+                selected.includes(role.name) ? 'bg-gray-700' : 'bg-neutral-800'
+              }`}
+              onClick={() => onToggle(role.name)}
+            >
+              <span className="text-red-500 mr-2">✗</span>
+              {role.name}
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 };
 
-const RoleColumn = ({ groups, type, selected, onToggle, className }) => (
-  <div className={className}>
-    {groups.map((group) => (
-      <RoleGroup
-        key={`${type}-${group}`}
-        group={group}
-        type={type}
-        selected={selected}
-        onToggle={onToggle}
-      />
-    ))}
-  </div>
-);
-
-const SubRoleModal = ({ selection, onToggle, onClose, modalRef }) => (
+const TraitsModal = ({ selection, onToggle, onClose, modalRef }) => (
   <div className="fixed inset-0 z-50 flex justify-center items-center">
     <div className="absolute inset-0 bg-black bg-opacity-70" />
     <div
@@ -120,22 +105,18 @@ const SubRoleModal = ({ selection, onToggle, onClose, modalRef }) => (
       >
         ✖
       </button>
-      <h2 className="text-lg font-bold mb-4 text-center">Sub-Role Selector</h2>
-      <div className="flex gap-6">
-        <RoleColumn
-          groups={OFFENSIVE_GROUPS}
-          type="offense"
-          selected={selection.offense}
-          onToggle={onToggle}
-          className="w-1/2 pr-3"
-        />
-        <RoleColumn
-          groups={DEFENSIVE_GROUPS}
-          type="defense"
-          selected={selection.defense}
-          onToggle={onToggle}
-          className="w-1/2 pl-3"
-        />
+      <h2 className="text-lg font-bold mb-4 text-center">
+        Traits & Tendencies
+      </h2>
+      <div>
+        {PLAYER_TRAIT_GROUPS.map((group) => (
+          <RoleGroup
+            key={group}
+            group={group}
+            selected={selection.offense || []}
+            onToggle={onToggle}
+          />
+        ))}
       </div>
     </div>
   </div>
@@ -144,7 +125,6 @@ const SubRoleModal = ({ selection, onToggle, onClose, modalRef }) => (
 const SubRoleSelector = ({ subRoles = {}, setSubRoles, setOpenModal }) => {
   const safeSubRoles = {
     offense: Array.isArray(subRoles.offense) ? subRoles.offense : [],
-    defense: Array.isArray(subRoles.defense) ? subRoles.defense : [],
   };
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -180,12 +160,13 @@ const SubRoleSelector = ({ subRoles = {}, setSubRoles, setOpenModal }) => {
     const roleData = SubRoleMasterList.find((r) => r.name === roleName);
     if (!roleData) return;
 
-    const { type } = roleData;
     setTempSelection((prev) => {
-      const currentList = prev[type] || [];
-      return currentList.includes(roleName)
-        ? { ...prev, [type]: currentList.filter((r) => r !== roleName) }
-        : { ...prev, [type]: [...currentList, roleName] };
+      const currentList = prev.offense || [];
+      return {
+        offense: currentList.includes(roleName)
+          ? currentList.filter((r) => r !== roleName)
+          : [...currentList, roleName],
+      };
     });
   };
 
@@ -194,29 +175,15 @@ const SubRoleSelector = ({ subRoles = {}, setSubRoles, setOpenModal }) => {
     setIsModalOpen(true);
   };
 
-  const handleEdit = (role) => setOpenModal?.(`subrole_${role}`);
+  const handleEdit = (role) => setOpenModal?.(`trait_${role}`);
 
   return (
     <div className="w-full cursor-pointer" onClick={handleOpen}>
-      <div className="flex h-20 rounded-lg -mt-1.5 relative">
-        <div className="w-1/2 p-1">
-          <SelectedRoleList
-            roles={safeSubRoles.offense}
-            side="offense"
-            onEdit={handleEdit}
-          />
-        </div>
-        <div className="absolute top-0 bottom-0 left-1/2 w-px bg-neutral-800" />
-        <div className="w-1/2 p-1">
-          <SelectedRoleList
-            roles={safeSubRoles.defense}
-            side="defense"
-            onEdit={handleEdit}
-          />
-        </div>
+      <div className="h-20 rounded-lg -mt-1.5">
+        <SelectedRoleList roles={safeSubRoles.offense} onEdit={handleEdit} />
       </div>
       {isModalOpen && (
-        <SubRoleModal
+        <TraitsModal
           selection={tempSelection}
           onToggle={handleToggle}
           onClose={handleClose}

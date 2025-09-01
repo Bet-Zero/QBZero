@@ -10,9 +10,9 @@ PlayerDetails/
     ProfilePlayerPosition.jsx
     index.jsx
   PlayerRolesSection/
-    ShootingProfileSelector.jsx
+    RunningProfileSelector.jsx
     SubRoleSelector.jsx
-    TwoWayMeter.jsx
+    ArmTalentMeter.jsx
     index.jsx
   PlayerStatsTable.jsx
   PlayerTraitsGrid.jsx
