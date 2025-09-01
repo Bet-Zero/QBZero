@@ -61,8 +61,8 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
 
     // Calculate dimensions for visible rounds only
     const baseMatchWidth = 200;
-    const baseGap = 40;
-    const totalWidth = visibleRounds.length * baseMatchWidth + (visibleRounds.length - 1) * baseGap + 80;
+    const baseGap = 120; // Increased gap for better horizontal spacing
+    const totalWidth = visibleRounds.length * baseMatchWidth + (visibleRounds.length - 1) * baseGap + 160;
 
     // Calculate height based on the round with most matches in visible area
     let maxMatches = 0;
@@ -72,16 +72,16 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
       maxMatches = Math.max(maxMatches, matches.length);
     });
 
-    const baseMatchHeight = 80;
-    const baseSpacing = 16;
-    const totalHeight = maxMatches * baseMatchHeight + (maxMatches - 1) * baseSpacing + 120;
+    const baseMatchHeight = 100; // Increased match height for better spacing
+    const baseSpacing = 24; // Increased spacing between matches
+    const totalHeight = maxMatches * baseMatchHeight + (maxMatches - 1) * baseSpacing + 160;
 
     // Calculate optimal scale for visible rounds
-    const widthScale = Math.min(1.2, containerWidth / totalWidth);
-    const heightScale = Math.min(1.2, containerHeight / totalHeight);
+    const widthScale = Math.min(1.0, containerWidth / totalWidth); // Reduced max scale
+    const heightScale = Math.min(1.0, containerHeight / totalHeight); // Reduced max scale
     const optimalScale = Math.min(widthScale, heightScale);
 
-    setScale(Math.max(0.8, optimalScale));
+    setScale(Math.max(0.6, optimalScale)); // Reduced minimum scale for better spacing
 
     // Calculate pan to center the focused round
     const focusRoundIndex = visibleRounds.indexOf(focusRound);
@@ -125,7 +125,7 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
     <div 
       ref={containerRef}
       className="w-full bg-neutral-900 rounded-lg overflow-hidden relative"
-      style={{ height: 'calc(100vh - 280px)', minHeight: '600px' }}
+      style={{ height: 'calc(100vh - 280px)', minHeight: '700px' }}
     >
       {/* Round Navigation */}
       <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-20">
@@ -196,7 +196,7 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
             transformOrigin: 'center center'
           }}
         >
-          <div className="flex gap-10 items-center justify-center h-full px-8">
+          <div className="flex gap-20 items-center justify-center h-full px-8"> {/* Increased gap significantly */}
             {rounds.map((roundNum, roundIndex) => {
               const matches = roundsData[roundNum] || [];
               const isVisible = Math.abs(roundIndex - focusRound) <= 2; // Show focus + 2 rounds on each side
@@ -224,7 +224,7 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
                   </div>
 
                   {/* Round matches */}
-                  <div className="flex flex-col justify-center space-y-4 flex-1">
+                  <div className="flex flex-col justify-center space-y-6 flex-1"> {/* Increased space between matches */}
                     {matches.map((match, matchIndex) => {
                       const isPlaceholder = match.qb1?.name === 'TBD' || match.qb2?.name === 'TBD';
                       const isChampionship = roundIndex === rounds.length - 1;
@@ -242,8 +242,8 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
                                 : 'bg-neutral-800 border-white/20 hover:shadow-xl hover:border-white/40'
                           }`}
                           style={{
-                            marginTop: roundIndex > 0 ? `${Math.pow(2, roundIndex - 1) * 20}px` : '0px',
-                            marginBottom: roundIndex > 0 ? `${Math.pow(2, roundIndex - 1) * 20}px` : '0px',
+                            marginTop: roundIndex > 0 ? `${Math.pow(2, roundIndex - 1) * 30}px` : '0px',
+                            marginBottom: roundIndex > 0 ? `${Math.pow(2, roundIndex - 1) * 30}px` : '0px',
                           }}
                         >
                           <div className="h-full flex flex-col">
@@ -312,8 +312,8 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
 
                   {/* Connecting lines */}
                   {roundIndex < rounds.length - 1 && (
-                    <div className="absolute left-full top-1/2 transform -translate-y-1/2 z-0">
-                      <div className="w-10 h-0.5 bg-blue-400/60"></div>
+                    <div className="absolute left-full top-1/2 transform -translate-y-1/2 z-0 ml-4">
+                      <div className="w-16 h-0.5 bg-blue-400/60"></div>
                     </div>
                   )}
                 </div>
