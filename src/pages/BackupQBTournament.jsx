@@ -185,10 +185,10 @@ const BackupQBTournament = () => {
   const champion = getChampion();
 
   return (
-    <div className="min-h-screen bg-neutral-900 text-white">
-      <div className="max-w-6xl mx-auto px-4 py-8">
+    <div className="h-screen bg-neutral-900 text-white flex flex-col overflow-hidden">
+      <div className="flex-shrink-0 px-4 py-4">
         {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
+        <div className="flex items-center gap-4 mb-4">
           <Link 
             to="/backup-qbs" 
             className="p-2 hover:bg-white/10 rounded-lg transition-colors"
@@ -196,10 +196,10 @@ const BackupQBTournament = () => {
             <ArrowLeftIcon className="h-6 w-6" />
           </Link>
           <div className="flex-1">
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent">
               Backup QB Tournament
             </h1>
-            <p className="text-white/70 mt-2">
+            <p className="text-white/70 mt-1 text-sm">
               Battle of the backup quarterbacks - vote your way to the ultimate backup QB!
             </p>
           </div>
@@ -213,15 +213,15 @@ const BackupQBTournament = () => {
           </button>
         </div>
 
-        {/* Tournament Status */}
+        {/* Tournament Status - Compact */}
         {bracket.length > 0 && (
-          <div className="mb-8 text-center">
-            <div className="inline-flex items-center gap-4 px-6 py-3 bg-neutral-800 rounded-lg border border-white/10">
-              <span className="text-lg font-semibold">
+          <div className="mb-4 text-center">
+            <div className="inline-flex items-center gap-4 px-4 py-2 bg-neutral-800 rounded-lg border border-white/10">
+              <span className="text-sm font-semibold">
                 {champion ? '🏆 Tournament Complete!' : roundNames[currentRound] || 'Tournament'}
               </span>
               {!champion && (
-                <span className="text-white/60">
+                <span className="text-white/60 text-sm">
                   {currentMatches.filter(m => m.winner).length} / {currentMatches.length} matches complete
                 </span>
               )}
@@ -229,41 +229,40 @@ const BackupQBTournament = () => {
           </div>
         )}
 
-        {/* Champion Display */}
+        {/* Champion Display - Compact */}
         {champion && (
-          <div className="mb-8 text-center">
-            <div className="inline-block p-8 bg-gradient-to-br from-yellow-600/30 to-orange-600/30 rounded-xl border-2 border-yellow-500/50">
-              <div className="text-6xl mb-4">🏆</div>
-              <h2 className="text-3xl font-bold mb-2">Tournament Champion</h2>
-              <div className="text-2xl font-semibold text-yellow-400">{champion.name}</div>
-              <div className="text-lg text-white/70">{champion.team}</div>
+          <div className="mb-4 text-center">
+            <div className="inline-block p-4 bg-gradient-to-br from-yellow-600/30 to-orange-600/30 rounded-xl border-2 border-yellow-500/50">
+              <div className="text-3xl mb-2">🏆</div>
+              <h2 className="text-xl font-bold mb-1">Tournament Champion</h2>
+              <div className="text-lg font-semibold text-yellow-400">{champion.name}</div>
+              <div className="text-sm text-white/70">{champion.team}</div>
             </div>
           </div>
         )}
+      </div>
 
-        {/* Tournament Bracket */}
-        {bracket.length > 0 && (
-          <div className="space-y-6">
-            <TournamentBracket
-              bracket={bracket}
-              selectWinner={selectWinner}
-              roundNames={roundNames}
-            />
-          </div>
-        )}
-
-        {/* Empty State */}
-        {bracket.length === 0 && (
-          <div className="text-center py-12">
-            <div className="text-white/40 text-lg mb-4">
-              No backup QBs found. Generate a tournament to get started!
+      {/* Tournament Bracket - Takes remaining space */}
+      <div className="flex-1 min-h-0">
+        {bracket.length > 0 ? (
+          <TournamentBracket
+            bracket={bracket}
+            selectWinner={selectWinner}
+            roundNames={roundNames}
+          />
+        ) : (
+          <div className="h-full flex items-center justify-center">
+            <div className="text-center">
+              <div className="text-white/40 text-lg mb-4">
+                No backup QBs found. Generate a tournament to get started!
+              </div>
+              <button
+                onClick={generateTournament}
+                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold transition-colors"
+              >
+                Generate Tournament
+              </button>
             </div>
-            <button
-              onClick={generateTournament}
-              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold transition-colors"
-            >
-              Generate Tournament
-            </button>
           </div>
         )}
       </div>
