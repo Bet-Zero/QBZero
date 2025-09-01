@@ -50,13 +50,19 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
     const containerWidth = container.clientWidth;
     const containerHeight = container.clientHeight;
 
-    // Show all tournament rounds for complete bracket view
-    const visibleRounds = rounds.map((_, index) => index);
+    // Show focused round + 1-2 surrounding rounds for better navigation
+    const visibleRounds = [];
+    const startRound = Math.max(0, focusRound - 1);
+    const endRound = Math.min(rounds.length - 1, focusRound + 2);
+    
+    for (let i = startRound; i <= endRound; i++) {
+      visibleRounds.push(i);
+    }
 
-    // Calculate dimensions for all rounds with improved spacing
-    const baseMatchWidth = 220; // Slightly wider matches
-    const baseGap = 80; // Doubled the gap between rounds for better separation
-    const totalWidth = visibleRounds.length * baseMatchWidth + (visibleRounds.length - 1) * baseGap + 160;
+    // Calculate dimensions for visible rounds with improved spacing
+    const baseMatchWidth = 240; // Wider matches for better readability
+    const baseGap = 60; // Increased gap between rounds
+    const totalWidth = visibleRounds.length * baseMatchWidth + (visibleRounds.length - 1) * baseGap + 120;
 
     // Calculate height based on the round with most matches in visible area
     let maxMatches = 0;
@@ -66,16 +72,16 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
       maxMatches = Math.max(maxMatches, matches.length);
     });
 
-    const baseMatchHeight = 90; // Slightly taller matches
-    const baseSpacing = 24; // Increased spacing between matches
-    const totalHeight = maxMatches * baseMatchHeight + (maxMatches - 1) * baseSpacing + 160;
+    const baseMatchHeight = 90; // Taller matches
+    const baseSpacing = 20; // Better spacing between matches
+    const totalHeight = maxMatches * baseMatchHeight + (maxMatches - 1) * baseSpacing + 140;
 
-    // Calculate optimal scale with higher minimum scale for better readability
+    // Calculate optimal scale for visible rounds
     const widthScale = Math.min(1.2, containerWidth / totalWidth);
     const heightScale = Math.min(1.2, containerHeight / totalHeight);
     const optimalScale = Math.min(widthScale, heightScale);
 
-    setScale(Math.max(0.7, optimalScale)); // Lowered minimum scale to fit all rounds
+    setScale(Math.max(0.8, optimalScale)); // Higher minimum scale for readability
 
     // Calculate pan to center the focused round
     const focusRoundIndex = visibleRounds.indexOf(focusRound);
@@ -190,12 +196,16 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
             transformOrigin: 'center center'
           }}
         >
-          <div className="flex gap-20 items-center justify-center h-full px-8"> {/* Doubled gap between rounds */}
+          <div className="flex gap-16 items-center justify-center h-full px-8"> {/* Better gap for focused view */}
             {rounds.map((roundNum, roundIndex) => {
-              const matches = roundsData[roundNum] || [];
-              const isVisible = true; // Show all rounds for complete tournament bracket view
+              // Show focused round + surrounding rounds
+              const startRound = Math.max(0, focusRound - 1);
+              const endRound = Math.min(rounds.length - 1, focusRound + 2);
+              const isVisible = roundIndex >= startRound && roundIndex <= endRound;
               
               if (!isVisible) return null;
+              
+              const matches = roundsData[roundNum] || [];
               
               return (
                 <div 
@@ -227,7 +237,7 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
                         <div
                           key={match.id}
                           className={`rounded border shadow-lg transition-all ${
-                            isChampionship ? 'w-60' : 'w-52'  /* Increased match width for better readability */
+                            isChampionship ? 'w-64' : 'w-56'  /* Wider matches for better readability */
                           } ${
                             isPlaceholder 
                               ? 'bg-neutral-700/50 border-white/10' 
@@ -236,8 +246,8 @@ const TournamentBracket = ({ bracket = [], selectWinner, roundNames = [] }) => {
                                 : 'bg-neutral-800 border-white/20 hover:shadow-xl hover:border-white/40'
                           }`}
                           style={{
-                            marginTop: roundIndex > 0 ? `${Math.pow(2, roundIndex - 1) * 24}px` : '0px',  /* Improved exponential spacing */
-                            marginBottom: roundIndex > 0 ? `${Math.pow(2, roundIndex - 1) * 24}px` : '0px',
+                            marginTop: roundIndex > 0 ? `${Math.pow(2, roundIndex - 1) * 20}px` : '0px',  /* Better exponential spacing */
+                            marginBottom: roundIndex > 0 ? `${Math.pow(2, roundIndex - 1) * 20}px` : '0px',
                           }}
                         >
                           <div className="h-full flex flex-col">
