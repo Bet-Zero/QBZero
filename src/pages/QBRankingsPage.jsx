@@ -18,6 +18,7 @@ const QBRankingsPage = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [currentRankingId, setCurrentRankingId] = useState(rankingId);
+  const [isCleanView, setIsCleanView] = useState(false);
 
   // Load ranking data when component mounts or rankingId changes
   useEffect(() => {
@@ -170,6 +171,8 @@ const QBRankingsPage = () => {
           isSaving={isSaving}
           canSave={!!currentRankingId}
           onSave={saveRankings}
+          isCleanView={isCleanView}
+          onToggleView={() => setIsCleanView(!isCleanView)}
         />
 
         <div className="space-y-4">
@@ -183,6 +186,7 @@ const QBRankingsPage = () => {
               onEditNotes={(notes) => handleEditNotes(qb.id, notes)}
               canMoveUp={index > 0}
               canMoveDown={index < rankings.length - 1}
+              readOnly={isCleanView}
             />
           ))}
 

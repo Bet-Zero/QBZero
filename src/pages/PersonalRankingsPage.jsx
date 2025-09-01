@@ -1,212 +1,77 @@
 import React, { useState, useEffect } from 'react';
 import QBRankingCard from '@/features/rankings/QBRankingCard';
-import AddQBModal from '@/features/rankings/AddQBModal';
-import RankingsHeader from '@/features/rankings/RankingsHeader';
-import CreateRankingModal from '@/features/rankings/CreateRankingModal';
-import PersonalRankingArchives from '@/features/rankings/PersonalRankingArchives';
-import { 
-  savePersonalRankingArchive, 
-  getLatestPersonalRankingArchive 
-} from '@/firebase/personalRankingHelpers';
+import { getLatestPersonalRankingArchive } from '@/firebase/personalRankingHelpers';
 
 const PersonalRankingsPage = () => {
-  const [rankings, setRankings] = useState([
-    {
-      id: '1',
-      name: 'Josh Allen',
-      rank: 1,
-      imageUrl: '/assets/headshots/josh-allen.png',
-      team: 'BUF',
-      notes: 'Elite arm talent and mobility',
-    },
-    {
-      id: '2',
-      name: 'Patrick Mahomes',
-      rank: 2,
-      imageUrl: '/assets/headshots/patrick-mahomes.png',
-      team: 'KC',
-      notes: 'Championship pedigree',
-    },
-    {
-      id: '3',
-      name: 'Lamar Jackson',
-      rank: 3,
-      imageUrl: '/assets/headshots/lamar-jackson.png',
-      team: 'BAL',
-      notes: 'Dual-threat MVP',
-    },
-  ]);
-
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showArchives, setShowArchives] = useState(false);
-  const [isSavingSnapshot, setIsSavingSnapshot] = useState(false);
-  const [hasLoadedFromArchive, setHasLoadedFromArchive] = useState(false);
+  const [rankings, setRankings] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Load latest archive on component mount
   useEffect(() => {
-    loadLatestArchive();
+    const loadRankings = async () => {
+      try {
+        const latestArchive = await getLatestPersonalRankingArchive();
+        if (latestArchive?.rankings?.length > 0) {
+          setRankings(latestArchive.rankings);
+        }
+      } catch (error) {
+        console.error('Error loading rankings:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadRankings();
   }, []);
 
-  const loadLatestArchive = async () => {
-    try {
-      const latestArchive = await getLatestPersonalRankingArchive();
-      if (latestArchive && latestArchive.rankings && latestArchive.rankings.length > 0) {
-        setRankings(latestArchive.rankings);
-        setHasLoadedFromArchive(true);
-      }
-    } catch (error) {
-      console.error('Error loading latest archive:', error);
-      // Keep default rankings if loading fails
-    }
-  };
-
-  const handleAddQB = (qbData) => {
-    const newQB = {
-      ...qbData,
-      id: Date.now().toString(),
-      rank: rankings.length + 1,
-    };
-    setRankings((prev) => [...prev, newQB]);
-    // Don't close modal anymore - let user bulk add
-  };
-
-  const handleMoveUp = (id) => {
-    setRankings((prev) => {
-      const index = prev.findIndex((qb) => qb.id === id);
-      if (index <= 0) return prev;
-
-      const newRankings = [...prev];
-      [newRankings[index - 1], newRankings[index]] = [
-        newRankings[index],
-        newRankings[index - 1],
-      ];
-
-      // Update rank numbers
-      return newRankings.map((qb, idx) => ({ ...qb, rank: idx + 1 }));
-    });
-  };
-
-  const handleMoveDown = (id) => {
-    setRankings((prev) => {
-      const index = prev.findIndex((qb) => qb.id === id);
-      if (index >= prev.length - 1) return prev;
-
-      const newRankings = [...prev];
-      [newRankings[index + 1], newRankings[index]] = [
-        newRankings[index],
-        newRankings[index + 1],
-      ];
-
-      // Update rank numbers
-      return newRankings.map((qb, idx) => ({ ...qb, rank: idx + 1 }));
-    });
-  };
-
-  const handleRemove = (id) => {
-    setRankings((prev) =>
-      prev
-        .filter((qb) => qb.id !== id)
-        .map((qb, idx) => ({ ...qb, rank: idx + 1 }))
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-neutral-900 text-white flex items-center justify-center">
+        <div className="text-white/60 text-lg">Loading rankings...</div>
+      </div>
     );
-  };
-
-  const handleEditNotes = (id, notes) => {
-    setRankings((prev) =>
-      prev.map((qb) => (qb.id === id ? { ...qb, notes } : qb))
-    );
-  };
-
-  const handleSaveSnapshot = async () => {
-    if (rankings.length === 0) return;
-
-    setIsSavingSnapshot(true);
-    try {
-      const notes = ''; // Could add a notes input modal in the future
-      await savePersonalRankingArchive(rankings, notes);
-      
-      console.log('Archive saved successfully!');
-      // Could show a success toast here
-    } catch (error) {
-      console.error('Error saving archive:', error);
-      // Could show an error toast here
-    } finally {
-      setIsSavingSnapshot(false);
-    }
-  };
-
-  const handleLoadArchive = (archiveRankings) => {
-    setRankings(archiveRankings);
-    setHasLoadedFromArchive(true);
-  };
+  }
 
   return (
     <div className="min-h-screen bg-neutral-900 text-white">
       <div className="max-w-4xl mx-auto px-4 py-8">
-        <RankingsHeader 
-          onAddQB={() => setShowAddModal(true)} 
-          rankingName="Personal QB Rankings"
-          onCreateNew={() => setShowCreateModal(true)}
-          showCreateNew={true}
-          onSaveSnapshot={handleSaveSnapshot}
-          isSavingSnapshot={isSavingSnapshot}
-          showSaveSnapshot={true}
-          onViewArchives={() => setShowArchives(true)}
-          showViewArchives={true}
-        />
+        {/* Clean header */}
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 bg-clip-text text-transparent mb-3">
+            Official QB Rankings
+          </h1>
+          <p className="text-white/60 text-lg">
+            The definitive quarterback rankings, updated regularly.
+          </p>
+          <div className="mt-2 text-sm text-white/40">
+            Last updated: {new Date().toLocaleDateString()}
+          </div>
+        </div>
 
         <div className="space-y-4">
           {rankings.map((qb, index) => (
             <QBRankingCard
               key={qb.id}
               qb={qb}
-              onMoveUp={() => handleMoveUp(qb.id)}
-              onMoveDown={() => handleMoveDown(qb.id)}
-              onRemove={() => handleRemove(qb.id)}
-              onEditNotes={(notes) => handleEditNotes(qb.id, notes)}
-              canMoveUp={index > 0}
-              canMoveDown={index < rankings.length - 1}
+              readOnly={true}
+              onMoveUp={() => {}}
+              onMoveDown={() => {}}
+              onRemove={() => {}}
+              onEditNotes={() => {}}
+              canMoveUp={false}
+              canMoveDown={false}
             />
           ))}
 
           {rankings.length === 0 && (
             <div className="text-center py-12">
-              <div className="text-white/40 text-lg mb-4">
-                No QBs ranked yet
+              <div className="text-white/40 text-lg">
+                No rankings available yet.
               </div>
-              <button
-                onClick={() => setShowAddModal(true)}
-                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-lg font-semibold transition-all transform hover:scale-105"
-              >
-                Add Your First QB
-              </button>
             </div>
           )}
         </div>
       </div>
-
-      {showAddModal && (
-        <AddQBModal
-          onClose={() => setShowAddModal(false)}
-          onAdd={handleAddQB}
-          existingQBNames={rankings.map((qb) => qb.name)}
-        />
-      )}
-
-      <CreateRankingModal
-        isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        onCreated={() => {
-          // Optional: Show success message or refresh
-        }}
-      />
-
-      {showArchives && (
-        <PersonalRankingArchives
-          onClose={() => setShowArchives(false)}
-          onLoadArchive={handleLoadArchive}
-        />
-      )}
     </div>
   );
 };

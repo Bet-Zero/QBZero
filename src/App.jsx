@@ -30,9 +30,21 @@ const App = () => {
         <Route path="/" element={<Home />} />
         <Route path="/players" element={<PlayerTableView />} />
         <Route path="/profiles" element={<PlayerProfileView />} />
-        <Route path="/rankings" element={<QBRankingsHome />} />
+
+        {/* Personal Rankings */}
+        <Route
+          path="/my-rankings"
+          element={<PersonalRankingsPage readOnly />}
+        />
+
+        {/* User Rankings */}
+        <Route
+          path="/rankings"
+          element={<Navigate to="/rankings/all" replace />}
+        />
+        <Route path="/rankings/all" element={<QBRankingsHome />} />
         <Route path="/rankings/:rankingId" element={<QBRankingsPage />} />
-        <Route path="/personal-rankings" element={<PersonalRankingsPage />} />
+
         <Route path="/qbw" element={<QBWPage />} />
         <Route path="/lists" element={<ListsHome />} />
         <Route path="/lists/:listId" element={<ListManager />} />

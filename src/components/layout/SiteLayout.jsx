@@ -91,12 +91,11 @@ const MobileMenu = ({ isOpen, onClose }) => {
             Backup QBs
           </Link>
           <Link
-            to="/rankings"
+            to="/my-rankings"
             className="block py-2 text-white/60 hover:text-white"
           >
             QB Rankings
           </Link>
-
           <NavGroup label="Tools" isMobile={true}>
             <Link
               to="/tier-maker"
@@ -119,6 +118,12 @@ const MobileMenu = ({ isOpen, onClose }) => {
                 className="block py-2 text-white/60 hover:text-white"
               >
                 Lists
+              </Link>
+              <Link
+                to="/rankings/all"
+                className="block py-2 text-white/60 hover:text-white"
+              >
+                Community Rankings
               </Link>
               <Link
                 to="/tiers"
@@ -157,7 +162,7 @@ const SiteLayout = () => {
           <Link to="/backup-qbs" className="hover:text-white">
             Backup QBs
           </Link>
-          <Link to="/rankings" className="hover:text-white">
+          <Link to="/my-rankings" className="hover:text-white">
             QB Rankings
           </Link>
           <NavGroup label="Tools" align="center">
@@ -181,6 +186,12 @@ const SiteLayout = () => {
                 className="block py-2 text-white/60 hover:text-white"
               >
                 Lists
+              </Link>
+              <Link
+                to="/rankings/all"
+                className="block py-2 text-white/60 hover:text-white"
+              >
+                Community Rankings
               </Link>
               <Link
                 to="/tiers"
