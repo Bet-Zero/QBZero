@@ -1,5 +1,13 @@
 import React from 'react';
-import { Plus, Save, CheckCircle, Clock, Eye, EyeOff } from 'lucide-react';
+import {
+  Plus,
+  Save,
+  CheckCircle,
+  Clock,
+  Eye,
+  EyeOff,
+  Trash2,
+} from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const RankingsHeader = ({
@@ -15,6 +23,8 @@ const RankingsHeader = ({
   showSaveSnapshot,
   onViewArchives,
   showViewArchives,
+  onClearAll,
+  showClearAll,
   isCleanView,
   onToggleView,
 }) => {
@@ -77,6 +87,16 @@ const RankingsHeader = ({
 
           {!isCleanView && (
             <>
+              {showClearAll && (
+                <button
+                  onClick={onClearAll}
+                  className="flex items-center gap-2 px-4 py-2 bg-red-600/80 hover:bg-red-700 rounded-lg font-medium text-white text-sm transition-all backdrop-blur-sm"
+                >
+                  <Trash2 size={16} />
+                  Clear All
+                </button>
+              )}
+
               {showViewArchives && (
                 <button
                   onClick={onViewArchives}

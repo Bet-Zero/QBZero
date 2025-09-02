@@ -35,7 +35,7 @@ const NavGroup = ({ label, children, align = 'left', isMobile = false }) => {
       </button>
 
       <div
-        className={`absolute top-full pt-2 opacity-0 group-hover:opacity-100 invisible group-hover:visible transition-all ${
+        className={`absolute top-full pt-2 opacity-0 group-hover:opacity-100 invisible group-hover:visible transition-all z-50 ${
           align === 'center' ? '-translate-x-1/2 left-1/2' : ''
         }`}
       >
@@ -91,10 +91,10 @@ const MobileMenu = ({ isOpen, onClose }) => {
             Backup QBs
           </Link>
           <Link
-            to="/my-rankings"
+            to="/rankings/all"
             className="block py-2 text-white/60 hover:text-white"
           >
-            QB Rankings
+            Browse Rankings
           </Link>
           <NavGroup label="Tools" isMobile={true}>
             <Link
@@ -110,9 +110,15 @@ const MobileMenu = ({ isOpen, onClose }) => {
             >
               QB Ranker
             </Link>
+            <Link
+              to="/rankings/new"
+              className="block py-2 text-white/60 hover:text-white"
+              onClick={onClose}
+            >
+              Create Rankings
+            </Link>
             <div className="border-t border-white/10 my-2" />
             <div>
-              <div className="text-xs text-white/50 mb-1">Saved</div>
               <Link
                 to="/lists"
                 className="block py-2 text-white/60 hover:text-white"
@@ -120,16 +126,16 @@ const MobileMenu = ({ isOpen, onClose }) => {
                 Lists
               </Link>
               <Link
-                to="/rankings/all"
-                className="block py-2 text-white/60 hover:text-white"
-              >
-                Community Rankings
-              </Link>
-              <Link
                 to="/tiers"
                 className="block py-2 text-white/60 hover:text-white"
               >
                 Tiers
+              </Link>
+              <Link
+                to="/rankings/all"
+                className="block py-2 text-white/60 hover:text-white"
+              >
+                Browse Rankings
               </Link>
             </div>
           </NavGroup>
@@ -178,9 +184,14 @@ const SiteLayout = () => {
             >
               QB Ranker
             </Link>
+            <Link
+              to="/rankings/new"
+              className="block py-2 px-4 text-white/60 hover:text-white hover:bg-white/5"
+            >
+              Create Rankings
+            </Link>
             <div className="border-t border-white/10 my-2" />
             <div className="px-4">
-              <div className="text-xs text-white/50 mb-1">Saved</div>
               <Link
                 to="/lists"
                 className="block py-2 text-white/60 hover:text-white"
@@ -188,16 +199,16 @@ const SiteLayout = () => {
                 Lists
               </Link>
               <Link
-                to="/rankings/all"
-                className="block py-2 text-white/60 hover:text-white"
-              >
-                Community Rankings
-              </Link>
-              <Link
                 to="/tiers"
                 className="block py-2 text-white/60 hover:text-white"
               >
                 Tiers
+              </Link>
+              <Link
+                to="/rankings/all"
+                className="block py-2 text-white/60 hover:text-white"
+              >
+                Browse Rankings
               </Link>
             </div>
           </NavGroup>

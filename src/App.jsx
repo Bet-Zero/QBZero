@@ -12,7 +12,7 @@ import RankerComparisonsPage from '@/pages/RankerComparisonsPage';
 import RankerResultsPage from '@/pages/RankerResultsPage';
 import QBRankingsPage from '@/pages/QBRankingsPage';
 import QBRankingsHome from '@/pages/QBRankingsHome';
-import PersonalRankingsPage from '@/pages/PersonalRankingsPage';
+import BrowseRankingsPage from '@/pages/BrowseRankingsPage';
 import QBWPage from '@/pages/QBWPage';
 import BackupQBsHome from '@/pages/BackupQBsHome';
 import BackupQBHallOfFame from '@/pages/BackupQBHallOfFame';
@@ -31,19 +31,23 @@ const App = () => {
         <Route path="/players" element={<PlayerTableView />} />
         <Route path="/profiles" element={<PlayerProfileView />} />
 
-        {/* Personal Rankings */}
+        {/* Personal Rankings - Unified System */}
+        <Route path="/rankings" element={<QBRankingsPage />} />
+        <Route path="/rankings/browse" element={<BrowseRankingsPage />} />
+
+        {/* Legacy redirects for old personal rankings routes */}
         <Route
           path="/my-rankings"
-          element={<PersonalRankingsPage readOnly />}
+          element={<Navigate to="/rankings" replace />}
+        />
+        <Route
+          path="/my-rankings/edit"
+          element={<Navigate to="/rankings" replace />}
         />
 
-        {/* User Rankings */}
-        <Route
-          path="/rankings"
-          element={<Navigate to="/rankings/all" replace />}
-        />
+        {/* Other Rankings Management */}
         <Route path="/rankings/all" element={<QBRankingsHome />} />
-        <Route path="/rankings/:rankingId" element={<QBRankingsPage />} />
+        <Route path="/rankings/other/:rankingId" element={<QBRankingsPage />} />
 
         <Route path="/qbw" element={<QBWPage />} />
         <Route path="/lists" element={<ListsHome />} />
