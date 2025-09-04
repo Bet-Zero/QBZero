@@ -1,12 +1,21 @@
 import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useRankerContext } from '@/context/RankerContext';
 import { RankingSetup } from '@/features/ranker/RankingSetup';
 import { quarterbacks } from '@/features/ranker/quarterbacks';
+import RankerNavBar from '@/components/ranker/RankerNavBar';
 
 const RankerSetupPage = () => {
   const navigate = useNavigate();
-  const { setSetupData, setCurrentPhase, setPlayerPool } = useRankerContext();
+  const {
+    setSetupData,
+    setCurrentPhase,
+    setPlayerPool,
+    canNavigateToStep,
+    generateShareableURL,
+    playerPool: existingPlayerPool,
+    setupData: existingSetupData,
+  } = useRankerContext();
 
   useEffect(() => {
     setCurrentPhase('setup');
@@ -23,8 +32,18 @@ const RankerSetupPage = () => {
   };
 
   return (
-    <div className="bg-neutral-900 min-h-screen flex items-center justify-center">
-      <RankingSetup playerPool={quarterbacks} onComplete={handleComplete} />
+    <div className="bg-neutral-900 min-h-screen">
+      <RankerNavBar />
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        {/* Setup component */}
+        <RankingSetup
+          playerPool={
+            existingPlayerPool.length > 0 ? existingPlayerPool : quarterbacks
+          }
+          onComplete={handleComplete}
+          existingSetupData={existingSetupData}
+        />
+      </div>
     </div>
   );
 };

@@ -61,12 +61,22 @@ const HelperIcon = ({ text }) => {
   );
 };
 
-export const RankingSetup = ({ playerPool = [], onComplete }) => {
-  const [topTier, setTopTier] = useState([]);
-  const [bottomTier, setBottomTier] = useState([]);
-  const [anchor, setAnchor] = useState(null);
-  const [firstPlace, setFirstPlace] = useState(null);
-  const [lastPlace, setLastPlace] = useState(null);
+export const RankingSetup = ({
+  playerPool = [],
+  onComplete,
+  existingSetupData = null,
+}) => {
+  const [topTier, setTopTier] = useState(existingSetupData?.topTier || []);
+  const [bottomTier, setBottomTier] = useState(
+    existingSetupData?.bottomTier || []
+  );
+  const [anchor, setAnchor] = useState(existingSetupData?.anchor || null);
+  const [firstPlace, setFirstPlace] = useState(
+    existingSetupData?.firstPlace || null
+  );
+  const [lastPlace, setLastPlace] = useState(
+    existingSetupData?.lastPlace || null
+  );
   const tierCountEstimate = Math.max(1, Math.round(playerPool.length * 0.25));
 
   const toggleMulti = (id, list, setter) => {
@@ -86,6 +96,15 @@ export const RankingSetup = ({ playerPool = [], onComplete }) => {
       <h2 className="text-xl sm:text-2xl font-bold mb-6 text-center sm:text-left">
         Pre-Ranking Setup
       </h2>
+
+      {existingSetupData && (
+        <div className="mb-6 p-4 bg-blue-600/20 border border-blue-400/30 rounded-lg">
+          <p className="text-blue-200 text-sm">
+            ℹ️ Your previous setup has been loaded. You can modify it or proceed
+            to comparisons.
+          </p>
+        </div>
+      )}
 
       {/* Top Tier Section */}
       <div
@@ -219,7 +238,7 @@ export const RankingSetup = ({ playerPool = [], onComplete }) => {
           onClick={handleReady}
           className="px-8 py-3 rounded-lg bg-green-600 hover:bg-green-700 transition-colors text-white font-semibold text-lg shadow-lg"
         >
-          Go
+          {existingSetupData ? 'Update & Continue' : 'Go'}
         </button>
       </div>
     </div>
