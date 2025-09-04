@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { LayoutGrid, ListOrdered, Download } from 'lucide-react';
+import { LayoutGrid, ListOrdered, Download, Edit3 } from 'lucide-react';
 import useImageDownload from '@/hooks/useImageDownload';
+import AdjustableRankings from './AdjustableRankings';
 
 // Mapping team abbreviations to logo file names
 const teamLogoMap = {
@@ -50,11 +51,13 @@ const getLogoPath = (team) => {
 // player names with their rank number. Designed to scale up to large player
 // pools by using a multi-column layout.
 
-const RankingResults = ({ ranking = [] }) => {
+const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
   const [viewType, setViewType] = useState('list'); // 'list' or 'grid'
   const [showLogoBg, setShowLogoBg] = useState(true); // Add state for logo background toggle
   const [isDownloading, setIsDownloading] = useState(false);
   const [isLocked, setIsLocked] = useState(false); // Add state to manage lock status
+  const [isAdjustMode, setIsAdjustMode] = useState(false);
+  const [currentRanking, setCurrentRanking] = useState(ranking);
   const shareViewRef = useRef(null);
   const downloadImage = useImageDownload(shareViewRef);
 
@@ -62,15 +65,20 @@ const RankingResults = ({ ranking = [] }) => {
     setIsLocked(false); // Unlock the page by default
   }, []);
 
+  // Update current ranking when prop changes
+  useEffect(() => {
+    setCurrentRanking(ranking);
+  }, [ranking]);
+
   const handleCopy = () => {
-    const text = ranking
+    const text = currentRanking
       .map((p, idx) => `#${idx + 1} ${p.display_name || p.name}`)
       .join('\n');
     navigator.clipboard.writeText(text).catch(() => {});
   };
 
   const handleExportCSV = () => {
-    const rows = ranking
+    const rows = currentRanking
       .map(
         (p, idx) =>
           `${idx + 1},"${(p.display_name || p.name).replace(/"/g, '""')}"`
@@ -102,8 +110,44 @@ const RankingResults = ({ ranking = [] }) => {
     }
   };
 
+  const handleAdjustRankings = () => {
+    setIsAdjustMode(true);
+  };
+
+  const handleSaveAdjustments = (adjustedRanking) => {
+    setCurrentRanking(adjustedRanking);
+    setIsAdjustMode(false);
+    if (onRankingAdjusted) {
+      onRankingAdjusted(adjustedRanking);
+    }
+  };
+
+  const handleCancelAdjustments = () => {
+    setIsAdjustMode(false);
+  };
+
+  // If in adjust mode, show the adjustable rankings component
+  if (isAdjustMode) {
+    return (
+      <AdjustableRankings
+        initialRanking={currentRanking}
+        onSave={handleSaveAdjustments}
+        onCancel={handleCancelAdjustments}
+      />
+    );
+  }
+
   const ActionButtons = () => (
     <div className="flex gap-2 justify-center sm:justify-start">
+      <button
+        onClick={handleAdjustRankings}
+        className="px-3 py-2 text-sm text-white bg-orange-600/80 hover:bg-orange-700 rounded flex items-center transition-colors"
+        title="Adjust Rankings"
+      >
+        <Edit3 size={16} className="mr-1" />
+        <span className="hidden sm:inline">Adjust Rankings</span>
+        <span className="sm:hidden">Adjust</span>
+      </button>
       {viewType === 'grid' && (
         <button
           onClick={() => setShowLogoBg(!showLogoBg)}
@@ -193,12 +237,12 @@ const RankingResults = ({ ranking = [] }) => {
 
   // Create column arrays for list view
   const createColumns = (cols) => {
-    const itemsPerCol = Math.ceil(ranking.length / cols);
+    const itemsPerCol = Math.ceil(currentRanking.length / cols);
     const columns = Array(cols)
       .fill()
       .map(() => []);
 
-    ranking.forEach((player, idx) => {
+    currentRanking.forEach((player, idx) => {
       const colIndex = Math.floor(idx / itemsPerCol);
       if (colIndex < cols) {
         columns[colIndex].push({ player, rank: idx + 1 });
@@ -233,7 +277,7 @@ const RankingResults = ({ ranking = [] }) => {
           {sharedHeader}
 
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 max-w-[1400px] mx-auto">
-            {ranking.map((p, idx) => {
+            {currentRanking.map((p, idx) => {
               const logoPath = getLogoPath(p.team);
               const headshot =
                 p.headshotUrl || `/assets/headshots/${p.player_id || p.id}.png`;

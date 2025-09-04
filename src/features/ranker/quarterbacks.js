@@ -33,7 +33,7 @@ export const quarterbacks = [
   { id: 'patrick-mahomes', name: 'Patrick Mahomes', team: 'KC' },
   { id: 'russell-wilson', name: 'Russell Wilson', team: 'NYG' },
   { id: 'sam-darnold', name: 'Sam Darnold', team: 'SEA' },
-  { id: 'sam-howell', name: 'Sam Howell', team: 'MIN' },
+  { id: 'sam-howell', name: 'Sam Howell', team: 'PHI' },
   { id: 'spencer-rattler', name: 'Spencer Rattler', team: 'NO' },
   { id: 'trevor-lawrence', name: 'Trevor Lawrence', team: 'JAX' },
   { id: 'tua-tagovailoa', name: 'Tua Tagovailoa', team: 'MIA' },

@@ -12,6 +12,7 @@ const RankerResultsPage = () => {
     playerPool,
     setCurrentPhase,
     resetRanker,
+    setFinalRanking,
   } = useRankerContext();
 
   useEffect(() => {
@@ -26,6 +27,10 @@ const RankerResultsPage = () => {
   const handleStartNew = () => {
     resetRanker();
     navigate('/ranker');
+  };
+
+  const handleRankingAdjusted = (adjustedRanking) => {
+    setFinalRanking(adjustedRanking);
   };
 
   if (!finalRanking || finalRanking.length === 0) {
@@ -64,7 +69,10 @@ const RankerResultsPage = () => {
         </div>
 
         {/* Results */}
-        <RankingResults ranking={finalRanking} />
+        <RankingResults
+          ranking={finalRanking}
+          onRankingAdjusted={handleRankingAdjusted}
+        />
 
         <div className="text-white/30 mt-8 text-center text-sm italic px-4">
           Ranking created on{' '}
