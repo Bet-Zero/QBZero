@@ -12,6 +12,7 @@ import {
   serverTimestamp,
   updateDoc,
   where,
+  deleteDoc,
 } from 'firebase/firestore';
 
 const personalRankingArchivesRef = collection(db, 'personalRankingArchives');
@@ -264,6 +265,41 @@ export const saveCurrentPersonalRankings = async (rankings, notes = '') => {
 };
 
 /**
+ * Update current personal rankings without creating an archive
+ * Use this for lightweight updates like notes changes
+ * @param {Array} rankings - The updated ranking data
+ * @returns {string} The ID of the updated current ranking
+ */
+export const updateCurrentPersonalRankings = async (rankings) => {
+  try {
+    const currentRanking = await getCurrentPersonalRanking();
+
+    if (!currentRanking) {
+      // If no current ranking exists, create one
+      return await saveCurrentPersonalRankings(rankings, '');
+    }
+
+    // Update the existing current ranking without archiving
+    const now = new Date();
+    const rankingData = {
+      rankings: rankings || [],
+      notes: currentRanking.notes || '', // Preserve existing notes
+      updatedAt: serverTimestamp(),
+      timestamp: now.toISOString(),
+      isCurrent: true,
+    };
+
+    const currentRef = doc(db, 'personalRankingArchives', currentRanking.id);
+    await updateDoc(currentRef, rankingData);
+
+    return currentRanking.id;
+  } catch (error) {
+    console.error('Error updating current personal rankings:', error);
+    throw error;
+  }
+};
+
+/**
  * Get the current (most recent) personal ranking
  * @returns {Object|null} The current ranking or null if none exists
  */
@@ -308,6 +344,42 @@ export const getArchivedPersonalRankings = async () => {
       .filter((archive) => !archive.isCurrent); // Filter out current rankings in JavaScript
   } catch (error) {
     console.error('Error fetching archived personal rankings:', error);
+    throw error;
+  }
+};
+
+/**
+ * Delete a personal ranking archive by ID
+ * @param {string} archiveId - The ID of the archive to delete
+ * @returns {boolean} Success status
+ */
+export const deletePersonalRankingArchive = async (archiveId) => {
+  try {
+    const archiveRef = doc(db, 'personalRankingArchives', archiveId);
+    await deleteDoc(archiveRef);
+    return true;
+  } catch (error) {
+    console.error('Error deleting personal ranking archive:', error);
+    throw error;
+  }
+};
+
+/**
+ * Delete all personal ranking archives (keeping current ranking)
+ * WARNING: This will delete all archive history!
+ * @returns {number} Number of archives deleted
+ */
+export const deleteAllPersonalRankingArchives = async () => {
+  try {
+    const archives = await getArchivedPersonalRankings();
+
+    for (const archive of archives) {
+      await deletePersonalRankingArchive(archive.id);
+    }
+
+    return archives.length;
+  } catch (error) {
+    console.error('Error deleting all personal ranking archives:', error);
     throw error;
   }
 };

@@ -6,6 +6,7 @@ import RankingsHeader from '@/features/rankings/RankingsHeader';
 import {
   getCurrentPersonalRanking,
   saveCurrentPersonalRankings,
+  updateCurrentPersonalRankings,
 } from '@/firebase/personalRankingHelpers';
 import {
   fetchQBRanking,
@@ -220,12 +221,29 @@ const QBRankingsPage = () => {
     setHasChanges(true);
   };
 
-  const handleEditNotes = (id, notes) => {
+  const handleEditNotes = async (id, notes) => {
+    // Update the state immediately for UI responsiveness
     setRankings((prev) => {
       return prev.map((qb) => (qb.id === id ? { ...qb, notes } : qb));
     });
 
-    setHasChanges(true);
+    // For personal rankings, save notes immediately without archiving
+    if (isPersonalRankings) {
+      try {
+        const updatedRankings = rankings.map((qb) =>
+          qb.id === id ? { ...qb, notes } : qb
+        );
+        await updateCurrentPersonalRankings(updatedRankings);
+        // Don't set hasChanges to true for notes-only updates
+        toast.success('Notes saved!', { duration: 2000 });
+      } catch (error) {
+        console.error('Error saving notes:', error);
+        toast.error('Failed to save notes');
+      }
+    } else {
+      // For other rankings, still trigger the change flag
+      setHasChanges(true);
+    }
   };
 
   const handleClearAll = () => {
