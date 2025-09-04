@@ -40,11 +40,63 @@ const teamLogoMap = {
   WAS: 'commanders',
 };
 
+// Custom positioning for specific team logos in grid view background
+// Values are in pixels - positive X moves right, positive Y moves down
+// Only add teams here that need positioning adjustments - all others will stay centered
+const teamLogoPositioning = {
+  // Add only the specific teams that need positioning adjustments:
+  DAL: { x: 55, y: 0 }, // Cowboys logo shifted left 15px
+  NO: { x: 125, y: 0 },
+  DET: { x: 0, y: 75 },
+  PHI: { x: 120, y: 0 },
+  MIN: { x: 80, y: 140 },
+  MIA: { x: 60, y: 60 },
+  NE: { x: 0, y: 20 },
+  BUF: { x: 80, y: 30 },
+  CAR: { x: 20, y: 50 },
+  TB: { x: 110, y: 60 },
+  // Add more teams here as needed
+};
+
 // Helper function to get logo path safely
 const getLogoPath = (team) => {
   if (!team) return null;
   const logoId = teamLogoMap[team] || team.toLowerCase();
   return `/assets/logos/${logoId}.svg`;
+};
+
+// Helper function to get background positioning for team logos
+const getLogoBackgroundStyle = (team, showLogoBg) => {
+  if (!showLogoBg) {
+    return { backgroundImage: 'none' };
+  }
+
+  const logoPath = getLogoPath(team);
+  if (!logoPath) {
+    return { backgroundImage: 'none' };
+  }
+
+  const positioning = teamLogoPositioning[team];
+
+  if (positioning) {
+    // Custom positioning for specific teams that need adjustment
+    return {
+      backgroundImage: `url(${logoPath})`,
+      backgroundSize: 'contain',
+      backgroundRepeat: 'no-repeat',
+      backgroundPosition: `calc(50% + ${positioning.x}px) calc(50% + ${positioning.y}px)`,
+      opacity: 0.1,
+    };
+  }
+
+  // Default center positioning for all other teams (exactly like before)
+  return {
+    backgroundImage: `url(${logoPath})`,
+    backgroundSize: 'contain',
+    backgroundRepeat: 'no-repeat',
+    backgroundPosition: 'center',
+    opacity: 0.1,
+  };
 };
 
 // Simple grid display for final rankings. Renders a responsive list of
@@ -281,7 +333,10 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
               const logoPath = getLogoPath(p.team);
               const headshot =
                 p.headshotUrl || `/assets/headshots/${p.player_id || p.id}.png`;
-              const logoBackgroundPath = getLogoPath(p.team); // Ensure same path for background and logo
+              const logoBackgroundStyle = getLogoBackgroundStyle(
+                p.team,
+                showLogoBg
+              );
 
               return (
                 <div key={p.id} className="relative group">
@@ -290,11 +345,20 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
                     {/* Headshot Container with overlaid rank */}
                     <div
                       className="aspect-square w-full overflow-hidden bg-[#111] relative"
-                      style={{
-                        backgroundImage: showLogoBg
-                          ? `url(${logoBackgroundPath})`
-                          : 'none',
-                      }} // Use same path for background
+                      style={
+                        teamLogoPositioning[p.team]
+                          ? {
+                              backgroundImage: showLogoBg
+                                ? `url(${logoPath})`
+                                : 'none',
+                              backgroundPosition: `calc(50% + ${teamLogoPositioning[p.team].x}px) calc(50% + ${teamLogoPositioning[p.team].y}px)`,
+                            }
+                          : {
+                              backgroundImage: showLogoBg
+                                ? `url(${logoPath})`
+                                : 'none',
+                            }
+                      }
                     >
                       <img
                         src={headshot}
