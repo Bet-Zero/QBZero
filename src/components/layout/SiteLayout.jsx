@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Link, Outlet } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import { ChevronDown, Menu, X } from 'lucide-react';
+import { ChevronDown, Menu, X, Lock } from 'lucide-react';
 
 const NavGroup = ({ label, children, align = 'left', isMobile = false }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -75,27 +75,28 @@ const MobileMenu = ({ isOpen, onClose }) => {
         </div>
 
         <nav className="p-6 space-y-4">
-          <Link
-            to="/profiles"
-            className="block py-2 text-white/60 hover:text-white"
-          >
-            QB Profiles
-          </Link>
+          <div className="flex items-center gap-2 py-2 text-white/40 cursor-not-allowed">
+            <Lock size={14} />
+            <span>QB Profiles</span>
+          </div>
           <Link to="/qbw" className="block py-2 text-white/60 hover:text-white">
             QBW 🔮
           </Link>
+          <div className="flex items-center gap-2 py-2 text-white/40 cursor-not-allowed">
+            <Lock size={14} />
+            <span>Backup QBs</span>
+          </div>
           <Link
-            to="/backup-qbs"
+            to="/rankings"
             className="block py-2 text-white/60 hover:text-white"
+            onClick={onClose}
           >
-            Backup QBs
+            QB Rankings
           </Link>
-          <Link
-            to="/rankings/all"
-            className="block py-2 text-white/60 hover:text-white"
-          >
-            Browse Rankings
-          </Link>
+          <div className="flex items-center gap-2 py-2 text-white/40 cursor-not-allowed">
+            <Lock size={14} />
+            <span>Browse Rankings</span>
+          </div>
           <NavGroup label="Tools" isMobile={true}>
             <Link
               to="/tier-maker"
@@ -110,33 +111,24 @@ const MobileMenu = ({ isOpen, onClose }) => {
             >
               QB Ranker
             </Link>
-            <Link
-              to="/rankings/new"
-              className="block py-2 text-white/60 hover:text-white"
-              onClick={onClose}
-            >
-              Create Rankings
-            </Link>
+            <div className="flex items-center gap-2 py-2 text-white/40 cursor-not-allowed">
+              <Lock size={14} />
+              <span>Create Rankings</span>
+            </div>
             <div className="border-t border-white/10 my-2" />
             <div>
-              <Link
-                to="/lists"
-                className="block py-2 text-white/60 hover:text-white"
-              >
-                Lists
-              </Link>
-              <Link
-                to="/tiers"
-                className="block py-2 text-white/60 hover:text-white"
-              >
-                Tiers
-              </Link>
-              <Link
-                to="/rankings/all"
-                className="block py-2 text-white/60 hover:text-white"
-              >
-                Browse Rankings
-              </Link>
+              <div className="flex items-center gap-2 py-2 text-white/40 cursor-not-allowed">
+                <Lock size={14} />
+                <span>Lists</span>
+              </div>
+              <div className="flex items-center gap-2 py-2 text-white/40 cursor-not-allowed">
+                <Lock size={14} />
+                <span>Tiers</span>
+              </div>
+              <div className="flex items-center gap-2 py-2 text-white/40 cursor-not-allowed">
+                <Lock size={14} />
+                <span>Browse Rankings</span>
+              </div>
             </div>
           </NavGroup>
         </nav>
@@ -159,16 +151,18 @@ const SiteLayout = () => {
         </Link>
 
         <nav className="hidden lg:flex gap-6 text-sm text-white/60 items-center">
-          <Link to="/profiles" className="hover:text-white">
-            QB Profiles
-          </Link>
+          <div className="flex items-center gap-1 text-white/40 cursor-not-allowed">
+            <Lock size={12} />
+            <span>QB Profiles</span>
+          </div>
           <Link to="/qbw" className="hover:text-white">
             QBW 🔮
           </Link>
-          <Link to="/backup-qbs" className="hover:text-white">
-            Backup QBs
-          </Link>
-          <Link to="/my-rankings" className="hover:text-white">
+          <div className="flex items-center gap-1 text-white/40 cursor-not-allowed">
+            <Lock size={12} />
+            <span>Backup QBs</span>
+          </div>
+          <Link to="/rankings" className="hover:text-white">
             QB Rankings
           </Link>
           <NavGroup label="Tools" align="center">
@@ -184,32 +178,24 @@ const SiteLayout = () => {
             >
               QB Ranker
             </Link>
-            <Link
-              to="/rankings/new"
-              className="block py-2 px-4 text-white/60 hover:text-white hover:bg-white/5"
-            >
-              Create Rankings
-            </Link>
+            <div className="flex items-center gap-2 py-2 px-4 text-white/40 cursor-not-allowed">
+              <Lock size={12} />
+              <span>Create Rankings</span>
+            </div>
             <div className="border-t border-white/10 my-2" />
             <div className="px-4">
-              <Link
-                to="/lists"
-                className="block py-2 text-white/60 hover:text-white"
-              >
-                Lists
-              </Link>
-              <Link
-                to="/tiers"
-                className="block py-2 text-white/60 hover:text-white"
-              >
-                Tiers
-              </Link>
-              <Link
-                to="/rankings/all"
-                className="block py-2 text-white/60 hover:text-white"
-              >
-                Browse Rankings
-              </Link>
+              <div className="flex items-center gap-2 py-2 text-white/40 cursor-not-allowed">
+                <Lock size={12} />
+                <span>Lists</span>
+              </div>
+              <div className="flex items-center gap-2 py-2 text-white/40 cursor-not-allowed">
+                <Lock size={12} />
+                <span>Tiers</span>
+              </div>
+              <div className="flex items-center gap-2 py-2 text-white/40 cursor-not-allowed">
+                <Lock size={12} />
+                <span>Browse Rankings</span>
+              </div>
             </div>
           </NavGroup>
         </nav>

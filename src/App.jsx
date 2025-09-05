@@ -13,6 +13,7 @@ import RankerResultsPage from '@/pages/RankerResultsPage';
 import QBRankingsPage from '@/pages/QBRankingsPage';
 import QBRankingsHome from '@/pages/QBRankingsHome';
 import BrowseRankingsPage from '@/pages/BrowseRankingsPage';
+import PublicQBRankingsPage from '@/pages/PublicQBRankingsPage';
 import QBWPage from '@/pages/QBWPage';
 import BackupQBsHome from '@/pages/BackupQBsHome';
 import BackupQBHallOfFame from '@/pages/BackupQBHallOfFame';
@@ -31,9 +32,12 @@ const App = () => {
         <Route path="/players" element={<PlayerTableView />} />
         <Route path="/profiles" element={<PlayerProfileView />} />
 
-        {/* Personal Rankings - Unified System */}
-        <Route path="/rankings" element={<QBRankingsPage />} />
+        {/* Personal Rankings - Read-only public access */}
+        <Route path="/rankings" element={<PublicQBRankingsPage />} />
         <Route path="/rankings/browse" element={<BrowseRankingsPage />} />
+
+        {/* Private Edit Access - For your personal use */}
+        <Route path="/rankings/edit" element={<QBRankingsPage />} />
 
         {/* Legacy redirects for old personal rankings routes */}
         <Route

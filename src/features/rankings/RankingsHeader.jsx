@@ -7,8 +7,10 @@ import {
   Eye,
   EyeOff,
   Trash2,
+  Share,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import toast from 'react-hot-toast';
 
 const RankingsHeader = ({
   onAddQB,
@@ -28,6 +30,18 @@ const RankingsHeader = ({
   isCleanView,
   onToggleView,
 }) => {
+  const handleSharePublicLink = () => {
+    const publicUrl = `${window.location.origin}/rankings/public`;
+    navigator.clipboard
+      .writeText(publicUrl)
+      .then(() => {
+        toast.success('Public link copied to clipboard!');
+      })
+      .catch(() => {
+        toast.error('Failed to copy link');
+      });
+  };
+
   return (
     <div className="mb-8">
       {/* Breadcrumb */}
@@ -83,6 +97,15 @@ const RankingsHeader = ({
                 Hide Controls
               </>
             )}
+          </button>
+
+          <button
+            onClick={handleSharePublicLink}
+            className="flex items-center gap-2 px-4 py-2 bg-purple-600/80 hover:bg-purple-700 rounded-lg font-medium text-white text-sm transition-all backdrop-blur-sm"
+            title="Copy public read-only link"
+          >
+            <Share size={16} />
+            Share Public Link
           </button>
 
           {!isCleanView && (
