@@ -5,6 +5,7 @@ import TeamLogo from '@/components/shared/TeamLogo';
 import PlayerHeadshot from '@/components/shared/PlayerHeadshot';
 import QBRankingBadge from '@/components/shared/QBRankingBadge';
 import { POSITION_MAP } from '@/utils/roles';
+import { getCurrentSeasonYear } from '@/utils/contracts';
 
 const PlayerHeader = ({ player, selectedPlayer }) => {
   const getAbbreviatedPosition = (position) => {
@@ -12,15 +13,20 @@ const PlayerHeader = ({ player, selectedPlayer }) => {
     return POSITION_MAP[position] || position;
   };
 
-  const thisYear = 2025;
-  const totalYears = player.contract?.annual_salaries?.length;
+  const currentYear = getCurrentSeasonYear();
   const currentYearSalaryObj = player.contract?.annual_salaries?.find(
-    (s) => s.year === thisYear
+    (s) => s.year === currentYear
   );
   const currentSalary = currentYearSalaryObj?.salary;
+
+  // Count years remaining (including current year)
+  const yearsRemaining =
+    player.contract?.annual_salaries?.filter((s) => s.year >= currentYear)
+      .length || 0;
+
   const contractSummary =
-    currentSalary && totalYears
-      ? `$${(currentSalary / 1_000_000).toFixed(1)}M / ${totalYears} yrs`
+    currentSalary && yearsRemaining
+      ? `$${(currentSalary / 1_000_000).toFixed(1)}M / ${yearsRemaining} yrs`
       : '—';
 
   const freeAgentType = player.free_agent_type; // now from top-level

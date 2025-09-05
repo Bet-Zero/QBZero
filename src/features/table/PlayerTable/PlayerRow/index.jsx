@@ -94,10 +94,10 @@ const PlayerRow = ({ player, ranking = '—' }) => {
                 )?.salary ??
                 0;
 
-              const yearsLeft = getYearsRemaining(
-                player.fa_year ?? player.free_agency_year,
-                CURRENT_YEAR
-              );
+              // Use the new function to count actual contract years remaining
+              const yearsLeft = player.contract.annual_salaries.filter(
+                (s) => s.year >= CURRENT_YEAR
+              ).length;
               const formattedSalary = `$${(currentSalary / 1_000_000).toFixed(1)}M`;
 
               return (

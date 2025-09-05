@@ -134,8 +134,8 @@ const QBWPage = () => {
               QBW
             </h1>
             <p className="text-xl text-white/70 max-w-2xl mx-auto">
-              My crystal ball QB predictions and hot takes that stood the test
-              of time
+              My crystal ball QB predictions and takes that stood the test of
+              time
             </p>
           </div>
 
