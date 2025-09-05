@@ -3,6 +3,7 @@ import PlayerName from './ProfilePlayerName';
 import PlayerPosition from './ProfilePlayerPosition';
 import TeamLogo from '@/components/shared/TeamLogo';
 import PlayerHeadshot from '@/components/shared/PlayerHeadshot';
+import QBRankingBadge from '@/components/shared/QBRankingBadge';
 import { POSITION_MAP } from '@/utils/roles';
 
 const PlayerHeader = ({ player, selectedPlayer }) => {
@@ -41,6 +42,13 @@ const PlayerHeader = ({ player, selectedPlayer }) => {
               position={getAbbreviatedPosition(player.bio?.Position)}
               className="text-5xl"
             />
+            {/* QB Ranking Badge - moved to right of position */}
+            <div className="ml-4">
+              <QBRankingBadge
+                playerId={selectedPlayer}
+                playerName={player.display_name || player.name}
+              />
+            </div>
           </div>
         </div>
       </div>
