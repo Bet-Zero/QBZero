@@ -60,6 +60,13 @@ const QBRankingCard = ({
     setIsEditingNotes(false);
   };
 
+  // Make all notes use the smallest text size on mobile, normal on desktop
+  const getNotesTextClasses = (text) => {
+    // Mobile: Always use the smallest size (10px) for uniformity
+    // Desktop: Use normal text size
+    return 'text-[11px] leading-[12px] sm:text-sm sm:leading-normal';
+  };
+
   // Get team logo for background
   const getTeamLogo = () => {
     if (!qb.team || qb.team === 'N/A') return null;
@@ -116,97 +123,104 @@ const QBRankingCard = ({
         </div>
       )}
 
-      <div className="flex relative z-10 min-h-[80px]">
-        {/* Rank Number Container - Cool but Mobile-Friendly */}
-        <div className="w-12 min-w-[48px] flex items-center justify-center bg-white/20 backdrop-blur-sm overflow-hidden relative rounded-l-lg">
+      {/* Fixed height container - Mobile: 90px, Desktop: ORIGINAL flexible layout */}
+      <div className="flex relative z-10 h-[90px] sm:min-h-[80px] sm:h-auto">
+        {/* Rank Number Container - Mobile compact, Desktop ORIGINAL */}
+        <div className="w-10 min-w-[40px] sm:w-12 sm:min-w-[48px] flex items-center justify-center bg-white/20 backdrop-blur-sm overflow-hidden relative rounded-l-lg">
           <div
             className="text-white font-black text-center leading-none select-none"
             style={{
               fontFamily: '"Bebas Neue", Impact, "Arial Black", sans-serif',
-              fontSize: qb.rank >= 10 ? '2.75rem' : '3.25rem',
+              fontSize: qb.rank >= 10 ? '2.25rem' : '2.75rem',
               textShadow: '2px 2px 4px rgba(0,0,0,0.8)',
-              transform: 'scaleY(1.2) translateY(2px)', // Shifted from -2px to +2px
+              transform: 'scaleY(1.2) translateY(2px)', // Desktop original
               letterSpacing: qb.rank >= 10 ? '-0.02em' : '0.02em',
-              // Adjust horizontal position based on digit count
               marginLeft: qb.rank >= 10 ? '1px' : '-1px',
-              // Fine-tune positioning for better optical centering
               position: 'relative',
-              top: '2px', // Shifted from 1px to 2px
+              top: '2px', // Desktop original
             }}
           >
             {qb.rank}
           </div>
-          {/* Subtle gradient overlay for extra style */}
           <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent pointer-events-none rounded-l-lg" />
         </div>
 
-        {/* QB Image - Full Height */}
-        <div className="w-20 bg-[#121212] flex-shrink-0 flex">
+        {/* QB Image - Mobile smaller, Desktop ORIGINAL */}
+        <div className="w-16 sm:w-20 bg-[#121212] flex-shrink-0 flex">
           <img
             src={qb.imageUrl}
             alt={qb.name}
-            className="w-full flex-1 object-cover"
+            className="w-full h-full object-cover"
             onError={(e) => {
               e.target.src = '/assets/headshots/default.png';
             }}
           />
         </div>
 
-        {/* QB Info */}
-        <div className="flex-1 p-4">
-          <div className="flex items-center gap-3 mb-2">
-            <h3 className="text-xl font-bold text-white drop-shadow-lg">
-              {qb.name}
-            </h3>
-            {qb.team && (
-              <div className="flex items-center gap-2 px-2 py-1 bg-[#111]/80 backdrop-blur-sm rounded text-white/80">
-                <div
-                  className="w-4 h-4 bg-center bg-no-repeat bg-contain"
-                  style={{
-                    backgroundImage: `url(${teamLogo})`,
-                  }}
+        {/* QB Info - Mobile compact, Desktop ORIGINAL */}
+        <div className="flex-1 p-3 sm:p-4 overflow-hidden">
+          {/* Header section - Mobile minimal, Desktop ORIGINAL */}
+          <div className="mb-1 sm:mb-2">
+            <div className="flex items-start gap-2 sm:gap-3">
+              <h3 className="text-base sm:text-xl font-bold text-white drop-shadow-lg leading-tight">
+                {qb.name}
+              </h3>
+              {qb.team && (
+                <div className="flex items-center gap-1 sm:gap-2 px-1.5 sm:px-2 py-0.5 sm:py-1 bg-[#111]/80 backdrop-blur-sm rounded text-white/80 flex-shrink-0">
+                  <div
+                    className="w-2.5 h-2.5 sm:w-4 sm:h-4 bg-center bg-no-repeat bg-contain"
+                    style={{
+                      backgroundImage: `url(${teamLogo})`,
+                    }}
+                  />
+                  <span className="text-[9px] sm:text-xs font-medium">
+                    {qb.team}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Notes Section - Mobile minimal, Desktop ORIGINAL */}
+          <div className="mt-1.5 sm:mt-0">
+            {isEditingNotes && !readOnly ? (
+              <div className="space-y-1.5 sm:space-y-2">
+                <textarea
+                  value={notesValue}
+                  onChange={(e) => setNotesValue(e.target.value)}
+                  placeholder="Add your notes about this QB..."
+                  className="w-full h-8 sm:h-auto p-1.5 sm:p-2 bg-black/60 backdrop-blur-sm border border-white/20 rounded sm:rounded-lg text-white placeholder-white/40 focus:border-blue-500 focus:outline-none resize-none text-xs sm:text-sm"
+                  rows={2}
                 />
-                <span className="text-xs font-medium">{qb.team}</span>
+                <div className="flex gap-1.5 sm:gap-2">
+                  <button
+                    onClick={handleSaveNotes}
+                    className="px-2 py-0.5 sm:px-3 sm:py-1 bg-green-600/80 hover:bg-green-700 rounded sm:rounded-lg text-white text-[10px] sm:text-sm font-medium transition-all backdrop-blur-sm"
+                  >
+                    Save
+                  </button>
+                  <button
+                    onClick={handleCancelNotes}
+                    className="px-2 py-0.5 sm:px-3 sm:py-1 bg-black/60 hover:bg-black/80 rounded sm:rounded-lg text-white text-[10px] sm:text-sm font-medium transition-all backdrop-blur-sm"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div
+                className={`text-white/70 drop-shadow-lg ${getNotesTextClasses(qb.notes)}`}
+              >
+                {qb.notes || (
+                  <span className="italic text-white/40 text-[9px] sm:text-sm">
+                    {readOnly
+                      ? 'No notes'
+                      : 'Click edit to add notes about this QB...'}
+                  </span>
+                )}
               </div>
             )}
           </div>
-
-          {/* Notes Section */}
-          {isEditingNotes && !readOnly ? (
-            <div className="space-y-2">
-              <textarea
-                value={notesValue}
-                onChange={(e) => setNotesValue(e.target.value)}
-                placeholder="Add your notes about this QB..."
-                className="w-full p-2 bg-black/60 backdrop-blur-sm border border-white/20 rounded-lg text-white placeholder-white/40 focus:border-blue-500 focus:outline-none resize-none"
-                rows={2}
-              />
-              <div className="flex gap-2">
-                <button
-                  onClick={handleSaveNotes}
-                  className="px-3 py-1 bg-green-600/80 hover:bg-green-700 rounded-lg text-white text-sm font-medium transition-all backdrop-blur-sm"
-                >
-                  Save
-                </button>
-                <button
-                  onClick={handleCancelNotes}
-                  className="px-3 py-1 bg-black/60 hover:bg-black/80 rounded-lg text-white text-sm font-medium transition-all backdrop-blur-sm"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="text-white/70 text-sm drop-shadow-lg">
-              {qb.notes || (
-                <span className="italic text-white/40">
-                  {readOnly
-                    ? 'No notes'
-                    : 'Click edit to add notes about this QB...'}
-                </span>
-              )}
-            </div>
-          )}
         </div>
       </div>
     </div>
