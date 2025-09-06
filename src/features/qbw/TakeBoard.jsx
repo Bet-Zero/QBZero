@@ -1,5 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { CheckCircle, XCircle, Clock, Eye, Plus, User, Shield } from 'lucide-react';
+import {
+  CheckCircle,
+  XCircle,
+  Clock,
+  Eye,
+  Plus,
+  User,
+  Shield,
+} from 'lucide-react';
 import {
   fetchAllTakes,
   fetchAuthorTakes,
@@ -236,7 +244,7 @@ const TakeBoard = () => {
                 <User size={16} />
                 Login to Add Takes
               </button>
-              
+
               <button
                 onClick={() => setShowAdminGate(true)}
                 className="flex items-center gap-2 px-3 py-2 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 rounded-lg text-purple-300 text-sm font-medium transition-all whitespace-nowrap"

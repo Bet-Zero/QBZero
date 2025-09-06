@@ -10,7 +10,7 @@ const AdminGate = ({ onAdminAccess, onClose }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     setIsLoading(true);
-    
+
     setTimeout(() => {
       if (passwordInput === correctPassword) {
         localStorage.setItem('qbzero_admin', 'true');
@@ -44,7 +44,7 @@ const AdminGate = ({ onAdminAccess, onClose }) => {
           <div className="text-white/60 text-sm mb-4">
             Enter admin password to access posting without authentication.
           </div>
-          
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-white/80 font-medium mb-2">
