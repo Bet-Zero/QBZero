@@ -33,10 +33,8 @@ const PublicQBRankingsPage = () => {
       const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
       return date.toLocaleDateString('en-US', {
         year: 'numeric',
-        month: 'long',
+        month: 'short',
         day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
       });
     } catch {
       return 'Unknown date';
@@ -71,7 +69,7 @@ const PublicQBRankingsPage = () => {
         </div>
 
         {/* Rankings List */}
-        <div className="space-y-4">
+        <div className="space-y-1.5 sm:space-y-2">
           {rankings.map((qb, index) => (
             <QBRankingCard
               key={qb.id}

@@ -289,7 +289,7 @@ const QBRankingsPage = () => {
           onToggleView={() => setIsCleanView(!isCleanView)}
         />
 
-        <div className="space-y-4">
+        <div className="space-y-1.5 sm:space-y-2">
           {rankings.map((qb, index) => (
             <QBRankingCard
               key={qb.id}

@@ -67,129 +67,142 @@ const RankingsHeader = ({
 
       {/* Action Bar */}
       <div
-        className={`flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-[#1a1a1a] rounded-xl border border-white/10 transition-opacity duration-300 ${isCleanView ? 'opacity-0 hover:opacity-100' : ''}`}
+        className={`flex flex-col gap-4 p-4 bg-[#1a1a1a] rounded-xl border border-white/10 transition-opacity duration-300 ${isCleanView ? 'opacity-0 hover:opacity-100' : ''}`}
       >
-        <div className="flex items-center gap-2 text-white/80">
-          <span className="text-sm font-medium">
-            🔥 Personal Rankings Board
-          </span>
-          {isSaving && (
-            <span className="text-xs text-yellow-400 flex items-center gap-1">
-              <Save size={12} />
-              Saving...
+        {/* Top row - Title and status */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-white/80">
+            <span className="text-sm font-medium">
+              🔥 Personal Rankings Board
             </span>
-          )}
-        </div>
+            {isSaving && (
+              <span className="text-xs text-yellow-400 flex items-center gap-1">
+                <Save size={12} />
+                Saving...
+              </span>
+            )}
+          </div>
 
-        <div className="flex items-center gap-3">
+          {/* Toggle view button - always visible */}
           <button
             onClick={onToggleView}
-            className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg font-medium text-white text-sm transition-all"
+            className="flex items-center gap-2 px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg font-medium text-white text-xs sm:text-sm transition-all"
           >
             {isCleanView ? (
               <>
-                <Eye size={16} />
-                Show Controls
+                <Eye size={14} />
+                <span className="hidden sm:inline">Show Controls</span>
+                <span className="sm:hidden">Show</span>
               </>
             ) : (
               <>
-                <EyeOff size={16} />
-                Hide Controls
+                <EyeOff size={14} />
+                <span className="hidden sm:inline">Hide Controls</span>
+                <span className="sm:hidden">Hide</span>
               </>
             )}
           </button>
-
-          <button
-            onClick={handleSharePublicLink}
-            className="flex items-center gap-2 px-4 py-2 bg-purple-600/80 hover:bg-purple-700 rounded-lg font-medium text-white text-sm transition-all backdrop-blur-sm"
-            title="Copy public read-only link"
-          >
-            <Share size={16} />
-            Share Public Link
-          </button>
-
-          {!isCleanView && (
-            <>
-              {showClearAll && (
-                <button
-                  onClick={onClearAll}
-                  className="flex items-center gap-2 px-4 py-2 bg-red-600/80 hover:bg-red-700 rounded-lg font-medium text-white text-sm transition-all backdrop-blur-sm"
-                >
-                  <Trash2 size={16} />
-                  Clear All
-                </button>
-              )}
-
-              {showViewArchives && (
-                <button
-                  onClick={onViewArchives}
-                  className="flex items-center gap-2 px-4 py-2 bg-orange-600/80 hover:bg-orange-700 rounded-lg font-medium text-white text-sm transition-all backdrop-blur-sm"
-                >
-                  <Clock size={16} />
-                  View Archives
-                </button>
-              )}
-
-              {showSaveSnapshot && (
-                <button
-                  onClick={onSaveSnapshot}
-                  disabled={isSavingSnapshot}
-                  className="flex items-center gap-2 px-4 py-2 bg-purple-600/80 hover:bg-purple-700 disabled:bg-purple-800 disabled:opacity-50 rounded-lg font-medium text-white text-sm transition-all backdrop-blur-sm"
-                >
-                  {isSavingSnapshot ? (
-                    <>
-                      <Save size={16} className="animate-pulse" />
-                      Saving Snapshot...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle size={16} />
-                      Save Snapshot
-                    </>
-                  )}
-                </button>
-              )}
-
-              {showCreateNew && (
-                <button
-                  onClick={onCreateNew}
-                  className="flex items-center gap-2 px-4 py-2 bg-green-600/80 hover:bg-green-700 rounded-lg font-medium text-white text-sm transition-all backdrop-blur-sm"
-                >
-                  <Plus size={16} />
-                  Create New List
-                </button>
-              )}
-
-              {canSave && (
-                <button
-                  onClick={onSave}
-                  disabled={isSaving}
-                  className="flex items-center gap-2 px-4 py-2 bg-green-600/80 hover:bg-green-700 disabled:bg-green-800 disabled:opacity-50 rounded-lg font-medium text-white text-sm transition-all backdrop-blur-sm"
-                >
-                  {isSaving ? (
-                    <>
-                      <Save size={16} className="animate-pulse" />
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle size={16} />
-                      Save
-                    </>
-                  )}
-                </button>
-              )}
-
-              <button
-                onClick={onAddQB}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 rounded-lg font-semibold text-white transition-all transform hover:scale-105 shadow-lg"
-              >
-                <Plus size={20} />
-                Add QB
-              </button>
-            </>
-          )}
         </div>
+
+        {/* Bottom row - Action buttons */}
+        {!isCleanView && (
+          <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2">
+            <button
+              onClick={handleSharePublicLink}
+              className="flex items-center gap-1.5 px-3 py-2 bg-purple-600/80 hover:bg-purple-700 rounded-lg font-medium text-white text-xs transition-all backdrop-blur-sm"
+              title="Copy public read-only link"
+            >
+              <Share size={14} />
+              <span className="hidden sm:inline">Share Public Link</span>
+              <span className="sm:hidden">Share</span>
+            </button>
+
+            {showClearAll && (
+              <button
+                onClick={onClearAll}
+                className="flex items-center gap-1.5 px-3 py-2 bg-red-600/80 hover:bg-red-700 rounded-lg font-medium text-white text-xs transition-all backdrop-blur-sm"
+              >
+                <Trash2 size={14} />
+                <span className="hidden sm:inline">Clear All</span>
+                <span className="sm:hidden">Clear</span>
+              </button>
+            )}
+
+            {showViewArchives && (
+              <button
+                onClick={onViewArchives}
+                className="flex items-center gap-1.5 px-3 py-2 bg-orange-600/80 hover:bg-orange-700 rounded-lg font-medium text-white text-xs transition-all backdrop-blur-sm"
+              >
+                <Clock size={14} />
+                <span className="hidden sm:inline">View Archives</span>
+                <span className="sm:hidden">Archives</span>
+              </button>
+            )}
+
+            {showSaveSnapshot && (
+              <button
+                onClick={onSaveSnapshot}
+                disabled={isSavingSnapshot}
+                className="flex items-center gap-1.5 px-3 py-2 bg-purple-600/80 hover:bg-purple-700 disabled:bg-purple-800 disabled:opacity-50 rounded-lg font-medium text-white text-xs transition-all backdrop-blur-sm"
+              >
+                {isSavingSnapshot ? (
+                  <>
+                    <Save size={14} className="animate-pulse" />
+                    <span className="hidden sm:inline">Saving Snapshot...</span>
+                    <span className="sm:hidden">Saving...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle size={14} />
+                    <span className="hidden sm:inline">Save Snapshot</span>
+                    <span className="sm:hidden">Snapshot</span>
+                  </>
+                )}
+              </button>
+            )}
+
+            {showCreateNew && (
+              <button
+                onClick={onCreateNew}
+                className="flex items-center gap-1.5 px-3 py-2 bg-green-600/80 hover:bg-green-700 rounded-lg font-medium text-white text-xs transition-all backdrop-blur-sm"
+              >
+                <Plus size={14} />
+                <span className="hidden sm:inline">Create New List</span>
+                <span className="sm:hidden">New</span>
+              </button>
+            )}
+
+            {canSave && (
+              <button
+                onClick={onSave}
+                disabled={isSaving}
+                className="flex items-center gap-1.5 px-3 py-2 bg-green-600/80 hover:bg-green-700 disabled:bg-green-800 disabled:opacity-50 rounded-lg font-medium text-white text-xs transition-all backdrop-blur-sm"
+              >
+                {isSaving ? (
+                  <>
+                    <Save size={14} className="animate-pulse" />
+                    <span className="hidden sm:inline">Saving...</span>
+                    <span className="sm:hidden">Save</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle size={14} />
+                    Save
+                  </>
+                )}
+              </button>
+            )}
+
+            <button
+              onClick={onAddQB}
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 rounded-lg font-semibold text-white text-xs sm:text-sm transition-all transform hover:scale-105 shadow-lg"
+            >
+              <Plus size={16} />
+              <span className="hidden sm:inline">Add QB</span>
+              <span className="sm:hidden">Add</span>
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

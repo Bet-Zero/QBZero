@@ -181,8 +181,8 @@ const QBRankingCard = ({
             </div>
           </div>
 
-          {/* Notes Section - Mobile minimal, Desktop ORIGINAL */}
-          <div className="mt-1.5 sm:mt-0">
+          {/* Notes Section - Mobile minimal with extra space above, Desktop ORIGINAL */}
+          <div className="mt-2 sm:mt-0">
             {isEditingNotes && !readOnly ? (
               <div className="space-y-1.5 sm:space-y-2">
                 <textarea
