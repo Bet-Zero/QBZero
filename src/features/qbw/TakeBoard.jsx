@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { CheckCircle, XCircle, Clock, Eye, Plus, User } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, Eye, Plus, User, Shield } from 'lucide-react';
 import {
   fetchAllTakes,
   fetchAuthorTakes,
@@ -8,6 +8,7 @@ import {
 import { quarterbacks } from '@/features/ranker/quarterbacks';
 import { toast } from 'react-hot-toast';
 import TakeAuthorModal from './TakeAuthorModal';
+import AdminGate from './AdminGate';
 
 const TakeCard = ({ take }) => {
   const getStatusIcon = () => {
@@ -99,6 +100,18 @@ const TakeBoard = () => {
     );
   }, [qbSearch]);
 
+  const [adminMode, setAdminMode] = useState(false);
+  const [showAdminGate, setShowAdminGate] = useState(false);
+
+  // Check for admin mode on mount
+  useEffect(() => {
+    const isAdmin = localStorage.getItem('qbzero_admin') === 'true';
+    if (isAdmin) {
+      setAdminMode(true);
+      setAuthor({ id: 'admin', name: 'Admin' });
+    }
+  }, []);
+
   useEffect(() => {
     if (author) {
       loadTakes();
@@ -157,7 +170,12 @@ const TakeBoard = () => {
   // Load author from localStorage on mount
   useEffect(() => {
     const savedAuthor = localStorage.getItem('takeAuthor');
-    if (savedAuthor) {
+    const isAdmin = localStorage.getItem('qbzero_admin') === 'true';
+
+    if (isAdmin) {
+      setAdminMode(true);
+      setAuthor({ id: 'admin', name: 'Admin' });
+    } else if (savedAuthor) {
       setAuthor(JSON.parse(savedAuthor));
     }
   }, []);
@@ -210,21 +228,57 @@ const TakeBoard = () => {
         {/* Author Controls - Positioned Absolute Right */}
         <div className="absolute md:right-0 right-1/2 md:translate-x-0 translate-x-1/2 md:top-1/2 top-[calc(100%+0.5rem)] md:-translate-y-1/2 translate-y-0 flex md:flex-row flex-col items-center gap-3">
           {!author ? (
-            <button
-              onClick={() => setShowAuthorModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600/80 hover:bg-blue-700 rounded-lg text-white text-sm font-medium transition-all whitespace-nowrap"
-            >
-              <User size={16} />
-              Login to Add Takes
-            </button>
+            <>
+              <button
+                onClick={() => setShowAuthorModal(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600/80 hover:bg-blue-700 rounded-lg text-white text-sm font-medium transition-all whitespace-nowrap"
+              >
+                <User size={16} />
+                Login to Add Takes
+              </button>
+              
+              <button
+                onClick={() => setShowAdminGate(true)}
+                className="flex items-center gap-2 px-3 py-2 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 rounded-lg text-purple-300 text-sm font-medium transition-all whitespace-nowrap"
+              >
+                <Shield size={14} />
+                Admin
+              </button>
+            </>
           ) : (
             <>
-              <div className="flex items-center gap-2 px-4 py-2 bg-white/10 rounded-lg whitespace-nowrap">
+              <div
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap ${
+                  adminMode
+                    ? 'bg-purple-600/20 border border-purple-500/30'
+                    : 'bg-white/10'
+                }`}
+              >
                 <User size={16} className="text-white/60" />
                 <span className="text-white text-sm font-medium">
                   {author.name}
                 </span>
+                {adminMode && (
+                  <span className="text-xs bg-purple-500/20 text-purple-300 px-2 py-1 rounded">
+                    ADMIN
+                  </span>
+                )}
               </div>
+
+              {adminMode && (
+                <button
+                  onClick={() => {
+                    setAdminMode(false);
+                    setAuthor(null);
+                    localStorage.removeItem('qbzero_admin');
+                    localStorage.removeItem('takeAuthor');
+                    toast.success('Logged out');
+                  }}
+                  className="px-3 py-2 bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 rounded-lg text-red-300 text-xs font-medium transition-all"
+                >
+                  Logout
+                </button>
+              )}
 
               <button
                 onClick={() => setShowForm(!showForm)}
@@ -445,6 +499,18 @@ const TakeBoard = () => {
           onClose={() => setShowAuthorModal(false)}
           onLogin={handleLogin}
           currentAuthor={author}
+        />
+      )}
+
+      {/* Admin Gate Modal */}
+      {showAdminGate && (
+        <AdminGate
+          onAdminAccess={() => {
+            setAdminMode(true);
+            setAuthor({ id: 'admin', name: 'Admin' });
+            setShowAdminGate(false);
+          }}
+          onClose={() => setShowAdminGate(false)}
         />
       )}
     </div>
