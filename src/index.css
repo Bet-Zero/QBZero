@@ -47,6 +47,24 @@
   .no-scrollbar::-webkit-scrollbar {
     display: none; /* Safari and Chrome */
   }
+
+  /* QB Ranking Card responsive styling */
+  .rank-number {
+    /* Desktop: apply the skew transform and margins */
+    @media (min-width: 640px) {
+      transform: scaleX(1.0) skewX(-6deg) scaleY(1.3) !important;
+      margin-top: 8px !important;
+      margin-left: -12px !important;
+    }
+    
+    /* Mobile: keep it simple and centered */
+    @media (max-width: 639px) {
+      transform: scaleX(1.0) !important;
+      margin-top: 0px !important;
+      margin-left: 0px !important;
+      font-size: clamp(2rem, 6vw, 3rem) !important;
+    }
+  }
 }
 
 body {

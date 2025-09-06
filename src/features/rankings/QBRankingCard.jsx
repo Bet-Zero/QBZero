@@ -120,20 +120,13 @@ const QBRankingCard = ({
         {/* Rank Number Container */}
         <div className="w-12 flex items-center justify-center bg-white/20 backdrop-blur-sm overflow-hidden">
           <div
-            className="font-bold text-white italic"
+            className="font-bold text-white italic flex items-center justify-center h-full rank-number"
             style={{
               textShadow: '1px 1px 2px rgba(0,0,0,0.9)',
               fontFamily: '"Bebas Neue", Impact, "Arial Black", sans-serif',
-              fontSize: qb.rank >= 10 ? '3.5rem' : '4.5rem',
+              fontSize: qb.rank >= 10 ? 'clamp(2.5rem, 4vw, 3.5rem)' : 'clamp(3rem, 5vw, 4.5rem)',
               lineHeight: '1.0',
-              transform: `scaleX(${qb.rank >= 10 ? '1.0' : '1.0'}) skewX(-6deg) scaleY(1.3)`,
               letterSpacing: qb.rank >= 10 ? '-0.05em' : '0.05em',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              height: '100%',
-              marginTop: '8px',
-              marginLeft: qb.rank >= 10 ? '-16px' : '-8px',
             }}
           >
             {qb.rank}
