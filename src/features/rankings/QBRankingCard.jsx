@@ -117,20 +117,27 @@ const QBRankingCard = ({
       )}
 
       <div className="flex relative z-10 min-h-[80px]">
-        {/* Rank Number Container */}
-        <div className="w-12 flex items-center justify-center bg-white/20 backdrop-blur-sm overflow-hidden">
+        {/* Rank Number Container - Cool but Mobile-Friendly */}
+        <div className="w-12 min-w-[48px] flex items-center justify-center bg-white/20 backdrop-blur-sm overflow-hidden relative rounded-l-lg">
           <div
-            className="font-bold text-white italic flex items-center justify-center h-full rank-number"
+            className="text-white font-black text-center leading-none select-none"
             style={{
-              textShadow: '1px 1px 2px rgba(0,0,0,0.9)',
               fontFamily: '"Bebas Neue", Impact, "Arial Black", sans-serif',
-              fontSize: qb.rank >= 10 ? 'clamp(2.5rem, 4vw, 3.5rem)' : 'clamp(3rem, 5vw, 4.5rem)',
-              lineHeight: '1.0',
-              letterSpacing: qb.rank >= 10 ? '-0.05em' : '0.05em',
+              fontSize: qb.rank >= 10 ? '2.75rem' : '3.25rem',
+              textShadow: '2px 2px 4px rgba(0,0,0,0.8)',
+              transform: 'scaleY(1.2) translateY(2px)', // Shifted from -2px to +2px
+              letterSpacing: qb.rank >= 10 ? '-0.02em' : '0.02em',
+              // Adjust horizontal position based on digit count
+              marginLeft: qb.rank >= 10 ? '1px' : '-1px',
+              // Fine-tune positioning for better optical centering
+              position: 'relative',
+              top: '2px', // Shifted from 1px to 2px
             }}
           >
             {qb.rank}
           </div>
+          {/* Subtle gradient overlay for extra style */}
+          <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent pointer-events-none rounded-l-lg" />
         </div>
 
         {/* QB Image - Full Height */}
@@ -193,7 +200,9 @@ const QBRankingCard = ({
             <div className="text-white/70 text-sm drop-shadow-lg">
               {qb.notes || (
                 <span className="italic text-white/40">
-                  {readOnly ? "No notes" : "Click edit to add notes about this QB..."}
+                  {readOnly
+                    ? 'No notes'
+                    : 'Click edit to add notes about this QB...'}
                 </span>
               )}
             </div>
