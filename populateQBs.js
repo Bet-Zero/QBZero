@@ -1,6 +1,12 @@
 // populateQBs.js - Script to populate Firestore with QB data
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, doc, setDoc, getDoc } from 'firebase/firestore';
+import {
+  getFirestore,
+  collection,
+  doc,
+  setDoc,
+  getDoc,
+} from 'firebase/firestore';
 import { quarterbacks } from './src/features/ranker/quarterbacks.js';
 
 // Firebase config (using environment variables)
@@ -18,14 +24,14 @@ const db = getFirestore(app);
 
 async function populateQBs() {
   console.log(`Starting to populate ${quarterbacks.length} quarterbacks...`);
-  
+
   for (const qb of quarterbacks) {
     try {
       const docRef = doc(db, 'players', qb.id);
-      
+
       // Check if document already exists
       const docSnap = await getDoc(docRef);
-      
+
       // Basic QB data structure matching what the components expect
       const qbData = {
         player_id: qb.id,
@@ -70,7 +76,7 @@ async function populateQBs() {
         },
         throwingProfile: '',
         system: {
-          stats: {}
+          stats: {},
         },
         contract: {},
         contract_summary: {},
@@ -84,15 +90,16 @@ async function populateQBs() {
         'bio.Team': qb.team,
         'bio.Position': 'QB',
       };
-      
+
       await setDoc(docRef, qbData, { merge: true });
-      console.log(`✓ ${qb.name} (${qb.team}) ${docSnap.exists() ? 'updated' : 'created'}`);
-      
+      console.log(
+        `✓ ${qb.name} (${qb.team}) ${docSnap.exists() ? 'updated' : 'created'}`
+      );
     } catch (error) {
       console.error(`✗ Error processing ${qb.name}:`, error);
     }
   }
-  
+
   console.log('Finished populating quarterbacks!');
 }
 
