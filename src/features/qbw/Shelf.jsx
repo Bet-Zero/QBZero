@@ -44,14 +44,31 @@ const Shelf = ({ title, qbs = [], className = '' }) => {
           <div className="absolute -bottom-3 left-2 right-2 h-4 bg-gradient-to-b from-black/40 to-transparent rounded-xl blur-lg transform rotateX-3"></div>
 
           {/* Crystal balls positioned ON TOP of the shelf surface */}
-          <div className="absolute -top-24 left-0 right-0 flex flex-wrap gap-3 sm:gap-8 justify-center px-3 sm:px-6 z-20">
+          {/* Mobile: Allow wrapping with more vertical space */}
+          <div className="absolute -top-40 left-0 right-0 flex flex-wrap gap-3 justify-center px-3 z-20 sm:hidden">
             {qbs.length > 0 ? (
               qbs.map((qb, index) => (
                 <div
                   key={qb.id || index}
                   className="flex-shrink-0 relative z-30"
                 >
-                  <CrystalBall qb={qb} size="responsive-mobile" />
+                  <CrystalBall qb={qb} size="sm" />
+                </div>
+              ))
+            ) : (
+              <div className="text-white/40 text-center py-8">Empty shelf</div>
+            )}
+          </div>
+          
+          {/* Desktop: Single row layout */}
+          <div className="absolute -top-24 left-0 right-0 hidden sm:flex flex-nowrap gap-8 justify-center px-6 z-20">
+            {qbs.length > 0 ? (
+              qbs.map((qb, index) => (
+                <div
+                  key={qb.id || index}
+                  className="flex-shrink-0 relative z-30"
+                >
+                  <CrystalBall qb={qb} size="md" />
                 </div>
               ))
             ) : (

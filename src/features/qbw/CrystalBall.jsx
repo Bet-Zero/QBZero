@@ -6,7 +6,6 @@ const CrystalBall = ({ qb, size = 'md' }) => {
     md: 'w-32 h-32',
     lg: 'w-40 h-40',
     xl: 'w-48 h-48',
-    'responsive-mobile': 'w-20 h-20 sm:w-32 sm:h-32',
   };
 
   const ballSize = sizeClasses[size];
