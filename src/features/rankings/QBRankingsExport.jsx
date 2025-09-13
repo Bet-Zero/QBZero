@@ -247,7 +247,7 @@ const QBRankingsExport = ({
     const sharedHeader = (
       <div className="text-center mb-6">
         <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 bg-clip-text text-transparent mb-2">
-          {rankingName || 'QB Rankings 2025'}
+          NFL QB Rankings
         </h1>
         <div className="text-sm text-white/60 italic">
           {new Date().toLocaleDateString(undefined, {
