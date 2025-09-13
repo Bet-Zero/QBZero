@@ -79,9 +79,10 @@ const MobileMenu = ({ isOpen, onClose }) => {
             <Lock size={14} />
             <span>QB Profiles</span>
           </div>
-          <Link to="/qbw" className="block py-2 text-white/60 hover:text-white">
-            QBW 🔮
-          </Link>
+          <div className="flex items-center gap-2 py-2 text-white/40 cursor-not-allowed">
+            <Lock size={14} />
+            <span>QBW 🔮</span>
+          </div>
           <div className="flex items-center gap-2 py-2 text-white/40 cursor-not-allowed">
             <Lock size={14} />
             <span>Backup QBs</span>
@@ -155,9 +156,10 @@ const SiteLayout = () => {
             <Lock size={12} />
             <span>QB Profiles</span>
           </div>
-          <Link to="/qbw" className="hover:text-white">
-            QBW 🔮
-          </Link>
+          <div className="flex items-center gap-1 text-white/40 cursor-not-allowed">
+            <Lock size={12} />
+            <span>QBW 🔮</span>
+          </div>
           <div className="flex items-center gap-1 text-white/40 cursor-not-allowed">
             <Lock size={12} />
             <span>Backup QBs</span>

@@ -274,9 +274,6 @@ const QBWPage = () => {
           {/* Main hero content */}
           <div className="text-center mb-12 relative z-10">
             <div className="text-8xl mb-4">🔮</div>
-            <h1 className="text-5xl sm:text-6xl font-bold bg-gradient-to-r from-purple-400 via-blue-400 to-cyan-400 bg-clip-text text-transparent mb-4">
-              QBW
-            </h1>
             <p className="text-xl text-white/70 max-w-2xl mx-auto">
               My crystal ball QB predictions and takes that stood the test of
               time
