@@ -320,8 +320,8 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
       </div>
     );
 
-    // Always render grid view for the export (shareViewRef)
-    // This ensures consistent export regardless of current view mode
+    // Always render desktop-style grid for the export (shareViewRef)
+    // Fixed 5-column layout regardless of device - no responsive breakpoints
     return (
       <div
         ref={shareViewRef}
@@ -329,7 +329,8 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
       >
         {sharedHeader}
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 max-w-[1400px] mx-auto">
+        {/* Fixed 5-column grid layout - exactly like desktop, no responsive breakpoints */}
+        <div className="grid grid-cols-5 gap-4 max-w-[1400px] mx-auto">
           {currentRanking.map((p, idx) => {
             const logoPath = getLogoPath(p.team);
             const headshot =
