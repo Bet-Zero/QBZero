@@ -199,11 +199,20 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
       <div
         ref={shareViewRef}
         className="bg-neutral-900 p-6 rounded-lg border border-white/10"
+        style={{ width: '1400px' }} // Force desktop width
       >
         {sharedHeader}
 
-        {/* Fixed 5-column layout for export - no responsive breakpoints */}
-        <div className="grid grid-cols-5 gap-4 max-w-[1400px] mx-auto">
+        {/* Force 5-column layout with inline styles - completely ignore device/screen size */}
+        <div 
+          style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(5, 1fr)', 
+            gap: '16px', 
+            maxWidth: '1400px', 
+            margin: '0 auto' 
+          }}
+        >
           {currentRanking.map((p, idx) => {
             const logoPath = getLogoPath(p.team);
             const headshot =
