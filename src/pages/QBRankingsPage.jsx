@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import QBRankingCard from '@/features/rankings/QBRankingCard';
 import AddQBModal from '@/features/rankings/AddQBModal';
 import RankingsHeader from '@/features/rankings/RankingsHeader';
+import QBRankingsExport from '@/features/rankings/QBRankingsExport';
 import {
   getCurrentPersonalRanking,
   saveCurrentPersonalRankings,
@@ -25,6 +26,7 @@ const QBRankingsPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
   const [isCleanView, setIsCleanView] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [showMovement, setShowMovement] = useState(false);
@@ -131,6 +133,10 @@ const QBRankingsPage = () => {
 
   const handleToggleMovement = () => {
     setShowMovement(!showMovement);
+  };
+
+  const handleExport = () => {
+    setShowExportModal(true);
   };
 
   // Save rankings
@@ -327,6 +333,8 @@ const QBRankingsPage = () => {
           showMovementToggle={
             isPersonalRankings && Object.keys(movementData).length > 0
           }
+          onExport={handleExport}
+          showExport={rankings.length > 0}
         />
 
         <div className="space-y-1.5 sm:space-y-2">
@@ -378,6 +386,14 @@ const QBRankingsPage = () => {
           onClose={() => setShowAddModal(false)}
           onAdd={handleAddQB}
           existingQBNames={rankings.map((qb) => qb.name)}
+        />
+      )}
+
+      {showExportModal && (
+        <QBRankingsExport
+          rankings={rankings}
+          rankingName={rankingName}
+          onClose={() => setShowExportModal(false)}
         />
       )}
     </div>

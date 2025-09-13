@@ -9,6 +9,7 @@ import {
   Trash2,
   Share,
   TrendingUp,
+  Download,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -33,6 +34,8 @@ const RankingsHeader = ({
   showMovement = false,
   onToggleMovement,
   showMovementToggle = false,
+  onExport,
+  showExport = false,
 }) => {
   const handleSharePublicLink = () => {
     const publicUrl = `${window.location.origin}/rankings/public`;
@@ -130,6 +133,18 @@ const RankingsHeader = ({
                   {showMovement ? 'Hide Movement' : 'Show Movement'}
                 </span>
                 <span className="sm:hidden">Movement</span>
+              </button>
+            )}
+
+            {showExport && (
+              <button
+                onClick={onExport}
+                className="flex items-center gap-1.5 px-3 py-2 bg-indigo-600/80 hover:bg-indigo-700 rounded-lg font-medium text-white text-xs transition-all backdrop-blur-sm"
+                title="Export rankings with grid view display"
+              >
+                <Download size={14} />
+                <span className="hidden sm:inline">Export Rankings</span>
+                <span className="sm:hidden">Export</span>
               </button>
             )}
 
