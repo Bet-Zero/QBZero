@@ -691,8 +691,10 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
         </div>
       </div>
 
-      {/* Hidden export content - only for image downloads */}
-      <div className="hidden">{renderContent()}</div>
+      {/* Export content - positioned off-screen for image capture */}
+      <div className="absolute -left-[9999px] -top-[9999px] opacity-0 pointer-events-none">
+        {renderContent()}
+      </div>
 
       {/* Visible display content */}
       {renderDisplayView()}
