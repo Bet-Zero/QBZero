@@ -108,8 +108,9 @@ const QBRankingsPage = () => {
 
     try {
       const archives = await getArchivedPersonalRankings();
-      // Get the most recent archive (first in the array since they're ordered by date desc)
-      return archives.length > 0 ? archives[0].rankings : null;
+      // Get the second most recent archive (index 1) to compare against,
+      // since the most recent (index 0) is likely the same as current rankings
+      return archives.length > 1 ? archives[1].rankings : null;
     } catch (error) {
       console.error('Error loading previous rankings:', error);
       return null;

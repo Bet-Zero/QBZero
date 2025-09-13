@@ -26,8 +26,10 @@ const PublicQBRankingsPage = () => {
           // Load previous rankings for movement comparison
           try {
             const archives = await getArchivedPersonalRankings();
-            if (archives.length > 0) {
-              const previousRankings = archives[0].rankings;
+            // Get the second most recent archive (index 1) to compare against,
+            // since the most recent (index 0) is likely the same as current rankings
+            if (archives.length > 1) {
+              const previousRankings = archives[1].rankings;
               const movement = calculateRankingMovement(
                 currentRanking.rankings,
                 previousRankings
