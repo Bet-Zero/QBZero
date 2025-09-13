@@ -8,6 +8,7 @@ import {
   EyeOff,
   Trash2,
   Share,
+  TrendingUp,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -29,6 +30,9 @@ const RankingsHeader = ({
   showClearAll,
   isCleanView,
   onToggleView,
+  showMovement = false,
+  onToggleMovement,
+  showMovementToggle = false,
 }) => {
   const handleSharePublicLink = () => {
     const publicUrl = `${window.location.origin}/rankings/public`;
@@ -107,6 +111,28 @@ const RankingsHeader = ({
         {/* Bottom row - Action buttons */}
         {!isCleanView && (
           <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2">
+            {showMovementToggle && (
+              <button
+                onClick={onToggleMovement}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg font-medium text-white text-xs transition-all backdrop-blur-sm ${
+                  showMovement
+                    ? 'bg-green-600/80 hover:bg-green-700'
+                    : 'bg-white/10 hover:bg-white/20'
+                }`}
+                title={
+                  showMovement
+                    ? 'Hide ranking movement'
+                    : 'Show ranking movement'
+                }
+              >
+                <TrendingUp size={14} />
+                <span className="hidden sm:inline">
+                  {showMovement ? 'Hide Movement' : 'Show Movement'}
+                </span>
+                <span className="sm:hidden">Movement</span>
+              </button>
+            )}
+
             <button
               onClick={handleSharePublicLink}
               className="flex items-center gap-1.5 px-3 py-2 bg-purple-600/80 hover:bg-purple-700 rounded-lg font-medium text-white text-xs transition-all backdrop-blur-sm"

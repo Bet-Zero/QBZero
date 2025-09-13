@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ChevronUp, ChevronDown, Trash2, Edit3 } from 'lucide-react';
+import RankingMovementIndicator from '@/components/shared/RankingMovementIndicator';
 
 // Mapping team abbreviations to logo file names
 const teamLogoMap = {
@@ -46,6 +47,8 @@ const QBRankingCard = ({
   canMoveUp,
   canMoveDown,
   readOnly = false,
+  movement = null, // Movement data from ranking comparison
+  showMovement = false, // Toggle for showing movement indicators
 }) => {
   const [isEditingNotes, setIsEditingNotes] = useState(false);
   const [notesValue, setNotesValue] = useState(qb.notes || '');
@@ -142,6 +145,17 @@ const QBRankingCard = ({
           >
             {qb.rank}
           </div>
+
+          {/* Movement Indicator positioned in top-right corner of rank number */}
+          {showMovement && movement && (
+            <div className="absolute top-1 -right-1 sm:top-0 sm:right-0 transform scale-75 sm:scale-90 z-10">
+              <RankingMovementIndicator
+                movement={movement}
+                showMovement={showMovement}
+              />
+            </div>
+          )}
+
           <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent pointer-events-none rounded-l-lg" />
         </div>
 
@@ -165,6 +179,7 @@ const QBRankingCard = ({
               <h3 className="text-base sm:text-xl font-bold text-white drop-shadow-lg leading-tight">
                 {qb.name}
               </h3>
+
               {qb.team && (
                 <div className="flex items-center gap-1 sm:gap-2 px-1.5 sm:px-2 py-0.5 sm:py-1 bg-[#111]/80 backdrop-blur-sm rounded text-white/80 flex-shrink-0">
                   <div

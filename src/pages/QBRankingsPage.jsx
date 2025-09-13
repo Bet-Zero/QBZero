@@ -7,12 +7,14 @@ import {
   getCurrentPersonalRanking,
   saveCurrentPersonalRankings,
   updateCurrentPersonalRankings,
+  getArchivedPersonalRankings,
 } from '@/firebase/personalRankingHelpers';
 import {
   fetchQBRanking,
   saveQBRanking,
   createQBRanking,
 } from '@/firebase/listHelpers';
+import { calculateRankingMovement } from '@/utils/rankingMovement';
 import toast from 'react-hot-toast';
 
 const QBRankingsPage = () => {
@@ -25,6 +27,8 @@ const QBRankingsPage = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [isCleanView, setIsCleanView] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const [showMovement, setShowMovement] = useState(false);
+  const [movementData, setMovementData] = useState({});
 
   // Use useRef for ID counter to persist across renders and avoid timing issues
   const idCounterRef = useRef(0);
@@ -97,6 +101,36 @@ const QBRankingsPage = () => {
 
     loadRanking();
   }, [rankingId, navigate, isPersonalRankings]);
+
+  // Load previous rankings for movement comparison
+  const loadPreviousRankings = async () => {
+    if (!isPersonalRankings) return null;
+
+    try {
+      const archives = await getArchivedPersonalRankings();
+      // Get the most recent archive (first in the array since they're ordered by date desc)
+      return archives.length > 0 ? archives[0].rankings : null;
+    } catch (error) {
+      console.error('Error loading previous rankings:', error);
+      return null;
+    }
+  };
+
+  // Calculate movement data when rankings change
+  useEffect(() => {
+    if (isPersonalRankings && rankings.length > 0) {
+      loadPreviousRankings().then((previousRankings) => {
+        if (previousRankings) {
+          const movement = calculateRankingMovement(rankings, previousRankings);
+          setMovementData(movement);
+        }
+      });
+    }
+  }, [rankings, isPersonalRankings]);
+
+  const handleToggleMovement = () => {
+    setShowMovement(!showMovement);
+  };
 
   // Save rankings
   const saveRankings = async (showToast = false) => {
@@ -287,6 +321,11 @@ const QBRankingsPage = () => {
           showClearAll={rankings.length > 0}
           isCleanView={isCleanView}
           onToggleView={() => setIsCleanView(!isCleanView)}
+          showMovement={showMovement}
+          onToggleMovement={handleToggleMovement}
+          showMovementToggle={
+            isPersonalRankings && Object.keys(movementData).length > 0
+          }
         />
 
         <div className="space-y-1.5 sm:space-y-2">
@@ -301,6 +340,8 @@ const QBRankingsPage = () => {
               canMoveUp={index > 0}
               canMoveDown={index < rankings.length - 1}
               readOnly={isCleanView}
+              movement={movementData[qb.id]}
+              showMovement={showMovement}
             />
           ))}
 
