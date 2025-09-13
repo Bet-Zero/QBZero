@@ -178,6 +178,109 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
     setIsAdjustMode(false);
   };
 
+  // Separate export-only content with fixed 5-column layout
+  const renderExportContent = () => {
+    const sharedHeader = (
+      <div className="text-center mb-6">
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 bg-clip-text text-transparent mb-2">
+          QB Rankings 2025
+        </h1>
+        <div className="text-sm text-white/60 italic">
+          {new Date().toLocaleDateString(undefined, {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          })}
+        </div>
+      </div>
+    );
+
+    return (
+      <div
+        ref={shareViewRef}
+        className="bg-neutral-900 p-6 rounded-lg border border-white/10"
+      >
+        {sharedHeader}
+
+        {/* Fixed 5-column layout for export - no responsive breakpoints */}
+        <div className="grid grid-cols-5 gap-4 max-w-[1400px] mx-auto">
+          {currentRanking.map((p, idx) => {
+            const logoPath = getLogoPath(p.team);
+            const headshot =
+              p.headshotUrl || `/assets/headshots/${p.player_id || p.id}.png`;
+            const logoBackgroundStyle = getLogoBackgroundStyle(
+              p.team,
+              showLogoBg
+            );
+
+            return (
+              <div key={p.id} className="relative group">
+                {/* Card */}
+                <div className="bg-[#1a1a1a] rounded-lg overflow-hidden border border-white/10 transition-all hover:border-white/20">
+                  {/* Headshot Container with overlaid rank */}
+                  <div
+                    className="aspect-square w-full overflow-hidden bg-[#111] relative"
+                    style={
+                      teamLogoPositioning[p.team]
+                        ? {
+                            backgroundImage: showLogoBg
+                              ? `url(${logoPath})`
+                              : 'none',
+                            backgroundPosition: `calc(50% + ${teamLogoPositioning[p.team].x}px) calc(50% + ${teamLogoPositioning[p.team].y}px)`,
+                          }
+                        : {
+                            backgroundImage: showLogoBg
+                              ? `url(${logoPath})`
+                              : 'none',
+                          }
+                    }
+                  >
+                    <img
+                      src={headshot}
+                      alt={p.name}
+                      className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                      onError={(e) => {
+                        e.target.src = '/assets/headshots/default.png';
+                      }}
+                    />
+                    {/* Rank overlay in corner */}
+                    <div className="absolute top-2 left-2 bg-neutral-600/50 backdrop-blur-sm text-white font-bold text-2xl px-1.5 py-1 rounded shadow-lg">
+                      {idx + 1}
+                    </div>
+                  </div>
+
+                  {/* Info Section */}
+                  <div className="p-3">
+                    <div className="text-white font-medium truncate mb-1">
+                      {p.display_name || p.name}
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      {logoPath && (
+                        <div className="w-4 h-4">
+                          <img
+                            src={logoPath}
+                            alt={p.team}
+                            className="w-full h-full object-contain"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                            }}
+                          />
+                        </div>
+                      )}
+                      <span className="text-white/60 text-sm">
+                        {p.team?.toUpperCase() || '—'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   // If in adjust mode, show the adjustable rankings component
   if (isAdjustMode) {
     return (
@@ -320,8 +423,94 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
       </div>
     );
 
-    // Always render desktop-style grid for the export (shareViewRef)
-    // Fixed 5-column layout regardless of device - no responsive breakpoints
+    if (viewType === 'grid') {
+      return (
+        <div
+          ref={shareViewRef}
+          className="bg-neutral-900 p-6 rounded-lg border border-white/10"
+        >
+          {sharedHeader}
+
+          {/* Desktop: 5 columns, Mobile: 2 columns for readability, Export: always 5 columns */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 max-w-[1400px] mx-auto">
+            {currentRanking.map((p, idx) => {
+              const logoPath = getLogoPath(p.team);
+              const headshot =
+                p.headshotUrl || `/assets/headshots/${p.player_id || p.id}.png`;
+              const logoBackgroundStyle = getLogoBackgroundStyle(
+                p.team,
+                showLogoBg
+              );
+
+              return (
+                <div key={p.id} className="relative group">
+                  {/* Card */}
+                  <div className="bg-[#1a1a1a] rounded-lg overflow-hidden border border-white/10 transition-all hover:border-white/20">
+                    {/* Headshot Container with overlaid rank */}
+                    <div
+                      className="aspect-square w-full overflow-hidden bg-[#111] relative"
+                      style={
+                        teamLogoPositioning[p.team]
+                          ? {
+                              backgroundImage: showLogoBg
+                                ? `url(${logoPath})`
+                                : 'none',
+                              backgroundPosition: `calc(50% + ${teamLogoPositioning[p.team].x}px) calc(50% + ${teamLogoPositioning[p.team].y}px)`,
+                            }
+                          : {
+                              backgroundImage: showLogoBg
+                                ? `url(${logoPath})`
+                                : 'none',
+                            }
+                      }
+                    >
+                      <img
+                        src={headshot}
+                        alt={p.name}
+                        className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                        onError={(e) => {
+                          e.target.src = '/assets/headshots/default.png';
+                        }}
+                      />
+                      {/* Rank overlay in corner */}
+                      <div className="absolute top-2 left-2 bg-neutral-600/50 backdrop-blur-sm text-white font-bold text-2xl px-1.5 py-1 rounded shadow-lg">
+                        {idx + 1}
+                      </div>
+                    </div>
+
+                    {/* Info Section */}
+                    <div className="p-3">
+                      <div className="text-white font-medium truncate mb-1">
+                        {p.display_name || p.name}
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        {logoPath && (
+                          <div className="w-4 h-4">
+                            <img
+                              src={logoPath}
+                              alt={p.team}
+                              className="w-full h-full object-contain"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                              }}
+                            />
+                          </div>
+                        )}
+                        <span className="text-white/60 text-sm">
+                          {p.team?.toUpperCase() || '—'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+
+    // List view
     return (
       <div
         ref={shareViewRef}
@@ -329,80 +518,162 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
       >
         {sharedHeader}
 
-        {/* Fixed 5-column grid layout - exactly like desktop, no responsive breakpoints */}
-        <div className="grid grid-cols-5 gap-4 max-w-[1400px] mx-auto">
-          {currentRanking.map((p, idx) => {
-            const logoPath = getLogoPath(p.team);
-            const headshot =
-              p.headshotUrl || `/assets/headshots/${p.player_id || p.id}.png`;
-            const logoBackgroundStyle = getLogoBackgroundStyle(
-              p.team,
-              showLogoBg
-            );
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-2 gap-y-1">
+          {/* Mobile columns (2) */}
+          {createColumns(numCols.base).map((column, colIndex) => (
+            <div key={colIndex} className="flex flex-col gap-1 sm:hidden">
+              {column.map(({ player: p, rank }) => {
+                const headshot =
+                  p.headshotUrl ||
+                  `/assets/headshots/${p.player_id || p.id}.png`;
+                const logoPath = getLogoPath(p.team);
 
-            return (
-              <div key={p.id} className="relative group">
-                {/* Card */}
-                <div className="bg-[#1a1a1a] rounded-lg overflow-hidden border border-white/10 transition-all hover:border-white/20">
-                  {/* Headshot Container with overlaid rank */}
+                return (
                   <div
-                    className="aspect-square w-full overflow-hidden bg-[#111] relative"
-                    style={
-                      teamLogoPositioning[p.team]
-                        ? {
-                            backgroundImage: showLogoBg
-                              ? `url(${logoPath})`
-                              : 'none',
-                            backgroundPosition: `calc(50% + ${teamLogoPositioning[p.team].x}px) calc(50% + ${teamLogoPositioning[p.team].y}px)`,
-                          }
-                        : {
-                            backgroundImage: showLogoBg
-                              ? `url(${logoPath})`
-                              : 'none',
-                          }
-                    }
+                    key={p.id}
+                    className="bg-white/5 rounded p-2 flex items-center gap-2"
                   >
+                    <div className="w-8 h-8 flex items-center justify-center bg-white/10 rounded-full font-bold text-white/80">
+                      {rank}
+                    </div>
                     <img
                       src={headshot}
-                      alt={p.name}
-                      className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                      alt=""
+                      className="w-10 h-10 rounded-full object-cover"
                       onError={(e) => {
                         e.target.src = '/assets/headshots/default.png';
                       }}
                     />
-                    {/* Rank overlay in corner */}
-                    <div className="absolute top-2 left-2 bg-neutral-600/50 backdrop-blur-sm text-white font-bold text-2xl px-1.5 py-1 rounded shadow-lg">
-                      {idx + 1}
+                    <div className="flex-1 truncate text-sm">
+                      <div className="font-medium text-white truncate">
+                        {p.display_name || p.name}
+                      </div>
+                      <div className="flex items-center gap-1 text-white/60 text-xs">
+                        {logoPath && (
+                          <div className="w-4 h-4">
+                            <img
+                              src={logoPath}
+                              alt={p.team}
+                              className="w-full h-full object-contain"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                              }}
+                            />
+                          </div>
+                        )}
+                        <span>{p.team?.toUpperCase() || '—'}</span>
+                      </div>
                     </div>
                   </div>
+                );
+              })}
+            </div>
+          ))}
 
-                  {/* Info Section */}
-                  <div className="p-3">
-                    <div className="text-white font-medium truncate mb-1">
-                      {p.display_name || p.name}
+          {/* Tablet columns (3) */}
+          {createColumns(numCols.sm).map((column, colIndex) => (
+            <div
+              key={colIndex}
+              className="hidden sm:flex md:hidden flex-col gap-1"
+            >
+              {column.map(({ player: p, rank }) => {
+                const headshot =
+                  p.headshotUrl ||
+                  `/assets/headshots/${p.player_id || p.id}.png`;
+                const logoPath = getLogoPath(p.team);
+
+                return (
+                  <div
+                    key={p.id}
+                    className="bg-white/5 rounded p-2 flex items-center gap-2"
+                  >
+                    <div className="w-8 h-8 flex items-center justify-center bg-white/10 rounded-full font-bold text-white/80">
+                      {rank}
                     </div>
-                    <div className="flex items-center gap-1.5">
-                      {logoPath && (
-                        <div className="w-4 h-4">
-                          <img
-                            src={logoPath}
-                            alt={p.team}
-                            className="w-full h-full object-contain"
-                            onError={(e) => {
-                              e.target.style.display = 'none';
-                            }}
-                          />
-                        </div>
-                      )}
-                      <span className="text-white/60 text-sm">
-                        {p.team?.toUpperCase() || '—'}
-                      </span>
+                    <img
+                      src={headshot}
+                      alt=""
+                      className="w-10 h-10 rounded-full object-cover"
+                      onError={(e) => {
+                        e.target.src = '/assets/headshots/default.png';
+                      }}
+                    />
+                    <div className="flex-1 truncate text-sm">
+                      <div className="font-medium text-white truncate">
+                        {p.display_name || p.name}
+                      </div>
+                      <div className="flex items-center gap-1 text-white/60 text-xs">
+                        {logoPath && (
+                          <div className="w-4 h-4">
+                            <img
+                              src={logoPath}
+                              alt={p.team}
+                              className="w-full h-full object-contain"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                              }}
+                            />
+                          </div>
+                        )}
+                        <span>{p.team?.toUpperCase() || '—'}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </div>
-            );
-          })}
+                );
+              })}
+            </div>
+          ))}
+
+          {/* Desktop columns (4) */}
+          {createColumns(numCols.md).map((column, colIndex) => (
+            <div key={colIndex} className="hidden md:flex flex-col gap-1">
+              {column.map(({ player: p, rank }) => {
+                const headshot =
+                  p.headshotUrl ||
+                  `/assets/headshots/${p.player_id || p.id}.png`;
+                const logoPath = getLogoPath(p.team);
+
+                return (
+                  <div
+                    key={p.id}
+                    className="bg-white/5 rounded p-2 flex items-center gap-2"
+                  >
+                    <div className="w-8 h-8 flex items-center justify-center bg-white/10 rounded-full font-bold text-white/80">
+                      {rank}
+                    </div>
+                    <img
+                      src={headshot}
+                      alt=""
+                      className="w-10 h-10 rounded-full object-cover"
+                      onError={(e) => {
+                        e.target.src = '/assets/headshots/default.png';
+                      }}
+                    />
+                    <div className="flex-1 truncate text-sm">
+                      <div className="font-medium text-white truncate">
+                        {p.display_name || p.name}
+                      </div>
+                      <div className="flex items-center gap-1 text-white/60 text-xs">
+                        {logoPath && (
+                          <div className="w-4 h-4">
+                            <img
+                              src={logoPath}
+                              alt={p.team}
+                              className="w-full h-full object-contain"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                              }}
+                            />
+                          </div>
+                        )}
+                        <span>{p.team?.toUpperCase() || '—'}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ))}
         </div>
       </div>
     );
@@ -418,7 +689,12 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
         </div>
       </div>
 
-      {/* Content */}
+      {/* Hidden export content with fixed 5-column layout */}
+      <div style={{ position: 'absolute', left: '-9999px', top: '-9999px', width: '1400px' }}>
+        {renderExportContent()}
+      </div>
+
+      {/* Visible display content with responsive layout */}
       {renderContent()}
 
       {/* Mobile buttons - shown only on mobile, positioned after rankings */}
