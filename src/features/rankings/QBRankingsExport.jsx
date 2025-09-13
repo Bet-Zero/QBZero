@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
-import { LayoutGrid, ListOrdered, Download, X } from 'lucide-react';
+import { LayoutGrid, ListOrdered, Download, X, TrendingUp } from 'lucide-react';
 import useImageDownload from '@/hooks/useImageDownload';
+import RankingMovementIndicator from '@/components/shared/RankingMovementIndicator';
 
 // Mapping team abbreviations to logo file names (copied from RankingResults)
 const teamLogoMap = {
@@ -60,7 +61,7 @@ const getLogoPath = (team) => {
   return `/assets/logos/${logoId}.svg`;
 };
 
-// Helper function to get background positioning for team logos
+// Helper function to get background positioning for team logos - CENTERED VERSION for personal rankings
 const getLogoBackgroundStyle = (team, showLogoBg) => {
   if (!showLogoBg) {
     return { backgroundImage: 'none' };
@@ -71,38 +72,34 @@ const getLogoBackgroundStyle = (team, showLogoBg) => {
     return { backgroundImage: 'none' };
   }
 
-  const positioning = teamLogoPositioning[team];
-
-  if (positioning) {
-    return {
-      backgroundImage: `url(${logoPath})`,
-      backgroundSize: 'contain',
-      backgroundRepeat: 'no-repeat',
-      backgroundPosition: `calc(50% + ${positioning.x}px) calc(50% + ${positioning.y}px)`,
-      opacity: 0.1,
-    };
-  }
-
+  // Always center logos for personal rankings export (ignore custom positioning)
+  // Use a pseudo-element approach by setting the background with opacity in CSS
   return {
     backgroundImage: `url(${logoPath})`,
     backgroundSize: 'contain',
     backgroundRepeat: 'no-repeat',
     backgroundPosition: 'center',
-    opacity: 0.1,
+    // Remove the opacity from here - it was affecting the entire container
   };
 };
 
-const QBRankingsExport = ({ rankings, rankingName, onClose }) => {
+const QBRankingsExport = ({
+  rankings,
+  rankingName,
+  onClose,
+  movementData = {},
+}) => {
   const [viewType, setViewType] = useState('grid'); // 'list' or 'grid'
   const [showLogoBg, setShowLogoBg] = useState(true);
+  const [showMovement, setShowMovement] = useState(
+    Object.keys(movementData).length > 0
+  );
   const [isDownloading, setIsDownloading] = useState(false);
   const shareViewRef = useRef(null);
   const downloadImage = useImageDownload(shareViewRef);
 
   const handleCopy = () => {
-    const text = rankings
-      .map((qb, idx) => `#${idx + 1} ${qb.name}`)
-      .join('\n');
+    const text = rankings.map((qb, idx) => `#${idx + 1} ${qb.name}`).join('\n');
     navigator.clipboard.writeText(text).catch(() => {});
   };
 
@@ -149,6 +146,21 @@ const QBRankingsExport = ({ rankings, rankingName, onClose }) => {
           <span className="hidden sm:inline">
             {showLogoBg ? 'Hide Logo BG' : 'Show Logo BG'}
           </span>
+        </button>
+      )}
+      {Object.keys(movementData).length > 0 && (
+        <button
+          onClick={() => setShowMovement(!showMovement)}
+          className={`px-3 py-2 text-sm text-white rounded hover:bg-white/20 flex items-center transition-colors ${
+            showMovement ? 'bg-green-600/80 hover:bg-green-700' : 'bg-white/10'
+          }`}
+          title={showMovement ? 'Hide Movement' : 'Show Movement'}
+        >
+          <TrendingUp size={16} className="mr-1" />
+          <span className="hidden sm:inline">
+            {showMovement ? 'Hide Movement' : 'Show Movement'}
+          </span>
+          <span className="sm:hidden">Movement</span>
         </button>
       )}
       <button
@@ -271,27 +283,7 @@ const QBRankingsExport = ({ rankings, rankingName, onClose }) => {
                     {/* Headshot Container with overlaid rank */}
                     <div
                       className="aspect-square w-full overflow-hidden bg-[#111] relative"
-                      style={
-                        teamLogoPositioning[qb.team]
-                          ? {
-                              backgroundImage: showLogoBg
-                                ? `url(${logoPath})`
-                                : 'none',
-                              backgroundPosition: `calc(50% + ${teamLogoPositioning[qb.team].x}px) calc(50% + ${teamLogoPositioning[qb.team].y}px)`,
-                              backgroundSize: 'contain',
-                              backgroundRepeat: 'no-repeat',
-                              backgroundOpacity: 0.1,
-                            }
-                          : {
-                              backgroundImage: showLogoBg
-                                ? `url(${logoPath})`
-                                : 'none',
-                              backgroundSize: 'contain',
-                              backgroundRepeat: 'no-repeat',
-                              backgroundPosition: 'center',
-                              backgroundOpacity: 0.1,
-                            }
-                      }
+                      style={logoBackgroundStyle}
                     >
                       <img
                         src={headshot}
@@ -308,7 +300,7 @@ const QBRankingsExport = ({ rankings, rankingName, onClose }) => {
                     </div>
 
                     {/* Info Section */}
-                    <div className="p-3">
+                    <div className="p-3 relative">
                       <div className="text-white font-medium truncate mb-1">
                         {qb.name}
                       </div>
@@ -329,6 +321,18 @@ const QBRankingsExport = ({ rankings, rankingName, onClose }) => {
                           {qb.team?.toUpperCase() || '—'}
                         </span>
                       </div>
+
+                      {/* Movement indicator positioned absolutely in bottom-right */}
+                      {showMovement &&
+                        movementData[qb.id] &&
+                        movementData[qb.id].moved && (
+                          <div className="absolute bottom-3 right-3">
+                            <RankingMovementIndicator
+                              movement={movementData[qb.id]}
+                              showMovement={true}
+                            />
+                          </div>
+                        )}
                     </div>
                   </div>
                 </div>
@@ -351,7 +355,8 @@ const QBRankingsExport = ({ rankings, rankingName, onClose }) => {
           {createColumns(numCols.base).map((column, colIndex) => (
             <div key={colIndex} className="flex flex-col gap-1 sm:hidden">
               {column.map(({ qb, rank }) => {
-                const headshot = qb.imageUrl || `/assets/headshots/${qb.id}.png`;
+                const headshot =
+                  qb.imageUrl || `/assets/headshots/${qb.id}.png`;
                 const logoPath = getLogoPath(qb.team);
 
                 return (
@@ -403,7 +408,8 @@ const QBRankingsExport = ({ rankings, rankingName, onClose }) => {
               className="hidden sm:flex md:hidden flex-col gap-1"
             >
               {column.map(({ qb, rank }) => {
-                const headshot = qb.imageUrl || `/assets/headshots/${qb.id}.png`;
+                const headshot =
+                  qb.imageUrl || `/assets/headshots/${qb.id}.png`;
                 const logoPath = getLogoPath(qb.team);
 
                 return (
@@ -452,7 +458,8 @@ const QBRankingsExport = ({ rankings, rankingName, onClose }) => {
           {createColumns(numCols.md).map((column, colIndex) => (
             <div key={colIndex} className="hidden md:flex flex-col gap-1">
               {column.map(({ qb, rank }) => {
-                const headshot = qb.imageUrl || `/assets/headshots/${qb.id}.png`;
+                const headshot =
+                  qb.imageUrl || `/assets/headshots/${qb.id}.png`;
                 const logoPath = getLogoPath(qb.team);
 
                 return (

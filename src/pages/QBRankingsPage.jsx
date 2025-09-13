@@ -393,6 +393,7 @@ const QBRankingsPage = () => {
         <QBRankingsExport
           rankings={rankings}
           rankingName={rankingName}
+          movementData={movementData}
           onClose={() => setShowExportModal(false)}
         />
       )}
