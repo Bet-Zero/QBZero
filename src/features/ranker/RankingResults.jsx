@@ -320,13 +320,110 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
       </div>
     );
 
+    // Always render grid view for the export (shareViewRef)
+    // This ensures consistent export regardless of current view mode
+    return (
+      <div
+        ref={shareViewRef}
+        className="bg-neutral-900 p-6 rounded-lg border border-white/10"
+      >
+        {sharedHeader}
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 max-w-[1400px] mx-auto">
+          {currentRanking.map((p, idx) => {
+            const logoPath = getLogoPath(p.team);
+            const headshot =
+              p.headshotUrl || `/assets/headshots/${p.player_id || p.id}.png`;
+            const logoBackgroundStyle = getLogoBackgroundStyle(
+              p.team,
+              showLogoBg
+            );
+
+            return (
+              <div key={p.id} className="relative group">
+                {/* Card */}
+                <div className="bg-[#1a1a1a] rounded-lg overflow-hidden border border-white/10 transition-all hover:border-white/20">
+                  {/* Headshot Container with overlaid rank */}
+                  <div
+                    className="aspect-square w-full overflow-hidden bg-[#111] relative"
+                    style={
+                      teamLogoPositioning[p.team]
+                        ? {
+                            backgroundImage: showLogoBg
+                              ? `url(${logoPath})`
+                              : 'none',
+                            backgroundPosition: `calc(50% + ${teamLogoPositioning[p.team].x}px) calc(50% + ${teamLogoPositioning[p.team].y}px)`,
+                          }
+                        : {
+                            backgroundImage: showLogoBg
+                              ? `url(${logoPath})`
+                              : 'none',
+                          }
+                    }
+                  >
+                    <img
+                      src={headshot}
+                      alt={p.name}
+                      className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                      onError={(e) => {
+                        e.target.src = '/assets/headshots/default.png';
+                      }}
+                    />
+                    {/* Rank overlay in corner */}
+                    <div className="absolute top-2 left-2 bg-neutral-600/50 backdrop-blur-sm text-white font-bold text-2xl px-1.5 py-1 rounded shadow-lg">
+                      {idx + 1}
+                    </div>
+                  </div>
+
+                  {/* Info Section */}
+                  <div className="p-3">
+                    <div className="text-white font-medium truncate mb-1">
+                      {p.display_name || p.name}
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      {logoPath && (
+                        <div className="w-4 h-4">
+                          <img
+                            src={logoPath}
+                            alt={p.team}
+                            className="w-full h-full object-contain"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                            }}
+                          />
+                        </div>
+                      )}
+                      <span className="text-white/60 text-sm">
+                        {p.team?.toUpperCase() || '—'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  // Separate render function for the display view (what user sees)
+  const renderDisplayView = () => {
     if (viewType === 'grid') {
       return (
-        <div
-          ref={shareViewRef}
-          className="bg-neutral-900 p-6 rounded-lg border border-white/10"
-        >
-          {sharedHeader}
+        <div className="bg-neutral-900 p-6 rounded-lg border border-white/10">
+          <div className="text-center mb-6">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 bg-clip-text text-transparent mb-2">
+              QB Rankings 2025
+            </h1>
+            <div className="text-sm text-white/60 italic">
+              {new Date().toLocaleDateString(undefined, {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              })}
+            </div>
+          </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 max-w-[1400px] mx-auto">
             {currentRanking.map((p, idx) => {
@@ -406,12 +503,21 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
       );
     }
 
+    // List view for display
     return (
-      <div
-        ref={shareViewRef}
-        className="bg-neutral-900 p-6 rounded-lg border border-white/10"
-      >
-        {sharedHeader}
+      <div className="bg-neutral-900 p-6 rounded-lg border border-white/10">
+        <div className="text-center mb-6">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 bg-clip-text text-transparent mb-2">
+            QB Rankings 2025
+          </h1>
+          <div className="text-sm text-white/60 italic">
+            {new Date().toLocaleDateString(undefined, {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            })}
+          </div>
+        </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-2 gap-y-1">
           {/* Mobile columns (2) */}
@@ -584,8 +690,13 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
         </div>
       </div>
 
-      {/* Content */}
-      {renderContent()}
+      {/* Hidden export content - only for image downloads */}
+      <div className="hidden">
+        {renderContent()}
+      </div>
+
+      {/* Visible display content */}
+      {renderDisplayView()}
 
       {/* Mobile buttons - shown only on mobile, positioned after rankings */}
       <div className="mt-6 sm:hidden">

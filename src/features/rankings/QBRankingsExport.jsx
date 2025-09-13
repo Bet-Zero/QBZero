@@ -267,6 +267,7 @@ const QBRankingsExport = ({
         >
           {sharedHeader}
 
+          {/* Use the same desktop-style grid that works well on mobile */}
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 max-w-[1400px] mx-auto">
             {rankings.map((qb, idx) => {
               const logoPath = getLogoPath(qb.team);
