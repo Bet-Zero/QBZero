@@ -204,13 +204,13 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
         {sharedHeader}
 
         {/* Force 5-column layout with inline styles - completely ignore device/screen size */}
-        <div 
-          style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(5, 1fr)', 
-            gap: '16px', 
-            maxWidth: '1400px', 
-            margin: '0 auto' 
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(5, 1fr)',
+            gap: '16px',
+            maxWidth: '1400px',
+            margin: '0 auto',
           }}
         >
           {currentRanking.map((p, idx) => {
@@ -699,7 +699,14 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
       </div>
 
       {/* Hidden export content with fixed 5-column layout */}
-      <div style={{ position: 'absolute', left: '-9999px', top: '-9999px', width: '1400px' }}>
+      <div
+        style={{
+          position: 'absolute',
+          left: '-9999px',
+          top: '-9999px',
+          width: '1400px',
+        }}
+      >
         {renderExportContent()}
       </div>
 

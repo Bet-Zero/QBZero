@@ -8,6 +8,7 @@ export const quarterbacks = [
   { id: 'c-j-stroud', name: 'C.J. Stroud', team: 'HOU' },
   { id: 'caleb-williams', name: 'Caleb Williams', team: 'CHI' },
   { id: 'cameron-ward', name: 'Cam Ward', team: 'TEN' },
+  { id: 'carson-wentz', name: 'Carson Wentz', team: 'MIN' },
   { id: 'dak-prescott', name: 'Dak Prescott', team: 'DAL' },
   { id: 'daniel-jones', name: 'Daniel Jones', team: 'IND' },
   { id: 'drake-maye', name: 'Drake Maye', team: 'NE' },
@@ -37,6 +38,5 @@ export const quarterbacks = [
   { id: 'spencer-rattler', name: 'Spencer Rattler', team: 'NO' },
   { id: 'trevor-lawrence', name: 'Trevor Lawrence', team: 'JAX' },
   { id: 'tua-tagovailoa', name: 'Tua Tagovailoa', team: 'MIA' },
-  { id: 'tyler-shough', name: 'Tyler Shough', team: 'NO' },
   { id: 'tyrod-taylor', name: 'Tyrod Taylor', team: 'NYJ' },
 ];
