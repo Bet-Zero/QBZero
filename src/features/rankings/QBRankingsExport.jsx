@@ -73,13 +73,12 @@ const getLogoBackgroundStyle = (team, showLogoBg) => {
   }
 
   // Always center logos for personal rankings export (ignore custom positioning)
-  // Use a pseudo-element approach by setting the background with opacity in CSS
   return {
     backgroundImage: `url(${logoPath})`,
     backgroundSize: 'contain',
     backgroundRepeat: 'no-repeat',
     backgroundPosition: 'center',
-    // Remove the opacity from here - it was affecting the entire container
+    opacity: 0.1, // Restore opacity to prevent logo from interfering with headshots
   };
 };
 
