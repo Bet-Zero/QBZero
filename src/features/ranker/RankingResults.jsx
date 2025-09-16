@@ -111,7 +111,8 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
   const [isAdjustMode, setIsAdjustMode] = useState(false);
   const [currentRanking, setCurrentRanking] = useState(ranking);
   const shareViewRef = useRef(null);
-  const downloadImage = useImageDownload(shareViewRef);
+  const exportViewRef = useRef(null); // Separate ref for export content
+  const downloadImage = useImageDownload(exportViewRef); // Use export ref for downloads
 
   useEffect(() => {
     setIsLocked(false); // Unlock the page by default
@@ -197,7 +198,7 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
 
     return (
       <div
-        ref={shareViewRef}
+        ref={exportViewRef}
         className="bg-neutral-900 p-6 rounded-lg border border-white/10"
         style={{ width: '1400px' }} // Force desktop width
       >
@@ -435,7 +436,6 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
     if (viewType === 'grid') {
       return (
         <div
-          ref={shareViewRef}
           className="bg-neutral-900 p-6 rounded-lg border border-white/10"
         >
           {sharedHeader}
@@ -522,7 +522,6 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
     // List view
     return (
       <div
-        ref={shareViewRef}
         className="bg-neutral-900 p-6 rounded-lg border border-white/10"
       >
         {sharedHeader}
