@@ -230,20 +230,7 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
                   {/* Headshot Container with overlaid rank */}
                   <div
                     className="aspect-square w-full overflow-hidden bg-[#111] relative"
-                    style={
-                      teamLogoPositioning[p.team]
-                        ? {
-                            backgroundImage: showLogoBg
-                              ? `url(${logoPath})`
-                              : 'none',
-                            backgroundPosition: `calc(50% + ${teamLogoPositioning[p.team].x}px) calc(50% + ${teamLogoPositioning[p.team].y}px)`,
-                          }
-                        : {
-                            backgroundImage: showLogoBg
-                              ? `url(${logoPath})`
-                              : 'none',
-                          }
-                    }
+                    style={logoBackgroundStyle}
                   >
                     <img
                       src={headshot}
@@ -458,20 +445,7 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
                     {/* Headshot Container with overlaid rank */}
                     <div
                       className="aspect-square w-full overflow-hidden bg-[#111] relative"
-                      style={
-                        teamLogoPositioning[p.team]
-                          ? {
-                              backgroundImage: showLogoBg
-                                ? `url(${logoPath})`
-                                : 'none',
-                              backgroundPosition: `calc(50% + ${teamLogoPositioning[p.team].x}px) calc(50% + ${teamLogoPositioning[p.team].y}px)`,
-                            }
-                          : {
-                              backgroundImage: showLogoBg
-                                ? `url(${logoPath})`
-                                : 'none',
-                            }
-                      }
+                      style={logoBackgroundStyle}
                     >
                       <img
                         src={headshot}
