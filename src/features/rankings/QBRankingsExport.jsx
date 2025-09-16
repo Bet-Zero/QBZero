@@ -270,7 +270,7 @@ const QBRankingsExport = ({
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 max-w-[1400px] mx-auto">
             {rankings.map((qb, idx) => {
               const logoPath = getLogoPath(qb.team);
-              const headshot = qb.imageUrl || `/assets/headshots/${qb.id}.png`;
+              const headshot = qb.headshotUrl || qb.imageUrl || `/assets/headshots/${qb.player_id || qb.id}.png`;
               const logoBackgroundStyle = getLogoBackgroundStyle(
                 qb.team,
                 showLogoBg
@@ -356,7 +356,7 @@ const QBRankingsExport = ({
             <div key={colIndex} className="flex flex-col gap-1 sm:hidden">
               {column.map(({ qb, rank }) => {
                 const headshot =
-                  qb.imageUrl || `/assets/headshots/${qb.id}.png`;
+                  qb.headshotUrl || qb.imageUrl || `/assets/headshots/${qb.player_id || qb.id}.png`;
                 const logoPath = getLogoPath(qb.team);
 
                 return (
@@ -409,7 +409,7 @@ const QBRankingsExport = ({
             >
               {column.map(({ qb, rank }) => {
                 const headshot =
-                  qb.imageUrl || `/assets/headshots/${qb.id}.png`;
+                  qb.headshotUrl || qb.imageUrl || `/assets/headshots/${qb.player_id || qb.id}.png`;
                 const logoPath = getLogoPath(qb.team);
 
                 return (
@@ -459,7 +459,7 @@ const QBRankingsExport = ({
             <div key={colIndex} className="hidden md:flex flex-col gap-1">
               {column.map(({ qb, rank }) => {
                 const headshot =
-                  qb.imageUrl || `/assets/headshots/${qb.id}.png`;
+                  qb.headshotUrl || qb.imageUrl || `/assets/headshots/${qb.player_id || qb.id}.png`;
                 const logoPath = getLogoPath(qb.team);
 
                 return (
