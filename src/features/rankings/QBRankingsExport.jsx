@@ -73,12 +73,12 @@ const getLogoBackgroundStyle = (team, showLogoBg) => {
   }
 
   // Always center logos for personal rankings export (ignore custom positioning)
+  // Use a linear gradient with the logo to apply opacity only to the background
   return {
-    backgroundImage: `url(${logoPath})`,
+    backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.25)), url(${logoPath})`,
     backgroundSize: 'contain',
     backgroundRepeat: 'no-repeat',
     backgroundPosition: 'center',
-    opacity: 0.25, // Increased opacity to make logo backgrounds more visible
   };
 };
 
