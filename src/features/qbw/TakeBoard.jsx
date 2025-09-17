@@ -225,16 +225,37 @@ const TakeBoard = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="relative mb-14 md:mb-0">
-        <div className="text-center">
+      <div className="relative mb-6 md:mb-0">
+        <div className="text-center relative">
           <h2 className="text-2xl font-bold text-white/90 mb-2">
             🎯 Take Board
           </h2>
-          <p className="text-white/60">QB predictions and hot takes</p>
+          <p className="text-white/60 mb-4 md:mb-0">QB predictions and hot takes</p>
+          
+          {/* Mobile: Login/Add Button positioned near title */}
+          <div className="md:hidden absolute top-0 right-0">
+            {!author ? (
+              <button
+                onClick={() => setShowAuthorModal(true)}
+                className="flex items-center gap-1 px-3 py-1.5 bg-blue-600/80 hover:bg-blue-700 rounded-lg text-white text-xs font-medium transition-all whitespace-nowrap"
+              >
+                <Plus size={14} />
+                + Add Take
+              </button>
+            ) : (
+              <button
+                onClick={() => setShowForm(!showForm)}
+                className="flex items-center gap-1 px-3 py-1.5 bg-blue-600/80 hover:bg-blue-700 rounded-lg text-white text-xs font-medium transition-all whitespace-nowrap"
+              >
+                <Plus size={14} />
+                + Add Take
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* Author Controls - Positioned Absolute Right */}
-        <div className="absolute md:right-0 right-1/2 md:translate-x-0 translate-x-1/2 md:top-1/2 top-[calc(100%+0.5rem)] md:-translate-y-1/2 translate-y-0 flex md:flex-row flex-col items-center gap-3">
+        {/* Desktop: Author Controls - Positioned Absolute Right */}
+        <div className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 items-center gap-3">
           {!author ? (
             <>
               <button
@@ -306,6 +327,66 @@ const TakeBoard = () => {
               </select>
             </>
           )}
+        </div>
+      </div>
+
+      {/* Mobile: Author Info and Controls */}
+      <div className="md:hidden space-y-3">
+        {author && (
+          <div className="flex items-center justify-center gap-3">
+            <div
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
+                adminMode
+                  ? 'bg-purple-600/20 border border-purple-500/30'
+                  : 'bg-white/10'
+              }`}
+            >
+              <User size={14} className="text-white/60" />
+              <span className="text-white font-medium">
+                {author.name}
+              </span>
+              {adminMode && (
+                <span className="text-xs bg-purple-500/20 text-purple-300 px-2 py-1 rounded">
+                  ADMIN
+                </span>
+              )}
+            </div>
+            
+            <select
+              value={viewingAuthorId || ''}
+              onChange={(e) => setViewingAuthorId(e.target.value || null)}
+              className="px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
+            >
+              <option value="">All Takes</option>
+              <option value={author.id}>My Takes Only</option>
+            </select>
+          </div>
+        )}
+        
+        {/* Mobile: Admin Button */}
+        <div className="flex justify-center">
+          {!author ? (
+            <button
+              onClick={() => setShowAdminGate(true)}
+              className="flex items-center gap-2 px-3 py-2 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 rounded-lg text-purple-300 text-sm font-medium transition-all"
+            >
+              <Shield size={14} />
+              Admin
+            </button>
+          ) : adminMode ? (
+            <button
+              onClick={() => {
+                setAdminMode(false);
+                setAuthor(null);
+                localStorage.removeItem('qbzero_admin');
+                localStorage.removeItem('takeAuthor');
+                toast.success('Logged out');
+              }}
+              className="px-3 py-2 bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 rounded-lg text-red-300 text-sm font-medium transition-all"
+            >
+              Logout
+            </button>
+          ) : null}
         </div>
       </div>
 
@@ -442,48 +523,102 @@ const TakeBoard = () => {
       )}
 
       {/* Filter Buttons and Search */}
-      <div className="flex flex-wrap items-center justify-center gap-2">
-        <button
-          onClick={() => setFilter('all')}
-          className={getFilterButtonClass('all')}
-        >
-          All ({takes.length})
-        </button>
-        <button
-          onClick={() => setFilter('correct')}
-          className={getFilterButtonClass('correct')}
-        >
-          ✅ Correct ({statusCounts.correct || 0})
-        </button>
-        <button
-          onClick={() => setFilter('wrong')}
-          className={getFilterButtonClass('wrong')}
-        >
-          ❌ Wrong ({statusCounts.wrong || 0})
-        </button>
-        <button
-          onClick={() => setFilter('pending')}
-          className={getFilterButtonClass('pending')}
-        >
-          ⏳ Pending ({statusCounts.pending || 0})
-        </button>
-
-        <div className="relative w-[200px]">
-          <input
-            type="text"
-            placeholder="Search QB..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full px-3 py-1.5 bg-white/10 border border-white/20 rounded-md text-sm text-white placeholder-white/40 focus:outline-none focus:border-blue-500 transition-colors"
-          />
-          {search && (
+      <div className="space-y-4">
+        {/* Mobile: Filter buttons on one line */}
+        <div className="md:hidden">
+          <div className="flex items-center justify-center gap-1 overflow-x-auto pb-2">
             <button
-              onClick={() => setSearch('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/60"
+              onClick={() => setFilter('all')}
+              className={`${getFilterButtonClass('all')} text-xs px-2 py-1.5 flex-shrink-0`}
             >
-              ×
+              All ({takes.length})
             </button>
-          )}
+            <button
+              onClick={() => setFilter('correct')}
+              className={`${getFilterButtonClass('correct')} text-xs px-2 py-1.5 flex-shrink-0`}
+            >
+              ✅ Correct ({statusCounts.correct || 0})
+            </button>
+            <button
+              onClick={() => setFilter('wrong')}
+              className={`${getFilterButtonClass('wrong')} text-xs px-2 py-1.5 flex-shrink-0`}
+            >
+              ❌ Wrong ({statusCounts.wrong || 0})
+            </button>
+            <button
+              onClick={() => setFilter('pending')}
+              className={`${getFilterButtonClass('pending')} text-xs px-2 py-1.5 flex-shrink-0`}
+            >
+              ⏳ Pending ({statusCounts.pending || 0})
+            </button>
+          </div>
+          
+          {/* Mobile: Search bar separated */}
+          <div className="flex justify-center">
+            <div className="relative w-[280px]">
+              <input
+                type="text"
+                placeholder="Search QB..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-sm text-white placeholder-white/40 focus:outline-none focus:border-blue-500 transition-colors"
+              />
+              {search && (
+                <button
+                  onClick={() => setSearch('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/60"
+                >
+                  ×
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Desktop: Original layout */}
+        <div className="hidden md:flex flex-wrap items-center justify-center gap-2">
+          <button
+            onClick={() => setFilter('all')}
+            className={getFilterButtonClass('all')}
+          >
+            All ({takes.length})
+          </button>
+          <button
+            onClick={() => setFilter('correct')}
+            className={getFilterButtonClass('correct')}
+          >
+            ✅ Correct ({statusCounts.correct || 0})
+          </button>
+          <button
+            onClick={() => setFilter('wrong')}
+            className={getFilterButtonClass('wrong')}
+          >
+            ❌ Wrong ({statusCounts.wrong || 0})
+          </button>
+          <button
+            onClick={() => setFilter('pending')}
+            className={getFilterButtonClass('pending')}
+          >
+            ⏳ Pending ({statusCounts.pending || 0})
+          </button>
+
+          <div className="relative w-[200px]">
+            <input
+              type="text"
+              placeholder="Search QB..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full px-3 py-1.5 bg-white/10 border border-white/20 rounded-md text-sm text-white placeholder-white/40 focus:outline-none focus:border-blue-500 transition-colors"
+            />
+            {search && (
+              <button
+                onClick={() => setSearch('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/60"
+              >
+                ×
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
