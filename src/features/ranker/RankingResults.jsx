@@ -85,7 +85,7 @@ const getLogoBackgroundStyle = (team, showLogoBg) => {
       backgroundSize: 'contain',
       backgroundRepeat: 'no-repeat',
       backgroundPosition: `calc(50% + ${positioning.x}px) calc(50% + ${positioning.y}px)`,
-      opacity: 0.25, // Increased opacity to make logo backgrounds more visible
+      opacity: 0.5, // Set to 50% opacity for better visibility
     };
   }
 
@@ -95,7 +95,7 @@ const getLogoBackgroundStyle = (team, showLogoBg) => {
     backgroundSize: 'contain',
     backgroundRepeat: 'no-repeat',
     backgroundPosition: 'center',
-    opacity: 0.25, // Increased opacity to make logo backgrounds more visible
+    opacity: 0.5, // Set to 50% opacity for better visibility
   };
 };
 
@@ -235,7 +235,7 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
                     <img
                       src={headshot}
                       alt={p.name}
-                      className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                      className="w-full h-full object-cover opacity-100 transition-transform group-hover:scale-105"
                       onError={(e) => {
                         e.target.src = '/assets/headshots/default.png';
                       }}
@@ -450,7 +450,7 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
                       <img
                         src={headshot}
                         alt={p.name}
-                        className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                        className="w-full h-full object-cover opacity-100 transition-transform group-hover:scale-105"
                         onError={(e) => {
                           e.target.src = '/assets/headshots/default.png';
                         }}
@@ -521,7 +521,7 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
                     <img
                       src={headshot}
                       alt=""
-                      className="w-10 h-10 rounded-full object-cover"
+                      className="w-10 h-10 rounded-full object-cover opacity-100"
                       onError={(e) => {
                         e.target.src = '/assets/headshots/default.png';
                       }}
@@ -575,7 +575,7 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
                     <img
                       src={headshot}
                       alt=""
-                      className="w-10 h-10 rounded-full object-cover"
+                      className="w-10 h-10 rounded-full object-cover opacity-100"
                       onError={(e) => {
                         e.target.src = '/assets/headshots/default.png';
                       }}
@@ -626,7 +626,7 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
                     <img
                       src={headshot}
                       alt=""
-                      className="w-10 h-10 rounded-full object-cover"
+                      className="w-10 h-10 rounded-full object-cover opacity-100"
                       onError={(e) => {
                         e.target.src = '/assets/headshots/default.png';
                       }}
