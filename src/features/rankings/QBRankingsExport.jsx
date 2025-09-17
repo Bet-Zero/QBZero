@@ -78,7 +78,7 @@ const getLogoBackgroundStyle = (team, showLogoBg) => {
     backgroundSize: 'contain',
     backgroundRepeat: 'no-repeat',
     backgroundPosition: 'center',
-    opacity: 0.1, // Restore opacity to prevent logo from interfering with headshots
+    opacity: 0.25, // Increased opacity to make logo backgrounds more visible
   };
 };
 
@@ -369,7 +369,7 @@ const QBRankingsExport = ({
                     </div>
                     <img
                       src={headshot}
-                      alt=""
+                      alt={qb.name}
                       className="w-10 h-10 rounded-full object-cover"
                       onError={(e) => {
                         e.target.src = '/assets/headshots/default.png';
@@ -422,7 +422,7 @@ const QBRankingsExport = ({
                     </div>
                     <img
                       src={headshot}
-                      alt=""
+                      alt={qb.name}
                       className="w-10 h-10 rounded-full object-cover"
                       onError={(e) => {
                         e.target.src = '/assets/headshots/default.png';
@@ -472,7 +472,7 @@ const QBRankingsExport = ({
                     </div>
                     <img
                       src={headshot}
-                      alt=""
+                      alt={qb.name}
                       className="w-10 h-10 rounded-full object-cover"
                       onError={(e) => {
                         e.target.src = '/assets/headshots/default.png';

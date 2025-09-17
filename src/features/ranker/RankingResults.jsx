@@ -85,7 +85,7 @@ const getLogoBackgroundStyle = (team, showLogoBg) => {
       backgroundSize: 'contain',
       backgroundRepeat: 'no-repeat',
       backgroundPosition: `calc(50% + ${positioning.x}px) calc(50% + ${positioning.y}px)`,
-      opacity: 0.1,
+      opacity: 0.25, // Increased opacity to make logo backgrounds more visible
     };
   }
 
@@ -95,7 +95,7 @@ const getLogoBackgroundStyle = (team, showLogoBg) => {
     backgroundSize: 'contain',
     backgroundRepeat: 'no-repeat',
     backgroundPosition: 'center',
-    opacity: 0.1,
+    opacity: 0.25, // Increased opacity to make logo backgrounds more visible
   };
 };
 
