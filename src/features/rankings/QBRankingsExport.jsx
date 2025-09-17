@@ -73,13 +73,12 @@ const getLogoBackgroundStyle = (team, showLogoBg) => {
   }
 
   // Always center logos for personal rankings export (ignore custom positioning)
-  // Use a pseudo-element approach by setting the background with opacity in CSS
   return {
     backgroundImage: `url(${logoPath})`,
     backgroundSize: 'contain',
     backgroundRepeat: 'no-repeat',
     backgroundPosition: 'center',
-    // Remove the opacity from here - it was affecting the entire container
+    opacity: 0.1, // Restore opacity to prevent logo from interfering with headshots
   };
 };
 
@@ -271,7 +270,7 @@ const QBRankingsExport = ({
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 max-w-[1400px] mx-auto">
             {rankings.map((qb, idx) => {
               const logoPath = getLogoPath(qb.team);
-              const headshot = qb.imageUrl || `/assets/headshots/${qb.id}.png`;
+              const headshot = qb.headshotUrl || qb.imageUrl || `/assets/headshots/${qb.player_id || qb.id}.png`;
               const logoBackgroundStyle = getLogoBackgroundStyle(
                 qb.team,
                 showLogoBg
@@ -357,7 +356,7 @@ const QBRankingsExport = ({
             <div key={colIndex} className="flex flex-col gap-1 sm:hidden">
               {column.map(({ qb, rank }) => {
                 const headshot =
-                  qb.imageUrl || `/assets/headshots/${qb.id}.png`;
+                  qb.headshotUrl || qb.imageUrl || `/assets/headshots/${qb.player_id || qb.id}.png`;
                 const logoPath = getLogoPath(qb.team);
 
                 return (
@@ -410,7 +409,7 @@ const QBRankingsExport = ({
             >
               {column.map(({ qb, rank }) => {
                 const headshot =
-                  qb.imageUrl || `/assets/headshots/${qb.id}.png`;
+                  qb.headshotUrl || qb.imageUrl || `/assets/headshots/${qb.player_id || qb.id}.png`;
                 const logoPath = getLogoPath(qb.team);
 
                 return (
@@ -460,7 +459,7 @@ const QBRankingsExport = ({
             <div key={colIndex} className="hidden md:flex flex-col gap-1">
               {column.map(({ qb, rank }) => {
                 const headshot =
-                  qb.imageUrl || `/assets/headshots/${qb.id}.png`;
+                  qb.headshotUrl || qb.imageUrl || `/assets/headshots/${qb.player_id || qb.id}.png`;
                 const logoPath = getLogoPath(qb.team);
 
                 return (
