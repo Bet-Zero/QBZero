@@ -58,6 +58,36 @@ const teamLogoPositioning = {
   // Add more teams here as needed
 };
 
+// Teams whose logos occupy the top-left area and interfere with rank numbers
+const teamsWithTopLeftLogos = [
+  'LV',
+  'LAV', // Raiders
+  'ATL', // Falcons
+  'NYG', // Giants
+  'HOU', // Texans
+  'IND', // Colts
+  'CHI', // Bears
+  'ARI', // Cardinals
+  'TEN', // Titans (partial overlap)
+  'CIN', // Bengals (partial overlap)
+  'CLE', // Browns (partial overlap)
+  'JAX', // Jaguars (partial overlap)
+  'PIT', // Steelers (partial overlap)
+];
+
+// Helper function to get smart rank background styling based on team logo placement
+const getRankBackgroundStyle = (team) => {
+  const hasLogoConflict = teamsWithTopLeftLogos.includes(team);
+
+  if (hasLogoConflict) {
+    // Higher opacity background with stronger shadow for teams with logo conflicts
+    return 'bg-neutral-900/80 backdrop-blur-sm text-white font-bold text-2xl px-1.5 py-1 rounded shadow-xl border border-white/20';
+  } else {
+    // Keep the original subtle styling for teams without conflicts
+    return 'bg-neutral-600/50 backdrop-blur-sm text-white font-bold text-2xl px-1.5 py-1 rounded shadow-lg';
+  }
+};
+
 // Helper function to get logo path safely
 const getLogoPath = (team) => {
   if (!team) return null;
@@ -80,9 +110,9 @@ const getLogoBackgroundStyle = (team, showLogoBg) => {
 
   if (positioning) {
     // Custom positioning for specific teams that need adjustment
-    // Use a linear gradient with the logo to apply opacity only to the background
+    // Use a darker gray overlay (instead of the original light gray) for better contrast
     return {
-      backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.25)), url(${logoPath})`,
+      backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.15)), url(${logoPath})`,
       backgroundSize: 'contain',
       backgroundRepeat: 'no-repeat',
       backgroundPosition: `calc(50% + ${positioning.x}px) calc(50% + ${positioning.y}px)`,
@@ -90,9 +120,9 @@ const getLogoBackgroundStyle = (team, showLogoBg) => {
   }
 
   // Default center positioning for all other teams
-  // Use a linear gradient with the logo to apply opacity only to the background
+  // Use a darker gray overlay (instead of the original light gray) for better contrast
   return {
-    backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.25)), url(${logoPath})`,
+    backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.15)), url(${logoPath})`,
     backgroundSize: 'contain',
     backgroundRepeat: 'no-repeat',
     backgroundPosition: 'center',
@@ -222,14 +252,15 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
               p.team,
               showLogoBg
             );
+            const rankBackgroundStyle = getRankBackgroundStyle(p.team);
 
             return (
               <div key={p.id} className="relative group">
                 {/* Card */}
-                <div className="bg-[#1a1a1a] rounded-lg overflow-hidden border border-white/10 transition-all hover:border-white/20">
+                <div className="bg-gradient-to-b from-[#2a2a2a] to-[#1f1f1f] rounded-lg overflow-hidden border border-white/25 transition-all hover:border-white/40 shadow-2xl">
                   {/* Headshot Container with overlaid rank */}
                   <div
-                    className="aspect-square w-full overflow-hidden bg-[#111] relative"
+                    className="aspect-square w-full overflow-hidden bg-[#0a0a0a] relative border-b border-white/15"
                     style={logoBackgroundStyle}
                   >
                     <img
@@ -241,13 +272,15 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
                       }}
                     />
                     {/* Rank overlay in corner */}
-                    <div className="absolute top-2 left-2 bg-neutral-600/50 backdrop-blur-sm text-white font-bold text-2xl px-1.5 py-1 rounded shadow-lg">
+                    <div
+                      className={`absolute top-2 left-2 ${rankBackgroundStyle}`}
+                    >
                       {idx + 1}
                     </div>
                   </div>
 
                   {/* Info Section */}
-                  <div className="p-3">
+                  <div className="p-3 bg-gradient-to-b from-[#1f1f1f] to-[#1a1a1a] border-t border-white/20">
                     <div className="text-white font-medium truncate mb-1">
                       {p.display_name || p.name}
                     </div>
@@ -422,9 +455,7 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
 
     if (viewType === 'grid') {
       return (
-        <div
-          className="bg-neutral-900 p-6 rounded-lg border border-white/10"
-        >
+        <div className="bg-neutral-900 p-6 rounded-lg border border-white/10">
           {sharedHeader}
 
           {/* Desktop: 5 columns, Mobile: 2 columns for readability, Export: always 5 columns */}
@@ -437,14 +468,15 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
                 p.team,
                 showLogoBg
               );
+              const rankBackgroundStyle = getRankBackgroundStyle(p.team);
 
               return (
                 <div key={p.id} className="relative group">
                   {/* Card */}
-                  <div className="bg-[#1a1a1a] rounded-lg overflow-hidden border border-white/10 transition-all hover:border-white/20">
+                  <div className="bg-gradient-to-b from-[#2a2a2a] to-[#1f1f1f] rounded-lg overflow-hidden border border-white/25 transition-all hover:border-white/40 shadow-2xl">
                     {/* Headshot Container with overlaid rank */}
                     <div
-                      className="aspect-square w-full overflow-hidden bg-[#111] relative"
+                      className="aspect-square w-full overflow-hidden bg-[#0a0a0a] relative border-b border-white/15"
                       style={logoBackgroundStyle}
                     >
                       <img
@@ -456,13 +488,15 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
                         }}
                       />
                       {/* Rank overlay in corner */}
-                      <div className="absolute top-2 left-2 bg-neutral-600/50 backdrop-blur-sm text-white font-bold text-2xl px-1.5 py-1 rounded shadow-lg">
+                      <div
+                        className={`absolute top-2 left-2 ${rankBackgroundStyle}`}
+                      >
                         {idx + 1}
                       </div>
                     </div>
 
                     {/* Info Section */}
-                    <div className="p-3">
+                    <div className="p-3 bg-gradient-to-b from-[#1f1f1f] to-[#1a1a1a] border-t border-white/20">
                       <div className="text-white font-medium truncate mb-1">
                         {p.display_name || p.name}
                       </div>
@@ -495,9 +529,7 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
 
     // List view
     return (
-      <div
-        className="bg-neutral-900 p-6 rounded-lg border border-white/10"
-      >
+      <div className="bg-neutral-900 p-6 rounded-lg border border-white/10">
         {sharedHeader}
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-2 gap-y-1">

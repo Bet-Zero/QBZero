@@ -54,6 +54,36 @@ const teamLogoPositioning = {
   TB: { x: 110, y: 60 },
 };
 
+// Teams whose logos occupy the top-left area and interfere with rank numbers
+const teamsWithTopLeftLogos = [
+  'LV',
+  'LAV', // Raiders
+  'ATL', // Falcons
+  'NYG', // Giants
+  'HOU', // Texans
+  'IND', // Colts
+  'CHI', // Bears
+  'ARI', // Cardinals
+  'TEN', // Titans (partial overlap)
+  'CIN', // Bengals (partial overlap)
+  'CLE', // Browns (partial overlap)
+  'JAX', // Jaguars (partial overlap)
+  'PIT', // Steelers (partial overlap)
+];
+
+// Helper function to get smart rank background styling based on team logo placement
+const getRankBackgroundStyle = (team) => {
+  const hasLogoConflict = teamsWithTopLeftLogos.includes(team);
+
+  if (hasLogoConflict) {
+    // Higher opacity background with stronger shadow for teams with logo conflicts
+    return 'bg-neutral-900/80 backdrop-blur-sm text-white font-bold text-2xl px-1.5 py-1 rounded shadow-xl border border-white/20';
+  } else {
+    // Keep the original subtle styling for teams without conflicts
+    return 'bg-neutral-600/50 backdrop-blur-sm text-white font-bold text-2xl px-1.5 py-1 rounded shadow-lg';
+  }
+};
+
 // Helper function to get logo path safely
 const getLogoPath = (team) => {
   if (!team) return null;
@@ -73,9 +103,9 @@ const getLogoBackgroundStyle = (team, showLogoBg) => {
   }
 
   // Always center logos for personal rankings export (ignore custom positioning)
-  // Use a linear gradient with the logo to apply opacity only to the background
+  // Use a darker gray overlay (instead of the original light gray) for better contrast
   return {
-    backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.25)), url(${logoPath})`,
+    backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.15)), url(${logoPath})`,
     backgroundSize: 'contain',
     backgroundRepeat: 'no-repeat',
     backgroundPosition: 'center',
@@ -210,7 +240,7 @@ const QBRankingsExport = ({
             strokeLinecap="round"
             strokeLinejoin="round"
             strokeWidth={2}
-            d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+            d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2z"
           />
         </svg>
         <span className="hidden sm:inline">Copy</span>
@@ -270,19 +300,23 @@ const QBRankingsExport = ({
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 max-w-[1400px] mx-auto">
             {rankings.map((qb, idx) => {
               const logoPath = getLogoPath(qb.team);
-              const headshot = qb.headshotUrl || qb.imageUrl || `/assets/headshots/${qb.player_id || qb.id}.png`;
+              const headshot =
+                qb.headshotUrl ||
+                qb.imageUrl ||
+                `/assets/headshots/${qb.player_id || qb.id}.png`;
               const logoBackgroundStyle = getLogoBackgroundStyle(
                 qb.team,
                 showLogoBg
               );
+              const rankBackgroundStyle = getRankBackgroundStyle(qb.team);
 
               return (
                 <div key={qb.id} className="relative group">
                   {/* Card */}
-                  <div className="bg-[#1a1a1a] rounded-lg overflow-hidden border border-white/10 transition-all hover:border-white/20">
+                  <div className="bg-gradient-to-b from-[#2a2a2a] to-[#1f1f1f] rounded-lg overflow-hidden border border-white/25 transition-all hover:border-white/40 shadow-2xl">
                     {/* Headshot Container with overlaid rank */}
                     <div
-                      className="aspect-square w-full overflow-hidden bg-[#111] relative"
+                      className="aspect-square w-full overflow-hidden bg-[#0a0a0a] relative border-b border-white/15"
                       style={logoBackgroundStyle}
                     >
                       <img
@@ -294,13 +328,15 @@ const QBRankingsExport = ({
                         }}
                       />
                       {/* Rank overlay in corner */}
-                      <div className="absolute top-2 left-2 bg-neutral-600/50 backdrop-blur-sm text-white font-bold text-2xl px-1.5 py-1 rounded shadow-lg">
+                      <div
+                        className={`absolute top-2 left-2 ${rankBackgroundStyle}`}
+                      >
                         {idx + 1}
                       </div>
                     </div>
 
                     {/* Info Section */}
-                    <div className="p-3 relative">
+                    <div className="p-3 relative bg-gradient-to-b from-[#1f1f1f] to-[#1a1a1a] border-t border-white/20">
                       <div className="text-white font-medium truncate mb-1">
                         {qb.name}
                       </div>
@@ -356,7 +392,9 @@ const QBRankingsExport = ({
             <div key={colIndex} className="flex flex-col gap-1 sm:hidden">
               {column.map(({ qb, rank }) => {
                 const headshot =
-                  qb.headshotUrl || qb.imageUrl || `/assets/headshots/${qb.player_id || qb.id}.png`;
+                  qb.headshotUrl ||
+                  qb.imageUrl ||
+                  `/assets/headshots/${qb.player_id || qb.id}.png`;
                 const logoPath = getLogoPath(qb.team);
 
                 return (
@@ -409,7 +447,9 @@ const QBRankingsExport = ({
             >
               {column.map(({ qb, rank }) => {
                 const headshot =
-                  qb.headshotUrl || qb.imageUrl || `/assets/headshots/${qb.player_id || qb.id}.png`;
+                  qb.headshotUrl ||
+                  qb.imageUrl ||
+                  `/assets/headshots/${qb.player_id || qb.id}.png`;
                 const logoPath = getLogoPath(qb.team);
 
                 return (
@@ -459,7 +499,9 @@ const QBRankingsExport = ({
             <div key={colIndex} className="hidden md:flex flex-col gap-1">
               {column.map(({ qb, rank }) => {
                 const headshot =
-                  qb.headshotUrl || qb.imageUrl || `/assets/headshots/${qb.player_id || qb.id}.png`;
+                  qb.headshotUrl ||
+                  qb.imageUrl ||
+                  `/assets/headshots/${qb.player_id || qb.id}.png`;
                 const logoPath = getLogoPath(qb.team);
 
                 return (
