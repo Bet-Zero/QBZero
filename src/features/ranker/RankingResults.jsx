@@ -80,22 +80,22 @@ const getLogoBackgroundStyle = (team, showLogoBg) => {
 
   if (positioning) {
     // Custom positioning for specific teams that need adjustment
+    // Use a linear gradient with the logo to apply opacity only to the background
     return {
-      backgroundImage: `url(${logoPath})`,
+      backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.25)), url(${logoPath})`,
       backgroundSize: 'contain',
       backgroundRepeat: 'no-repeat',
       backgroundPosition: `calc(50% + ${positioning.x}px) calc(50% + ${positioning.y}px)`,
-      opacity: 0.25, // Increased opacity to make logo backgrounds more visible
     };
   }
 
-  // Default center positioning for all other teams (exactly like before)
+  // Default center positioning for all other teams
+  // Use a linear gradient with the logo to apply opacity only to the background
   return {
-    backgroundImage: `url(${logoPath})`,
+    backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.25)), url(${logoPath})`,
     backgroundSize: 'contain',
     backgroundRepeat: 'no-repeat',
     backgroundPosition: 'center',
-    opacity: 0.25, // Increased opacity to make logo backgrounds more visible
   };
 };
 
