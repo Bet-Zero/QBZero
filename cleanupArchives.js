@@ -2,6 +2,7 @@
 // This will keep your current ranking but delete all test archives
 // One time script, keeping just in case I need it again
 
+import 'dotenv/config';
 import { initializeApp } from 'firebase/app';
 import {
   getFirestore,
@@ -13,14 +14,14 @@ import {
   deleteDoc,
 } from 'firebase/firestore';
 
-// Firebase configuration
+// Firebase configuration from environment variables
 const firebaseConfig = {
-  apiKey: 'AIzaSyAXv8xJd08cDsM0X6hlMXZuWns-jwn3Lz8',
-  authDomain: 'qb-zero.firebaseapp.com',
-  projectId: 'qb-zero',
-  storageBucket: 'qb-zero.appspot.com',
-  messagingSenderId: '105500121903',
-  appId: '1:105500121903:web:119be1873ef2885949dfda',
+  apiKey: process.env.VITE_FIREBASE_API_KEY,
+  authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.VITE_FIREBASE_APP_ID,
 };
 
 const app = initializeApp(firebaseConfig);
