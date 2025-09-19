@@ -10,6 +10,7 @@ import DrawerShell from '@/components/shared/ui/drawers/DrawerShell';
 import OpenDrawerButton from '@/components/shared/ui/drawers/OpenDrawerButton';
 import AddPlayerDrawer from '@/features/roster/AddPlayerDrawer';
 import CreateTierListModal from '@/features/tierMaker/CreateTierListModal';
+import TierMakerExport from '@/features/tierMaker/TierMakerExport';
 import { fetchTierList, saveTierList } from '@/firebase/listHelpers';
 import { toast } from 'react-hot-toast';
 
@@ -99,6 +100,7 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
   const [tiers, setTiers] = useState(getInitialTiers);
   const [tierOrder, setTierOrder] = useState([...DEFAULT_TIERS, 'Pool']);
   const [screenshotMode, setScreenshotMode] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState(null);
   const [selectedList, setSelectedList] = useState('');
@@ -106,6 +108,22 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [initialLoaded, setInitialLoaded] = useState(false);
+
+  // Calculate which players are currently used in any tier
+  const usedPlayerIds = useMemo(() => {
+    const ids = new Set();
+    Object.values(tiers).forEach((tierPlayers) => {
+      tierPlayers.forEach((player) => {
+        ids.add(player.player_id || player.id);
+      });
+    });
+    return ids;
+  }, [tiers]);
+
+  // Filter available players for the drawer (exclude already used players)
+  const availablePlayersForDrawer = useMemo(() => {
+    return processedPlayers.filter((player) => !usedPlayerIds.has(player.id));
+  }, [processedPlayers, usedPlayerIds]);
 
   const addPlayerToPool = (player) => {
     const formatted = { ...player, player_id: player.id };
@@ -147,6 +165,7 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
       ...prev,
       [fromTier]: prev[fromTier].filter((p) => p.player_id !== playerId),
     }));
+    // Player will automatically become available in drawer due to usedPlayerIds recalculation
   };
 
   const addTier = () => {
@@ -267,6 +286,17 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
     }
   }, [initialLoaded, initialTierListId, tierListsData, allPlayers.length]);
 
+  // Get current tier list name for export
+  const getCurrentTierListName = () => {
+    if (selectedTierList) {
+      const currentList = tierLists.find(
+        (list) => list.id === selectedTierList
+      );
+      return currentList?.name || 'Tier List';
+    }
+    return 'Tier List';
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center py-10 text-white">
@@ -284,7 +314,7 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
       <DrawerShell isOpen={drawerOpen} onClose={() => setDrawerOpen(false)}>
         <AddPlayerDrawer
           onClose={() => setDrawerOpen(false)}
-          allPlayers={processedPlayers}
+          allPlayers={availablePlayersForDrawer}
           onSelect={(player) => {
             addPlayerToPool(player);
           }}
@@ -400,7 +430,7 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
         </div>
       </div>
       {!drawerOpen && (
-        <div className="fixed bottom-6 left-6 z-50">
+        <div className="fixed bottom-6 left-6 z-50 flex flex-col gap-2">
           <button
             onClick={() => setScreenshotMode(!screenshotMode)}
             className={`px-4 py-2 rounded transition-all duration-300 ${
@@ -411,6 +441,15 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
           >
             {screenshotMode ? 'Exit Screenshot View' : 'Screenshot View'}
           </button>
+
+          {!screenshotMode && (
+            <button
+              onClick={() => setShowExportModal(true)}
+              className="px-4 py-2 rounded bg-neutral-600 hover:bg-neutral-700 text-white transition-all duration-300"
+            >
+              Export
+            </button>
+          )}
         </div>
       )}
 
@@ -430,6 +469,15 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
         onClose={() => setShowCreateModal(false)}
         onCreated={handleCreateAndSave}
       />
+
+      {showExportModal && (
+        <TierMakerExport
+          tiers={tiers}
+          tierOrder={tierOrder}
+          tierListName={getCurrentTierListName()}
+          onClose={() => setShowExportModal(false)}
+        />
+      )}
     </div>
   );
 };
