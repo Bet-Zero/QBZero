@@ -112,6 +112,84 @@ const getLogoBackgroundStyle = (team, showLogoBg) => {
   };
 };
 
+const getHeadshotSrc = (qb) =>
+  qb?.headshotUrl ||
+  qb?.imageUrl ||
+  `/assets/headshots/${qb?.player_id || qb?.id}.png`;
+
+const GridCard = ({
+  qb,
+  rank,
+  showLogoBg,
+  showMovement,
+  movementData = {},
+}) => {
+  const logoPath = getLogoPath(qb.team);
+  const headshot = getHeadshotSrc(qb);
+  const logoBackgroundStyle = getLogoBackgroundStyle(qb.team, showLogoBg);
+  const rankBackgroundStyle = getRankBackgroundStyle(qb.team);
+  const movement = movementData?.[qb.id];
+
+  return (
+    <div className="relative group">
+      {/* Card */}
+      <div className="bg-gradient-to-b from-[#2a2a2a] to-[#1f1f1f] rounded-lg overflow-hidden border border-white/25 transition-all hover:border-white/40 shadow-2xl">
+        {/* Headshot Container with overlaid rank */}
+        <div
+          className="aspect-square w-full overflow-hidden bg-[#0a0a0a] relative border-b border-white/15"
+          style={logoBackgroundStyle}
+        >
+          <img
+            src={headshot}
+            alt={qb.name}
+            className="w-full h-full object-cover transition-transform group-hover:scale-105"
+            loading="eager"
+            decoding="async"
+            crossOrigin="anonymous"
+            onError={(e) => {
+              e.target.src = '/assets/headshots/default.png';
+            }}
+          />
+          {/* Rank overlay in corner */}
+          <div className={`absolute top-2 left-2 ${rankBackgroundStyle}`}>
+            {rank}
+          </div>
+        </div>
+
+        {/* Info Section */}
+        <div className="p-3 relative bg-gradient-to-b from-[#1f1f1f] to-[#1a1a1a] border-t border-white/20">
+          <div className="text-white font-medium truncate mb-1">{qb.name}</div>
+          <div className="flex items-center gap-1.5">
+            {logoPath && (
+              <div className="w-4 h-4">
+                <img
+                  src={logoPath}
+                  alt={qb.team}
+                  className="w-full h-full object-contain"
+                  loading="eager"
+                  decoding="async"
+                  crossOrigin="anonymous"
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                  }}
+                />
+              </div>
+            )}
+            <span className="text-white/60 text-sm">{qb.team?.toUpperCase() || '—'}</span>
+          </div>
+
+          {/* Movement indicator positioned absolutely in bottom-right */}
+          {showMovement && movement?.moved && (
+            <div className="absolute bottom-3 right-3">
+              <RankingMovementIndicator movement={movement} showMovement={true} />
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const QBRankingsExport = ({
   rankings,
   rankingName,
@@ -125,7 +203,10 @@ const QBRankingsExport = ({
   );
   const [isDownloading, setIsDownloading] = useState(false);
   const shareViewRef = useRef(null);
-  const downloadImage = useImageDownload(shareViewRef);
+  const exportViewRef = useRef(null);
+  const activeDownloadRef =
+    viewType === 'grid' ? exportViewRef : shareViewRef;
+  const downloadImage = useImageDownload(activeDownloadRef);
 
   const handleCopy = () => {
     const text = rankings.map((qb, idx) => `#${idx + 1} ${qb.name}`).join('\n');
@@ -272,21 +353,23 @@ const QBRankingsExport = ({
     return columns;
   };
 
-  const renderContent = () => {
-    const sharedHeader = (
-      <div className="text-center mb-6">
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 bg-clip-text text-transparent mb-2">
-          NFL QB Rankings
-        </h1>
-        <div className="text-sm text-white/60 italic">
-          {new Date().toLocaleDateString(undefined, {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-          })}
-        </div>
+  const renderSharedHeader = () => (
+    <div className="text-center mb-6">
+      <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 bg-clip-text text-transparent mb-2">
+        NFL QB Rankings
+      </h1>
+      <div className="text-sm text-white/60 italic">
+        {new Date().toLocaleDateString(undefined, {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        })}
       </div>
-    );
+    </div>
+  );
+
+  const renderContent = () => {
+    const sharedHeader = renderSharedHeader();
 
     if (viewType === 'grid') {
       return (
@@ -298,82 +381,16 @@ const QBRankingsExport = ({
 
           {/* Use the same desktop-style grid that works well on mobile */}
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 max-w-[1400px] mx-auto">
-            {rankings.map((qb, idx) => {
-              const logoPath = getLogoPath(qb.team);
-              const headshot =
-                qb.headshotUrl ||
-                qb.imageUrl ||
-                `/assets/headshots/${qb.player_id || qb.id}.png`;
-              const logoBackgroundStyle = getLogoBackgroundStyle(
-                qb.team,
-                showLogoBg
-              );
-              const rankBackgroundStyle = getRankBackgroundStyle(qb.team);
-
-              return (
-                <div key={qb.id} className="relative group">
-                  {/* Card */}
-                  <div className="bg-gradient-to-b from-[#2a2a2a] to-[#1f1f1f] rounded-lg overflow-hidden border border-white/25 transition-all hover:border-white/40 shadow-2xl">
-                    {/* Headshot Container with overlaid rank */}
-                    <div
-                      className="aspect-square w-full overflow-hidden bg-[#0a0a0a] relative border-b border-white/15"
-                      style={logoBackgroundStyle}
-                    >
-                      <img
-                        src={headshot}
-                        alt={qb.name}
-                        className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                        onError={(e) => {
-                          e.target.src = '/assets/headshots/default.png';
-                        }}
-                      />
-                      {/* Rank overlay in corner */}
-                      <div
-                        className={`absolute top-2 left-2 ${rankBackgroundStyle}`}
-                      >
-                        {idx + 1}
-                      </div>
-                    </div>
-
-                    {/* Info Section */}
-                    <div className="p-3 relative bg-gradient-to-b from-[#1f1f1f] to-[#1a1a1a] border-t border-white/20">
-                      <div className="text-white font-medium truncate mb-1">
-                        {qb.name}
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        {logoPath && (
-                          <div className="w-4 h-4">
-                            <img
-                              src={logoPath}
-                              alt={qb.team}
-                              className="w-full h-full object-contain"
-                              onError={(e) => {
-                                e.target.style.display = 'none';
-                              }}
-                            />
-                          </div>
-                        )}
-                        <span className="text-white/60 text-sm">
-                          {qb.team?.toUpperCase() || '—'}
-                        </span>
-                      </div>
-
-                      {/* Movement indicator positioned absolutely in bottom-right */}
-                      {showMovement &&
-                        movementData[qb.id] &&
-                        movementData[qb.id].moved && (
-                          <div className="absolute bottom-3 right-3">
-                            <RankingMovementIndicator
-                              movement={movementData[qb.id]}
-                              showMovement={true}
-                            />
-                          </div>
-                        )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+            {rankings.map((qb, idx) => (
+              <GridCard
+                key={qb.id || qb.player_id || idx}
+                qb={qb}
+                rank={idx + 1}
+                showLogoBg={showLogoBg}
+                showMovement={showMovement}
+                movementData={movementData}
+              />
+            ))}
           </div>
         </div>
       );
@@ -390,16 +407,13 @@ const QBRankingsExport = ({
           {/* Mobile columns (2) */}
           {createColumns(numCols.base).map((column, colIndex) => (
             <div key={colIndex} className="flex flex-col gap-1 sm:hidden">
-              {column.map(({ qb, rank }) => {
-                const headshot =
-                  qb.headshotUrl ||
-                  qb.imageUrl ||
-                  `/assets/headshots/${qb.player_id || qb.id}.png`;
-                const logoPath = getLogoPath(qb.team);
+              {column.map(({ qb: columnQB, rank }) => {
+                const headshot = getHeadshotSrc(columnQB);
+                const logoPath = getLogoPath(columnQB.team);
 
                 return (
                   <div
-                    key={qb.id}
+                    key={columnQB.id || columnQB.player_id || columnQB.name}
                     className="bg-white/5 rounded p-2 flex items-center gap-2"
                   >
                     <div className="w-8 h-8 flex items-center justify-center bg-white/10 rounded-full font-bold text-white/80">
@@ -407,30 +421,36 @@ const QBRankingsExport = ({
                     </div>
                     <img
                       src={headshot}
-                      alt={qb.name}
+                      alt={columnQB.name}
                       className="w-10 h-10 rounded-full object-cover"
+                      loading="eager"
+                      decoding="async"
+                      crossOrigin="anonymous"
                       onError={(e) => {
                         e.target.src = '/assets/headshots/default.png';
                       }}
                     />
                     <div className="flex-1 truncate text-sm">
                       <div className="font-medium text-white truncate">
-                        {qb.name}
+                        {columnQB.name}
                       </div>
                       <div className="flex items-center gap-1 text-white/60 text-xs">
                         {logoPath && (
                           <div className="w-4 h-4">
                             <img
                               src={logoPath}
-                              alt={qb.team}
+                              alt={columnQB.team}
                               className="w-full h-full object-contain"
+                              loading="eager"
+                              decoding="async"
+                              crossOrigin="anonymous"
                               onError={(e) => {
                                 e.target.style.display = 'none';
                               }}
                             />
                           </div>
                         )}
-                        <span>{qb.team?.toUpperCase() || '—'}</span>
+                        <span>{columnQB.team?.toUpperCase() || '—'}</span>
                       </div>
                     </div>
                   </div>
@@ -445,16 +465,13 @@ const QBRankingsExport = ({
               key={colIndex}
               className="hidden sm:flex md:hidden flex-col gap-1"
             >
-              {column.map(({ qb, rank }) => {
-                const headshot =
-                  qb.headshotUrl ||
-                  qb.imageUrl ||
-                  `/assets/headshots/${qb.player_id || qb.id}.png`;
-                const logoPath = getLogoPath(qb.team);
+              {column.map(({ qb: columnQB, rank }) => {
+                const headshot = getHeadshotSrc(columnQB);
+                const logoPath = getLogoPath(columnQB.team);
 
                 return (
                   <div
-                    key={qb.id}
+                    key={columnQB.id || columnQB.player_id || columnQB.name}
                     className="bg-white/5 rounded p-2 flex items-center gap-2"
                   >
                     <div className="w-8 h-8 flex items-center justify-center bg-white/10 rounded-full font-bold text-white/80">
@@ -462,30 +479,36 @@ const QBRankingsExport = ({
                     </div>
                     <img
                       src={headshot}
-                      alt={qb.name}
+                      alt={columnQB.name}
                       className="w-10 h-10 rounded-full object-cover"
+                      loading="eager"
+                      decoding="async"
+                      crossOrigin="anonymous"
                       onError={(e) => {
                         e.target.src = '/assets/headshots/default.png';
                       }}
                     />
                     <div className="flex-1 truncate text-sm">
                       <div className="font-medium text-white truncate">
-                        {qb.name}
+                        {columnQB.name}
                       </div>
                       <div className="flex items-center gap-1 text-white/60 text-xs">
                         {logoPath && (
                           <div className="w-4 h-4">
                             <img
                               src={logoPath}
-                              alt={qb.team}
+                              alt={columnQB.team}
                               className="w-full h-full object-contain"
+                              loading="eager"
+                              decoding="async"
+                              crossOrigin="anonymous"
                               onError={(e) => {
                                 e.target.style.display = 'none';
                               }}
                             />
                           </div>
                         )}
-                        <span>{qb.team?.toUpperCase() || '—'}</span>
+                        <span>{columnQB.team?.toUpperCase() || '—'}</span>
                       </div>
                     </div>
                   </div>
@@ -497,16 +520,13 @@ const QBRankingsExport = ({
           {/* Desktop columns (4) */}
           {createColumns(numCols.md).map((column, colIndex) => (
             <div key={colIndex} className="hidden md:flex flex-col gap-1">
-              {column.map(({ qb, rank }) => {
-                const headshot =
-                  qb.headshotUrl ||
-                  qb.imageUrl ||
-                  `/assets/headshots/${qb.player_id || qb.id}.png`;
-                const logoPath = getLogoPath(qb.team);
+              {column.map(({ qb: columnQB, rank }) => {
+                const headshot = getHeadshotSrc(columnQB);
+                const logoPath = getLogoPath(columnQB.team);
 
                 return (
                   <div
-                    key={qb.id}
+                    key={columnQB.id || columnQB.player_id || columnQB.name}
                     className="bg-white/5 rounded p-2 flex items-center gap-2"
                   >
                     <div className="w-8 h-8 flex items-center justify-center bg-white/10 rounded-full font-bold text-white/80">
@@ -514,30 +534,36 @@ const QBRankingsExport = ({
                     </div>
                     <img
                       src={headshot}
-                      alt={qb.name}
+                      alt={columnQB.name}
                       className="w-10 h-10 rounded-full object-cover"
+                      loading="eager"
+                      decoding="async"
+                      crossOrigin="anonymous"
                       onError={(e) => {
                         e.target.src = '/assets/headshots/default.png';
                       }}
                     />
                     <div className="flex-1 truncate text-sm">
                       <div className="font-medium text-white truncate">
-                        {qb.name}
+                        {columnQB.name}
                       </div>
                       <div className="flex items-center gap-1 text-white/60 text-xs">
                         {logoPath && (
                           <div className="w-4 h-4">
                             <img
                               src={logoPath}
-                              alt={qb.team}
+                              alt={columnQB.team}
                               className="w-full h-full object-contain"
+                              loading="eager"
+                              decoding="async"
+                              crossOrigin="anonymous"
                               onError={(e) => {
                                 e.target.style.display = 'none';
                               }}
                             />
                           </div>
                         )}
-                        <span>{qb.team?.toUpperCase() || '—'}</span>
+                        <span>{columnQB.team?.toUpperCase() || '—'}</span>
                       </div>
                     </div>
                   </div>
@@ -549,6 +575,37 @@ const QBRankingsExport = ({
       </div>
     );
   };
+
+  const renderExportGrid = () => (
+    <div
+      ref={exportViewRef}
+      className="bg-neutral-900 p-6 rounded-lg border border-white/10"
+      style={{ width: '1400px' }}
+    >
+      {renderSharedHeader()}
+
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(5, minmax(0, 1fr))',
+          gap: '16px',
+          maxWidth: '1400px',
+          margin: '0 auto',
+        }}
+      >
+        {rankings.map((qb, idx) => (
+          <GridCard
+            key={qb.id || qb.player_id || idx}
+            qb={qb}
+            rank={idx + 1}
+            showLogoBg={showLogoBg}
+            showMovement={showMovement}
+            movementData={movementData}
+          />
+        ))}
+      </div>
+    </div>
+  );
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -575,6 +632,19 @@ const QBRankingsExport = ({
         {/* Action Buttons */}
         <div className="p-6 border-b border-white/10">
           <ActionButtons />
+        </div>
+
+        {/* Hidden export grid to force 5-column layout during downloads */}
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            left: '-9999px',
+            top: '-9999px',
+            width: '1400px',
+          }}
+        >
+          {renderExportGrid()}
         </div>
 
         {/* Content */}
