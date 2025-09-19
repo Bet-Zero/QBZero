@@ -129,6 +129,11 @@ const getLogoBackgroundStyle = (team, showLogoBg) => {
   };
 };
 
+const getHeadshotSrc = (player) =>
+  player?.headshotUrl ||
+  player?.imageUrl ||
+  `/assets/headshots/${player?.player_id || player?.id}.png`;
+
 // Simple grid display for final rankings. Renders a responsive list of
 // player names with their rank number. Designed to scale up to large player
 // pools by using a multi-column layout.
@@ -140,7 +145,6 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
   const [isLocked, setIsLocked] = useState(false); // Add state to manage lock status
   const [isAdjustMode, setIsAdjustMode] = useState(false);
   const [currentRanking, setCurrentRanking] = useState(ranking);
-  const shareViewRef = useRef(null);
   const exportViewRef = useRef(null); // Separate ref for export content
   const downloadImage = useImageDownload(exportViewRef); // Use export ref for downloads
 
@@ -246,8 +250,7 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
         >
           {currentRanking.map((p, idx) => {
             const logoPath = getLogoPath(p.team);
-            const headshot =
-              p.headshotUrl || `/assets/headshots/${p.player_id || p.id}.png`;
+            const headshot = getHeadshotSrc(p);
             const logoBackgroundStyle = getLogoBackgroundStyle(
               p.team,
               showLogoBg
@@ -267,6 +270,9 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
                       src={headshot}
                       alt={p.name}
                       className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                      loading="eager"
+                      decoding="async"
+                      crossOrigin="anonymous"
                       onError={(e) => {
                         e.target.src = '/assets/headshots/default.png';
                       }}
@@ -291,6 +297,9 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
                             src={logoPath}
                             alt={p.team}
                             className="w-full h-full object-contain"
+                            loading="eager"
+                            decoding="async"
+                            crossOrigin="anonymous"
                             onError={(e) => {
                               e.target.style.display = 'none';
                             }}
@@ -462,8 +471,7 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 max-w-[1400px] mx-auto">
             {currentRanking.map((p, idx) => {
               const logoPath = getLogoPath(p.team);
-              const headshot =
-                p.headshotUrl || `/assets/headshots/${p.player_id || p.id}.png`;
+              const headshot = getHeadshotSrc(p);
               const logoBackgroundStyle = getLogoBackgroundStyle(
                 p.team,
                 showLogoBg
@@ -483,6 +491,9 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
                         src={headshot}
                         alt={p.name}
                         className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                        loading="eager"
+                        decoding="async"
+                        crossOrigin="anonymous"
                         onError={(e) => {
                           e.target.src = '/assets/headshots/default.png';
                         }}
@@ -507,6 +518,9 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
                               src={logoPath}
                               alt={p.team}
                               className="w-full h-full object-contain"
+                              loading="eager"
+                              decoding="async"
+                              crossOrigin="anonymous"
                               onError={(e) => {
                                 e.target.style.display = 'none';
                               }}
@@ -537,9 +551,7 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
           {createColumns(numCols.base).map((column, colIndex) => (
             <div key={colIndex} className="flex flex-col gap-1 sm:hidden">
               {column.map(({ player: p, rank }) => {
-                const headshot =
-                  p.headshotUrl ||
-                  `/assets/headshots/${p.player_id || p.id}.png`;
+                const headshot = getHeadshotSrc(p);
                 const logoPath = getLogoPath(p.team);
 
                 return (
@@ -554,6 +566,9 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
                       src={headshot}
                       alt=""
                       className="w-10 h-10 rounded-full object-cover"
+                      loading="eager"
+                      decoding="async"
+                      crossOrigin="anonymous"
                       onError={(e) => {
                         e.target.src = '/assets/headshots/default.png';
                       }}
@@ -569,6 +584,9 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
                               src={logoPath}
                               alt={p.team}
                               className="w-full h-full object-contain"
+                              loading="eager"
+                              decoding="async"
+                              crossOrigin="anonymous"
                               onError={(e) => {
                                 e.target.style.display = 'none';
                               }}
@@ -591,9 +609,7 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
               className="hidden sm:flex md:hidden flex-col gap-1"
             >
               {column.map(({ player: p, rank }) => {
-                const headshot =
-                  p.headshotUrl ||
-                  `/assets/headshots/${p.player_id || p.id}.png`;
+                const headshot = getHeadshotSrc(p);
                 const logoPath = getLogoPath(p.team);
 
                 return (
@@ -608,6 +624,9 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
                       src={headshot}
                       alt=""
                       className="w-10 h-10 rounded-full object-cover"
+                      loading="eager"
+                      decoding="async"
+                      crossOrigin="anonymous"
                       onError={(e) => {
                         e.target.src = '/assets/headshots/default.png';
                       }}
@@ -623,6 +642,9 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
                               src={logoPath}
                               alt={p.team}
                               className="w-full h-full object-contain"
+                              loading="eager"
+                              decoding="async"
+                              crossOrigin="anonymous"
                               onError={(e) => {
                                 e.target.style.display = 'none';
                               }}
@@ -642,9 +664,7 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
           {createColumns(numCols.md).map((column, colIndex) => (
             <div key={colIndex} className="hidden md:flex flex-col gap-1">
               {column.map(({ player: p, rank }) => {
-                const headshot =
-                  p.headshotUrl ||
-                  `/assets/headshots/${p.player_id || p.id}.png`;
+                const headshot = getHeadshotSrc(p);
                 const logoPath = getLogoPath(p.team);
 
                 return (
@@ -659,6 +679,9 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
                       src={headshot}
                       alt=""
                       className="w-10 h-10 rounded-full object-cover"
+                      loading="eager"
+                      decoding="async"
+                      crossOrigin="anonymous"
                       onError={(e) => {
                         e.target.src = '/assets/headshots/default.png';
                       }}
@@ -674,6 +697,9 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
                               src={logoPath}
                               alt={p.team}
                               className="w-full h-full object-contain"
+                              loading="eager"
+                              decoding="async"
+                              crossOrigin="anonymous"
                               onError={(e) => {
                                 e.target.style.display = 'none';
                               }}
