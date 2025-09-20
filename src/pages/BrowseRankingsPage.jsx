@@ -55,6 +55,16 @@ const BrowseRankingsPage = () => {
     }
   };
 
+  // Helper function to clean up redundant notes
+  const cleanNotes = (notes) => {
+    if (!notes) return null; // Return null instead of "No notes" to hide the area
+    // Remove auto-archive text since we already show the date in the header
+    if (notes.startsWith('Auto-archived on')) {
+      return null; // Return null to hide the notes area completely
+    }
+    return notes;
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-neutral-900 text-white flex items-center justify-center">
@@ -91,8 +101,10 @@ const BrowseRankingsPage = () => {
                       Archive from {formatDate(selectedArchive.timestamp)}
                     </h2>
                     <p className="text-blue-300/80 text-sm">
-                      {selectedArchive.rankings?.length || 0} QBs ranked •{' '}
-                      {selectedArchive.notes || 'No notes'}
+                      {selectedArchive.rankings?.length || 0} QBs ranked
+                      {cleanNotes(selectedArchive.notes) && (
+                        <> • {cleanNotes(selectedArchive.notes)}</>
+                      )}
                     </p>
                   </div>
                   <button
@@ -104,7 +116,7 @@ const BrowseRankingsPage = () => {
                 </div>
 
                 {/* Full Archive Rankings Display */}
-                <div className="space-y-4 max-h-[600px] overflow-y-auto">
+                <div className="space-y-2 max-h-[600px] overflow-y-auto">
                   {selectedArchive.rankings?.map((qb, index) => (
                     <QBRankingCard
                       key={qb.id}
@@ -119,6 +131,7 @@ const BrowseRankingsPage = () => {
                       onEditNotes={() => {}}
                       canMoveUp={false}
                       canMoveDown={false}
+                      isArchiveMode={true} // Enable archive mode for uniform row heights
                     />
                   )) || (
                     <div className="text-center py-8 text-white/60">
@@ -282,11 +295,11 @@ const BrowseRankingsPage = () => {
                           <Eye size={16} className="text-white/40" />
                         </div>
                       </div>
-                      {archive.notes && (
+                      {archive.notes && cleanNotes(archive.notes) && (
                         <div className="text-white/70 text-xs mt-1 italic">
-                          {archive.notes.length > 50
-                            ? `${archive.notes.substring(0, 50)}...`
-                            : archive.notes}
+                          {cleanNotes(archive.notes).length > 50
+                            ? `${cleanNotes(archive.notes).substring(0, 50)}...`
+                            : cleanNotes(archive.notes)}
                         </div>
                       )}
                       <div className="text-blue-400/60 text-xs mt-1 font-medium">

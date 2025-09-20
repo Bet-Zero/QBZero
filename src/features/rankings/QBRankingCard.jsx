@@ -49,6 +49,7 @@ const QBRankingCard = ({
   readOnly = false,
   movement = null, // Movement data from ranking comparison
   showMovement = false, // Toggle for showing movement indicators
+  isArchiveMode = false, // New prop to indicate this is being used in archive display
 }) => {
   const [isEditingNotes, setIsEditingNotes] = useState(false);
   const [notesValue, setNotesValue] = useState(qb.notes || '');
@@ -65,6 +66,10 @@ const QBRankingCard = ({
 
   // Make all notes use the smallest text size on mobile, normal on desktop
   const getNotesTextClasses = (text) => {
+    // For archive mode, always use constrained classes to prevent stretching
+    if (isArchiveMode) {
+      return 'text-[11px] leading-[12px] sm:text-sm sm:leading-normal line-clamp-2 overflow-hidden';
+    }
     // Mobile: Always use the smallest size (10px) for uniformity
     // Desktop: Use normal text size
     return 'text-[11px] leading-[12px] sm:text-sm sm:leading-normal';
@@ -126,8 +131,14 @@ const QBRankingCard = ({
         </div>
       )}
 
-      {/* Fixed height container - Mobile: 90px, Desktop: ORIGINAL flexible layout */}
-      <div className="flex relative z-10 h-[90px] sm:min-h-[80px] sm:h-auto">
+      {/* Fixed height container - Mobile: 90px, Desktop: ORIGINAL flexible layout OR fixed for archive mode */}
+      <div
+        className={`flex relative z-10 ${
+          isArchiveMode
+            ? 'h-[90px] sm:h-[100px]' // Fixed height for archive mode on both mobile and desktop
+            : 'h-[90px] sm:min-h-[80px] sm:h-auto' // Original flexible height for regular rankings
+        }`}
+      >
         {/* Rank Number Container - Mobile compact, Desktop ORIGINAL */}
         <div className="w-10 min-w-[40px] sm:w-12 sm:min-w-[48px] flex items-center justify-center bg-white/20 backdrop-blur-sm overflow-hidden relative rounded-l-lg">
           <div
@@ -176,8 +187,33 @@ const QBRankingCard = ({
           {/* Header section - Mobile minimal, Desktop ORIGINAL */}
           <div className="mb-1 sm:mb-2">
             <div className="flex items-start gap-2 sm:gap-3">
-              <h3 className="text-base sm:text-xl font-bold text-white drop-shadow-lg leading-tight">
-                {qb.name}
+              <h3
+                className={`font-bold text-white drop-shadow-lg leading-tight ${
+                  isArchiveMode
+                    ? 'text-sm sm:text-xl' // Archive mode: force smaller text on mobile for 2-line names
+                    : 'text-base sm:text-xl' // Regular mode: keep original sizing
+                }`}
+              >
+                {/* Force 2-line layout on mobile for archive mode only */}
+                {isArchiveMode ? (
+                  <span className="block sm:inline">
+                    {/* On mobile, split name and force 2 lines. On desktop, keep inline with proper spacing */}
+                    <span className="block sm:inline">
+                      {qb.name.split(' ').slice(0, -1).join(' ')}
+                    </span>
+                    {qb.name.split(' ').length > 1 && (
+                      <>
+                        <span className="hidden sm:inline"> </span>{' '}
+                        {/* Add space back for desktop */}
+                        <span className="block sm:inline">
+                          {qb.name.split(' ').slice(-1)[0]}
+                        </span>
+                      </>
+                    )}
+                  </span>
+                ) : (
+                  qb.name
+                )}
               </h3>
 
               {qb.team && (
@@ -225,6 +261,7 @@ const QBRankingCard = ({
             ) : (
               <div
                 className={`text-white/70 drop-shadow-lg ${getNotesTextClasses(qb.notes)}`}
+                title={isArchiveMode && qb.notes ? qb.notes : undefined} // Show full notes on hover in archive mode
               >
                 {qb.notes || (
                   <span className="italic text-white/40 text-[9px] sm:text-sm">
