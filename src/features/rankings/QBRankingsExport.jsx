@@ -131,7 +131,7 @@ const GridCard = ({
   const movement = movementData?.[qb.id];
 
   return (
-    <div className="relative group">
+    <div className="inline-block">
       {/* Card */}
       <div className="bg-gradient-to-b from-[#2a2a2a] to-[#1f1f1f] rounded-lg overflow-hidden border border-white/25 transition-all hover:border-white/40 shadow-2xl">
         {/* Headshot Container with overlaid rank */}
@@ -175,13 +175,18 @@ const GridCard = ({
                 />
               </div>
             )}
-            <span className="text-white/60 text-sm">{qb.team?.toUpperCase() || '—'}</span>
+            <span className="text-white/60 text-sm">
+              {qb.team?.toUpperCase() || '—'}
+            </span>
           </div>
 
           {/* Movement indicator positioned absolutely in bottom-right */}
           {showMovement && movement?.moved && (
             <div className="absolute bottom-3 right-3">
-              <RankingMovementIndicator movement={movement} showMovement={true} />
+              <RankingMovementIndicator
+                movement={movement}
+                showMovement={true}
+              />
             </div>
           )}
         </div>
@@ -204,8 +209,7 @@ const QBRankingsExport = ({
   const [isDownloading, setIsDownloading] = useState(false);
   const shareViewRef = useRef(null);
   const exportViewRef = useRef(null);
-  const activeDownloadRef =
-    viewType === 'grid' ? exportViewRef : shareViewRef;
+  const activeDownloadRef = viewType === 'grid' ? exportViewRef : shareViewRef;
   const downloadImage = useImageDownload(activeDownloadRef);
 
   const handleCopy = () => {
@@ -222,8 +226,12 @@ const QBRankingsExport = ({
         day: 'numeric',
       })
       .replace(/,/g, '');
+
     try {
-      await downloadImage(`${rankingName || 'qb-rankings'}-${date}.png`);
+      // For grid view, use the visible element directly instead of hidden export
+      const downloadRef = viewType === 'grid' ? shareViewRef : shareViewRef;
+      const downloadImageFn = useImageDownload(downloadRef);
+      await downloadImageFn(`${rankingName || 'qb-rankings'}-${date}.png`);
     } finally {
       setIsDownloading(false);
     }
@@ -353,35 +361,55 @@ const QBRankingsExport = ({
     return columns;
   };
 
-  const renderSharedHeader = () => (
-    <div className="text-center mb-6">
-      <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 bg-clip-text text-transparent mb-2">
-        NFL QB Rankings
-      </h1>
-      <div className="text-sm text-white/60 italic">
-        {new Date().toLocaleDateString(undefined, {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        })}
+  const renderPosterHeader = () => {
+    const updatedDate = new Date().toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+
+    return (
+      <div className="mb-6">
+        {/* Title line */}
+        <h1 className="text-[56px] md:text-[64px] font-black uppercase tracking-[0.04em] leading-none text-white">
+          NFL QB RANKINGS
+        </h1>
+        {/* Thin underline under title - shortened and aligned with column 1 */}
+        <div className="mt-3 h-[2px] w-[28%] bg-white/20"></div>
+        {/* Subline */}
+        <div className="mt-4 text-[16px] md:text-[18px] text-white/70">
+          Updated {updatedDate}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
-  const renderContent = () => {
-    const sharedHeader = renderSharedHeader();
+  const renderPosterFooter = () => {
+    return (
+      <div className="pt-8 border-t border-white/12">
+        <div className="flex items-center justify-between text-[12px] text-white/55">
+          <span>QBZero</span>
+          <span></span>
+        </div>
+      </div>
+    );
+  };
 
-    if (viewType === 'grid') {
-      return (
+  const renderGridLayout = (isExport = false) => {
+    const containerRef = isExport ? exportViewRef : shareViewRef;
+
+    return (
+      <div className="min-h-screen w-full bg-neutral-950 text-white flex items-center justify-center">
         <div
-          ref={shareViewRef}
-          className="bg-neutral-900 p-6 rounded-lg border border-white/10"
+          ref={containerRef}
+          className="w-[1400px] px-16 pt-20 pb-24 flex flex-col"
         >
-          {sharedHeader}
+          {/* Header (top-left) */}
+          {renderPosterHeader()}
 
-          {/* Use the same desktop-style grid that works well on mobile */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 max-w-[1400px] mx-auto">
-            {rankings.map((qb, idx) => (
+          {/* Grid with 6 columns x 7 rows - back to clean layout before dividers */}
+          <div className="mt-6 mb-12 grid grid-cols-6 gap-x-4 gap-y-6 justify-items-center">
+            {rankings.slice(0, 42).map((qb, idx) => (
               <GridCard
                 key={qb.id || qb.player_id || idx}
                 qb={qb}
@@ -392,16 +420,37 @@ const QBRankingsExport = ({
               />
             ))}
           </div>
+
+          {/* Footer */}
+          {renderPosterFooter()}
         </div>
-      );
+      </div>
+    );
+  };
+
+  const renderContent = () => {
+    if (viewType === 'grid') {
+      return renderGridLayout(false);
     }
 
+    // List view remains unchanged
     return (
       <div
         ref={shareViewRef}
         className="bg-neutral-900 p-6 rounded-lg border border-white/10"
       >
-        {sharedHeader}
+        <div className="text-center mb-6">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 bg-clip-text text-transparent mb-2">
+            NFL QB Rankings
+          </h1>
+          <div className="text-sm text-white/60 italic">
+            {new Date().toLocaleDateString(undefined, {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            })}
+          </div>
+        </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-2 gap-y-1">
           {/* Mobile columns (2) */}
@@ -576,37 +625,6 @@ const QBRankingsExport = ({
     );
   };
 
-  const renderExportGrid = () => (
-    <div
-      ref={exportViewRef}
-      className="bg-neutral-900 p-6 rounded-lg border border-white/10"
-      style={{ width: '1400px' }}
-    >
-      {renderSharedHeader()}
-
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(5, minmax(0, 1fr))',
-          gap: '16px',
-          maxWidth: '1400px',
-          margin: '0 auto',
-        }}
-      >
-        {rankings.map((qb, idx) => (
-          <GridCard
-            key={qb.id || qb.player_id || idx}
-            qb={qb}
-            rank={idx + 1}
-            showLogoBg={showLogoBg}
-            showMovement={showMovement}
-            movementData={movementData}
-          />
-        ))}
-      </div>
-    </div>
-  );
-
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-neutral-900 rounded-xl border border-white/20 w-full max-w-7xl max-h-[90vh] overflow-hidden">
@@ -632,19 +650,6 @@ const QBRankingsExport = ({
         {/* Action Buttons */}
         <div className="p-6 border-b border-white/10">
           <ActionButtons />
-        </div>
-
-        {/* Hidden export grid to force 5-column layout during downloads */}
-        <div
-          aria-hidden="true"
-          style={{
-            position: 'absolute',
-            left: '-9999px',
-            top: '-9999px',
-            width: '1400px',
-          }}
-        >
-          {renderExportGrid()}
         </div>
 
         {/* Content */}
