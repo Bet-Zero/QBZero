@@ -5,7 +5,7 @@ import { toast } from 'react-hot-toast';
 const AdminGate = ({ onAdminAccess, onClose }) => {
   const [passwordInput, setPasswordInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const correctPassword = 'Makenzie1!'; // Using the same password as your main PasswordGate
+  const correctPassword = 'Sidearm9!'; // Using the same password as your main PasswordGate
 
   const handleSubmit = (e) => {
     e.preventDefault();

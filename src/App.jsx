@@ -23,6 +23,7 @@ import NotFound from '@/pages/NotFound';
 import ListPresentationView from '@/pages/ListPresentationView';
 import Home from '@/pages/Home';
 import ComingSoon from '@/pages/ComingSoon';
+import AdminProtectedRoute from '@/components/shared/AdminProtectedRoute';
 
 const App = () => {
   return (
@@ -36,8 +37,15 @@ const App = () => {
         <Route path="/rankings" element={<PublicQBRankingsPage />} />
         <Route path="/rankings/browse" element={<BrowseRankingsPage />} />
 
-        {/* Private Edit Access - For your personal use */}
-        <Route path="/rankings/edit" element={<QBRankingsPage />} />
+        {/* Private Edit Access - Protected by admin system */}
+        <Route
+          path="/rankings/edit"
+          element={
+            <AdminProtectedRoute>
+              <QBRankingsPage />
+            </AdminProtectedRoute>
+          }
+        />
 
         {/* Legacy redirects for old personal rankings routes */}
         <Route
