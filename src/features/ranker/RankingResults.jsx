@@ -222,7 +222,7 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
 
     return (
       <div className="min-h-screen w-full bg-neutral-950 text-white flex items-center justify-center">
-        <div className="w-[1400px] px-16 pt-20 pb-12 flex flex-col">
+        <div className="w-[1400px] px-24 pt-20 pb-12 flex flex-col">
           {/* Header (top-left) */}
           {renderPosterHeader()}
 
