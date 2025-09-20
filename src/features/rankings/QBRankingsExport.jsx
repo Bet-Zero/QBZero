@@ -386,7 +386,7 @@ const QBRankingsExport = ({
 
   const renderPosterFooter = () => {
     return (
-      <div className="pt-8 border-t border-white/12">
+      <div className="pt-8 border-t border-white/25">
         <div className="flex items-center justify-between text-[12px] text-white/55">
           <span>QBZero</span>
           <span></span>
@@ -402,7 +402,7 @@ const QBRankingsExport = ({
       <div className="min-h-screen w-full bg-neutral-950 text-white flex items-center justify-center">
         <div
           ref={containerRef}
-          className="w-[1400px] px-16 pt-20 pb-24 flex flex-col"
+          className="w-[1400px] px-16 pt-20 pb-12 flex flex-col"
         >
           {/* Header (top-left) */}
           {renderPosterHeader()}
