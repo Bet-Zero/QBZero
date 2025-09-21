@@ -2,6 +2,8 @@ import React, { useState, useRef } from 'react';
 import { LayoutGrid, ListOrdered, Download, X, TrendingUp } from 'lucide-react';
 import useImageDownload from '@/hooks/useImageDownload';
 import RankingMovementIndicator from '@/components/shared/RankingMovementIndicator';
+import GridStyleToggle from './GridStyleToggle';
+import CompactGridCard from './CompactGridCard';
 
 // Mapping team abbreviations to logo file names (copied from RankingResults)
 const teamLogoMap = {
@@ -202,6 +204,7 @@ const QBRankingsExport = ({
   movementData = {},
 }) => {
   const [viewType, setViewType] = useState('grid'); // 'list' or 'grid'
+  const [compactGrid, setCompactGrid] = useState(false); // false = standard grid, true = compact grid
   const [showLogoBg, setShowLogoBg] = useState(true);
   const [showMovement, setShowMovement] = useState(
     Object.keys(movementData).length > 0
@@ -240,31 +243,39 @@ const QBRankingsExport = ({
   const ActionButtons = () => (
     <div className="flex gap-2 justify-center sm:justify-start">
       {viewType === 'grid' && (
-        <button
-          onClick={() => setShowLogoBg(!showLogoBg)}
-          className="px-3 py-2 text-sm text-white bg-white/10 rounded hover:bg-white/20 flex items-center transition-colors"
-          title={showLogoBg ? 'Hide Logo Background' : 'Show Logo Background'}
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            className="mr-1"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-            />
-          </svg>
-          <span className="hidden sm:inline">
-            {showLogoBg ? 'Hide Logo BG' : 'Show Logo BG'}
-          </span>
-        </button>
+        <>
+          <GridStyleToggle 
+            compactGrid={compactGrid} 
+            onChange={setCompactGrid} 
+          />
+          {!compactGrid && (
+            <button
+              onClick={() => setShowLogoBg(!showLogoBg)}
+              className="px-3 py-2 text-sm text-white bg-white/10 rounded hover:bg-white/20 flex items-center transition-colors"
+              title={showLogoBg ? 'Hide Logo Background' : 'Show Logo Background'}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                className="mr-1"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
+              </svg>
+              <span className="hidden sm:inline">
+                {showLogoBg ? 'Hide Logo BG' : 'Show Logo BG'}
+              </span>
+            </button>
+          )}
+        </>
       )}
       {Object.keys(movementData).length > 0 && (
         <button
@@ -407,19 +418,34 @@ const QBRankingsExport = ({
           {/* Header (top-left) */}
           {renderPosterHeader()}
 
-          {/* Grid with 6 columns x 7 rows - back to clean layout before dividers */}
-          <div className="mt-6 mb-12 grid grid-cols-6 gap-x-4 gap-y-6 justify-items-center">
-            {rankings.slice(0, 42).map((qb, idx) => (
-              <GridCard
-                key={qb.id || qb.player_id || idx}
-                qb={qb}
-                rank={idx + 1}
-                showLogoBg={showLogoBg}
-                showMovement={showMovement}
-                movementData={movementData}
-              />
-            ))}
-          </div>
+          {compactGrid ? (
+            /* Compact Grid - 2 columns with horizontal cards */
+            <div className="mt-6 mb-12 grid grid-cols-2 gap-x-8 gap-y-3 max-w-4xl mx-auto">
+              {rankings.slice(0, 42).map((qb, idx) => (
+                <CompactGridCard
+                  key={qb.id || qb.player_id || idx}
+                  qb={qb}
+                  rank={idx + 1}
+                  showMovement={showMovement}
+                  movementData={movementData}
+                />
+              ))}
+            </div>
+          ) : (
+            /* Standard Grid - 6 columns x 7 rows with QB cards */
+            <div className="mt-6 mb-12 grid grid-cols-6 gap-x-4 gap-y-6 justify-items-center">
+              {rankings.slice(0, 42).map((qb, idx) => (
+                <GridCard
+                  key={qb.id || qb.player_id || idx}
+                  qb={qb}
+                  rank={idx + 1}
+                  showLogoBg={showLogoBg}
+                  showMovement={showMovement}
+                  movementData={movementData}
+                />
+              ))}
+            </div>
+          )}
 
           {/* Footer */}
           {renderPosterFooter()}
