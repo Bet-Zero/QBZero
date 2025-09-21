@@ -1,0 +1,51 @@
+import React from 'react';
+import { describe, expect, it } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
+import '@testing-library/jest-dom/vitest';
+import BackupQBBracket from '@/features/backupBracket/BackupQBBracket.jsx';
+
+const createEntrants = (count) =>
+  Array.from({ length: count }, (_, index) => ({
+    id: `qb-${index + 1}`,
+    display_name: `QB ${index + 1}`,
+    team: `T${index + 1}`,
+  }));
+
+describe('BackupQBBracket component', () => {
+  it('allows selecting and clearing winners', async () => {
+    render(<BackupQBBracket entrants={createEntrants(16)} preferredSize={16} />);
+
+    expect(await screen.findByText('Winner of Round of 16 • Match 1')).toBeInTheDocument();
+
+    const allButtons = screen.getAllByRole('button', { name: /Select QB/i });
+    const qb1Button = allButtons.find((button) => button.getAttribute('aria-label')?.includes('QB 1'));
+    const qb8Button = allButtons.find((button) => button.getAttribute('aria-label')?.includes('QB 8'));
+
+    expect(qb1Button).toBeTruthy();
+    expect(qb8Button).toBeTruthy();
+
+    fireEvent.click(qb1Button);
+    fireEvent.click(qb8Button);
+
+    expect(screen.queryByText('Winner of Round of 16 • Match 1')).not.toBeInTheDocument();
+
+    const updatedQb1Button = screen
+      .getAllByRole('button', { name: /Select QB 1 as winner/i })
+      .find((button) => button.getAttribute('aria-label')?.includes('QB 1'));
+    const updatedQb8Button = screen
+      .getAllByRole('button', { name: /Select QB 8 as winner/i })
+      .find((button) => button.getAttribute('aria-label')?.includes('QB 8'));
+
+    expect(updatedQb1Button).toHaveAttribute('aria-pressed', 'true');
+    expect(updatedQb8Button).toHaveAttribute('aria-pressed', 'true');
+
+    fireEvent.click(updatedQb1Button);
+    expect(await screen.findByText('Winner of Round of 16 • Match 1')).toBeInTheDocument();
+
+    const resetQb1Button = screen
+      .getAllByRole('button', { name: /Select QB 1 as winner/i })
+      .find((button) => button.getAttribute('aria-label')?.includes('QB 1'));
+
+    expect(resetQb1Button).toHaveAttribute('aria-pressed', 'false');
+  });
+});

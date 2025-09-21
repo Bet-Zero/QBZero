@@ -1,8 +1,24 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { FireIcon } from '@heroicons/react/24/outline';
+import BackupQBBracket from '@/features/backupBracket/BackupQBBracket';
+import usePlayerData from '@/hooks/usePlayerData.js';
+import { filterBackupQBs } from '@/utils/backupQBs/backupQBClassification';
 
 const BackupQBsHome = () => {
+  const { players } = usePlayerData();
+  const backupQBs = useMemo(() => filterBackupQBs(players || []), [players]);
+  const bracketEntrants = useMemo(
+    () =>
+      backupQBs.map((qb) => ({
+        id: qb.id || qb.player_id,
+        display_name:
+          qb.display_name || qb.displayName || qb.fullName || qb.name || qb.player_name || qb.id,
+        team: qb.bio?.Team || qb.team || qb.currentTeam || 'FA',
+      })),
+    [backupQBs]
+  );
+
   return (
     <div className="min-h-screen bg-neutral-900 text-white py-12 px-4">
       <div className="max-w-6xl mx-auto space-y-12">
@@ -13,6 +29,15 @@ const BackupQBsHome = () => {
             A celebration of the unsung heroes who keep NFL teams running when
             called upon.
           </p>
+        </div>
+
+        {/* Bracket Section */}
+        <div className="space-y-6">
+          <p className="text-white/70 text-sm text-center max-w-3xl mx-auto">
+            Rank the best reserves in football with our interactive bracket. Choose winners, watch them advance,
+            and crown the ultimate backup quarterback champion.
+          </p>
+          <BackupQBBracket entrants={bracketEntrants} preferredSize={32} />
         </div>
 
         {/* Hall of Fame Card */}

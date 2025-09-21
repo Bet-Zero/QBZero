@@ -13,7 +13,7 @@ describe('AnchorComparison', () => {
     const handle = vi.fn();
     render(<AnchorComparison anchor={anchor} players={players} onComplete={handle} />);
     fireEvent.click(screen.getByText('Alpha'));
-    fireEvent.click(screen.getByText('Confirm'));
+    fireEvent.click(screen.getByText('Confirm Selection'));
     expect(handle).toHaveBeenCalledWith(['1']);
   });
 });
