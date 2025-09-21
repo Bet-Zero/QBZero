@@ -415,19 +415,97 @@ const QBRankingsExport = ({
           {/* Header (top-left) */}
           {renderPosterHeader()}
 
-          {/* Grid with 6 columns x 7 rows - back to clean layout before dividers */}
-          <div className="mt-6 mb-12 grid grid-cols-6 gap-x-4 gap-y-6 justify-items-center">
-            {rankings.slice(0, 42).map((qb, idx) => (
-              <GridCard
-                key={qb.id || qb.player_id || idx}
-                qb={qb}
-                rank={idx + 1}
-                showLogoBg={showLogoBg}
-                showMovement={showMovement}
-                movementData={movementData}
-              />
-            ))}
-          </div>
+          {/* Grid with 6 columns x 7 rows - conditional rendering based on grid style */}
+          {gridStyle === 'standard' ? (
+            <div className="mt-6 mb-12 grid grid-cols-6 gap-x-4 gap-y-6 justify-items-center">
+              {rankings.slice(0, 42).map((qb, idx) => (
+                <GridCard
+                  key={qb.id || qb.player_id || idx}
+                  qb={qb}
+                  rank={idx + 1}
+                  showLogoBg={showLogoBg}
+                  showMovement={showMovement}
+                  movementData={movementData}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="mt-6 mb-12 grid grid-cols-6 gap-x-4 gap-y-6 justify-items-center">
+              {rankings.slice(0, 42).map((qb, idx) => {
+                const logoPath = getLogoPath(qb.team);
+                const headshot = getHeadshotSrc(qb);
+                const logoBackgroundStyle = getLogoBackgroundStyle(qb.team, showLogoBg);
+                const rankBackgroundStyle = getRankBackgroundStyle(qb.team);
+                const movement = movementData?.[qb.id];
+
+                return (
+                  <div key={qb.id || qb.player_id || idx} className="w-[180px]">
+                    {/* Card with fixed width - exact copy from original Ranker Results */}
+                    <div className="bg-gradient-to-b from-[#2a2a2a] to-[#1f1f1f] rounded-lg overflow-hidden border border-white/25 transition-all hover:border-white/40 shadow-2xl">
+                      {/* Headshot Container with overlaid rank - fixed aspect ratio */}
+                      <div
+                        className="w-[180px] h-[180px] overflow-hidden bg-[#0a0a0a] relative border-b border-white/15"
+                        style={logoBackgroundStyle}
+                      >
+                        <img
+                          src={headshot}
+                          alt={qb.display_name || qb.name}
+                          className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                          loading="eager"
+                          decoding="async"
+                          crossOrigin="anonymous"
+                          onError={(e) => {
+                            e.target.src = '/assets/headshots/default.png';
+                          }}
+                        />
+                        {/* Rank overlay in corner */}
+                        <div className={`absolute top-2 left-2 ${rankBackgroundStyle}`}>
+                          {idx + 1}
+                        </div>
+                      </div>
+
+                      {/* Info Section - increased height to prevent text clipping */}
+                      <div className="p-3 h-[70px] relative bg-gradient-to-b from-[#1f1f1f] to-[#1a1a1a] border-t border-white/20 flex flex-col">
+                        <div className="text-white font-medium truncate text-sm mb-1 leading-normal overflow-visible">
+                          {qb.display_name || qb.name}
+                        </div>
+                        <div className="flex items-center gap-1.5 mt-auto">
+                          {logoPath && (
+                            <div className="w-4 h-4 flex-shrink-0">
+                              <img
+                                src={logoPath}
+                                alt={qb.team}
+                                className="w-full h-full object-contain"
+                                loading="eager"
+                                decoding="async"
+                                crossOrigin="anonymous"
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                }}
+                              />
+                            </div>
+                          )}
+                          <span className="text-white/60 text-xs truncate">
+                            {qb.team?.toUpperCase() || '—'}
+                          </span>
+                        </div>
+
+                        {/* Movement indicator positioned absolutely in bottom-right */}
+                        {showMovement && movement?.moved && (
+                          <div className="absolute bottom-3 right-3">
+                            <RankingMovementIndicator
+                              movement={movement}
+                              showMovement={true}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           {/* Footer */}
           {renderPosterFooter()}
