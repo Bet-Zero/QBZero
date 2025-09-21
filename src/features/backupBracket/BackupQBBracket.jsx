@@ -133,8 +133,6 @@ const BackupQBBracket = ({ entrants = [], preferredSize = 32 }) => {
   };
 
   const columnStyle = (roundIndex) => {
-    const centerSpacing = Math.pow(2, roundIndex) * (MATCH_HEIGHT + BASE_GAP);
-    const gap = centerSpacing - MATCH_HEIGHT;
     const offset =
       roundIndex === 0
         ? 0
@@ -142,8 +140,17 @@ const BackupQBBracket = ({ entrants = [], preferredSize = 32 }) => {
 
     return {
       width: `${COLUMN_WIDTH}px`,
-      gap: `${Math.max(gap, 16)}px`,
       paddingTop: `${offset}px`,
+    };
+  };
+
+  const getRoundMeasurements = (roundIndex) => {
+    const centerSpacing = Math.pow(2, roundIndex) * (MATCH_HEIGHT + BASE_GAP);
+    const gap = centerSpacing - MATCH_HEIGHT;
+
+    return {
+      centerSpacing,
+      gap: Math.max(gap, 16),
     };
   };
 
@@ -231,46 +238,48 @@ const BackupQBBracket = ({ entrants = [], preferredSize = 32 }) => {
             <div className="flex" style={{ gap: `${COLUMN_GAP}px` }}>
               {rounds.map((round, roundIndex) => {
                 const label = labels[roundIndex] || `Round ${roundIndex + 1}`;
-                const centerSpacing = Math.pow(2, roundIndex) * (MATCH_HEIGHT + BASE_GAP);
+                const { centerSpacing, gap } = getRoundMeasurements(roundIndex);
 
                 return (
                   <div key={round.roundIndex} className="flex flex-col" style={columnStyle(roundIndex)}>
                     <h3 className="text-center text-sm font-semibold uppercase tracking-widest text-white/60 mb-4">
                       {label}
                     </h3>
-                    {round.matches.map((match) => {
-                      const participants = getMatchParticipants({
-                        rounds,
-                        seededBySeed: seeded.bySeed,
-                        winners,
-                        roundIndex,
-                        matchIndex: match.matchIndex,
-                        entrantsById: seeded.byId,
-                      });
-                      const placeholderLabels =
-                        roundIndex === 0
-                          ? []
-                          : match.sources.map((source) => {
-                              const sourceLabel = labels[source.roundIndex] || `Round ${source.roundIndex + 1}`;
-                              return `Winner of ${sourceLabel} • Match ${source.matchIndex + 1}`;
-                            });
+                    <div className="flex flex-col" style={{ gap: `${gap}px` }}>
+                      {round.matches.map((match) => {
+                        const participants = getMatchParticipants({
+                          rounds,
+                          seededBySeed: seeded.bySeed,
+                          winners,
+                          roundIndex,
+                          matchIndex: match.matchIndex,
+                          entrantsById: seeded.byId,
+                        });
+                        const placeholderLabels =
+                          roundIndex === 0
+                            ? []
+                            : match.sources.map((source) => {
+                                const sourceLabel = labels[source.roundIndex] || `Round ${source.roundIndex + 1}`;
+                                return `Winner of ${sourceLabel} • Match ${source.matchIndex + 1}`;
+                              });
 
-                      return (
-                        <MatchupCard
-                          key={match.id}
-                          roundIndex={roundIndex}
-                          matchIndex={match.matchIndex}
-                          participants={participants}
-                          winnerId={winners[roundIndex][match.matchIndex]}
-                          placeholderLabels={placeholderLabels}
-                          onSelect={(playerId) => handleSelectWinner(roundIndex, match.matchIndex, playerId)}
-                          onHover={() => setHoveredMatch(`${roundIndex}-${match.matchIndex}`)}
-                          onHoverEnd={() => setHoveredMatch(null)}
-                          isLastRound={roundIndex === rounds.length - 1}
-                          centerSpacing={centerSpacing}
-                        />
-                      );
-                    })}
+                        return (
+                          <MatchupCard
+                            key={match.id}
+                            roundIndex={roundIndex}
+                            matchIndex={match.matchIndex}
+                            participants={participants}
+                            winnerId={winners[roundIndex][match.matchIndex]}
+                            placeholderLabels={placeholderLabels}
+                            onSelect={(playerId) => handleSelectWinner(roundIndex, match.matchIndex, playerId)}
+                            onHover={() => setHoveredMatch(`${roundIndex}-${match.matchIndex}`)}
+                            onHoverEnd={() => setHoveredMatch(null)}
+                            isLastRound={roundIndex === rounds.length - 1}
+                            centerSpacing={centerSpacing}
+                          />
+                        );
+                      })}
+                    </div>
                   </div>
                 );
               })}
