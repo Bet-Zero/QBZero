@@ -14,14 +14,13 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
   const [gridStyle, setGridStyle] = useState('connected'); // 'standard' or 'connected' - default to connected for ranker results
   const [showLogoBg, setShowLogoBg] = useState(true); // Add state for logo background toggle
   const [isDownloading, setIsDownloading] = useState(false);
-  const [isLocked, setIsLocked] = useState(false); // Add state to manage lock status
   const [isAdjustMode, setIsAdjustMode] = useState(false);
   const [currentRanking, setCurrentRanking] = useState(ranking);
   const gridViewRef = useRef(null); // Ref for the visible grid view
   const downloadImage = useImageDownload(gridViewRef); // Use grid view ref for downloads
 
   useEffect(() => {
-    setIsLocked(false); // Unlock the page by default
+    // Component initialization - state setup handled by useState defaults
   }, []);
 
   // Update current ranking when prop changes

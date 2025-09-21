@@ -1,7 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { LayoutGrid, ListOrdered, Download, X, TrendingUp } from 'lucide-react';
 import useImageDownload from '@/hooks/useImageDownload';
-import RankingMovementIndicator from '@/components/shared/RankingMovementIndicator';
 import GridLayout from '@/components/shared/GridLayout';
 import GridStyleToggle from '@/components/shared/GridStyleToggle';
 
