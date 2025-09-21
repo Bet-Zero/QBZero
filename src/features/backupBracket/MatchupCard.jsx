@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import clsx from 'clsx';
 
-const MATCH_HEIGHT = 92;
+const MATCH_HEIGHT = 96;
 const CONNECTOR_LENGTH = 56;
 
 const MatchupCard = ({
@@ -59,13 +59,13 @@ const MatchupCard = ({
   return (
     <div
       className="relative"
-      style={{ minHeight: `${MATCH_HEIGHT}px` }}
+      style={{ height: `${MATCH_HEIGHT}px` }}
       onMouseEnter={onHover}
       onMouseLeave={onHoverEnd}
       onFocus={onHover}
       onBlur={onHoverEnd}
     >
-      <div className="rounded-xl border border-white/10 bg-neutral-800/70 backdrop-blur-sm shadow-lg overflow-hidden">
+      <div className="h-full rounded-xl border border-white/10 bg-neutral-800/70 backdrop-blur-sm shadow-lg overflow-hidden flex flex-col">
         {participantRows.map((participant, index) => {
           const showDivider = index === 1;
           const statusClasses =
@@ -80,10 +80,9 @@ const MatchupCard = ({
               key={participant.id}
               type="button"
               className={clsx(
-                'w-full text-left px-4 py-3 transition-colors focus:outline-none',
+                'w-full text-left px-4 py-3 transition-colors focus:outline-none flex-1 flex items-center justify-between gap-3',
                 statusClasses,
-                showDivider && 'border-t border-white/10',
-                'flex items-center justify-between gap-3'
+                showDivider && 'border-t border-white/10'
               )}
               disabled={participant.isPlaceholder}
               onClick={() => handleSelect(participant)}
@@ -94,6 +93,7 @@ const MatchupCard = ({
                   ? 'Waiting on previous result'
                   : `Select ${participant.label} as winner`
               }
+              style={{ minHeight: `${MATCH_HEIGHT / participantRows.length}px` }}
             >
               <div className="flex items-center gap-3">
                 <span className="text-xs font-semibold text-white/50">
@@ -110,15 +110,24 @@ const MatchupCard = ({
                   )}
                 </div>
               </div>
-              {participant.status === 'winner' ? (
-                <span className="text-emerald-300 text-xs font-semibold">Advanced</span>
-              ) : participant.status === 'eliminated' ? (
-                <span className="text-white/30 text-xs">Out</span>
-              ) : (
-                <span className="text-white/40 text-xs">
-                  {participant.isPlaceholder ? 'TBD' : 'Pick'}
-                </span>
-              )}
+              <span
+                className={clsx(
+                  'text-xs font-semibold uppercase tracking-wide text-right min-w-[44px]',
+                  participant.status === 'winner'
+                    ? 'text-emerald-300'
+                    : participant.status === 'eliminated'
+                    ? 'text-white/30'
+                    : 'text-white/40'
+                )}
+              >
+                {participant.status === 'winner'
+                  ? ' '
+                  : participant.status === 'eliminated'
+                  ? 'Out'
+                  : participant.isPlaceholder
+                  ? 'TBD'
+                  : 'Pick'}
+              </span>
             </button>
           );
         })}
@@ -127,18 +136,19 @@ const MatchupCard = ({
       {!isLastRound && (
         <div
           aria-hidden="true"
-          className="absolute top-1/2 right-[-56px] h-px bg-white/10"
-          style={{ width: `${CONNECTOR_LENGTH}px` }}
+          className="absolute top-1/2 h-px bg-white/10"
+          style={{ width: `${CONNECTOR_LENGTH}px`, right: `-${CONNECTOR_LENGTH}px` }}
         />
       )}
 
       {!isLastRound && matchIndex % 2 === 0 && (
         <div
           aria-hidden="true"
-          className="absolute right-[-56px] w-px bg-white/10"
+          className="absolute w-px bg-white/10"
           style={{
             top: '50%',
             height: `${centerSpacing}px`,
+            right: `-${CONNECTOR_LENGTH}px`,
           }}
         />
       )}

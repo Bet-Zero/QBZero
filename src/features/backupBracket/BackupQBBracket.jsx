@@ -135,7 +135,10 @@ const BackupQBBracket = ({ entrants = [], preferredSize = 32 }) => {
   const columnStyle = (roundIndex) => {
     const centerSpacing = Math.pow(2, roundIndex) * (MATCH_HEIGHT + BASE_GAP);
     const gap = centerSpacing - MATCH_HEIGHT;
-    const offset = roundIndex === 0 ? 0 : centerSpacing / 2 - MATCH_HEIGHT / 2;
+    const offset =
+      roundIndex === 0
+        ? 0
+        : ((Math.pow(2, roundIndex) - 1) / 2) * (MATCH_HEIGHT + BASE_GAP);
 
     return {
       width: `${COLUMN_WIDTH}px`,

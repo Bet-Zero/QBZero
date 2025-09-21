@@ -28,9 +28,24 @@ describe('BackupQBBracket component', () => {
     fireEvent.click(qb8Button);
 
     expect(screen.queryByText('Winner of Round of 16 • Match 1')).not.toBeInTheDocument();
-    expect(screen.getAllByText('Advanced').length).toBeGreaterThan(0);
 
-    fireEvent.click(qb1Button);
+    const updatedQb1Button = screen
+      .getAllByRole('button', { name: /Select QB 1 as winner/i })
+      .find((button) => button.getAttribute('aria-label')?.includes('QB 1'));
+    const updatedQb8Button = screen
+      .getAllByRole('button', { name: /Select QB 8 as winner/i })
+      .find((button) => button.getAttribute('aria-label')?.includes('QB 8'));
+
+    expect(updatedQb1Button).toHaveAttribute('aria-pressed', 'true');
+    expect(updatedQb8Button).toHaveAttribute('aria-pressed', 'true');
+
+    fireEvent.click(updatedQb1Button);
     expect(await screen.findByText('Winner of Round of 16 • Match 1')).toBeInTheDocument();
+
+    const resetQb1Button = screen
+      .getAllByRole('button', { name: /Select QB 1 as winner/i })
+      .find((button) => button.getAttribute('aria-label')?.includes('QB 1'));
+
+    expect(resetQb1Button).toHaveAttribute('aria-pressed', 'false');
   });
 });
