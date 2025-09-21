@@ -1,199 +1,11 @@
 import React, { useState, useRef } from 'react';
 import { LayoutGrid, ListOrdered, Download, X, TrendingUp } from 'lucide-react';
 import useImageDownload from '@/hooks/useImageDownload';
-import RankingMovementIndicator from '@/components/shared/RankingMovementIndicator';
-
-// Mapping team abbreviations to logo file names (copied from RankingResults)
-const teamLogoMap = {
-  ARI: 'cardinals',
-  ATL: 'falcons',
-  BAL: 'ravens',
-  BUF: 'bills',
-  CAR: 'panthers',
-  CHI: 'bears',
-  CIN: 'bengals',
-  CLE: 'browns',
-  DAL: 'cowboys',
-  DEN: 'broncos',
-  DET: 'lions',
-  GB: 'packers',
-  HOU: 'texans',
-  IND: 'colts',
-  JAX: 'jaguars',
-  KC: 'chiefs',
-  LAC: 'chargers',
-  LAR: 'rams',
-  LAV: 'raiders',
-  LV: 'raiders',
-  MIA: 'dolphins',
-  MIN: 'vikings',
-  NE: 'patriots',
-  NO: 'saints',
-  NYG: 'giants',
-  NYJ: 'jets',
-  PHI: 'eagles',
-  PIT: 'steelers',
-  SF: '49ers',
-  SEA: 'seahawks',
-  TB: 'buccaneers',
-  TEN: 'titans',
-  WAS: 'commanders',
-};
-
-// Custom positioning for specific team logos in grid view background (copied from RankingResults)
-const teamLogoPositioning = {
-  DAL: { x: 55, y: 0 },
-  NO: { x: 125, y: 0 },
-  DET: { x: 0, y: 75 },
-  PHI: { x: 120, y: 0 },
-  MIN: { x: 80, y: 140 },
-  MIA: { x: 60, y: 60 },
-  NE: { x: 0, y: 20 },
-  BUF: { x: 80, y: 30 },
-  CAR: { x: 20, y: 50 },
-  TB: { x: 110, y: 60 },
-};
-
-// Teams whose logos occupy the top-left area and interfere with rank numbers
-const teamsWithTopLeftLogos = [
-  'LV',
-  'LAV', // Raiders
-  'ATL', // Falcons
-  'NYG', // Giants
-  'HOU', // Texans
-  'IND', // Colts
-  'CHI', // Bears
-  'ARI', // Cardinals
-  'TEN', // Titans (partial overlap)
-  'CIN', // Bengals (partial overlap)
-  'CLE', // Browns (partial overlap)
-  'JAX', // Jaguars (partial overlap)
-  'PIT', // Steelers (partial overlap)
-];
-
-// Helper function to get smart rank background styling based on team logo placement
-const getRankBackgroundStyle = (team) => {
-  const hasLogoConflict = teamsWithTopLeftLogos.includes(team);
-
-  if (hasLogoConflict) {
-    // Higher opacity background with stronger shadow for teams with logo conflicts
-    return 'bg-neutral-900/80 backdrop-blur-sm text-white font-bold text-2xl px-1.5 py-1 rounded shadow-xl border border-white/20';
-  } else {
-    // Keep the original subtle styling for teams without conflicts
-    return 'bg-neutral-600/50 backdrop-blur-sm text-white font-bold text-2xl px-1.5 py-1 rounded shadow-lg';
-  }
-};
-
-// Helper function to get logo path safely
-const getLogoPath = (team) => {
-  if (!team) return null;
-  const logoId = teamLogoMap[team] || team.toLowerCase();
-  return `/assets/logos/${logoId}.svg`;
-};
-
-// Helper function to get background positioning for team logos - CENTERED VERSION for personal rankings
-const getLogoBackgroundStyle = (team, showLogoBg) => {
-  if (!showLogoBg) {
-    return { backgroundImage: 'none' };
-  }
-
-  const logoPath = getLogoPath(team);
-  if (!logoPath) {
-    return { backgroundImage: 'none' };
-  }
-
-  // Always center logos for personal rankings export (ignore custom positioning)
-  // Use a darker gray overlay (instead of the original light gray) for better contrast
-  return {
-    backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.15)), url(${logoPath})`,
-    backgroundSize: 'contain',
-    backgroundRepeat: 'no-repeat',
-    backgroundPosition: 'center',
-  };
-};
-
-const getHeadshotSrc = (qb) =>
-  qb?.headshotUrl ||
-  qb?.imageUrl ||
-  `/assets/headshots/${qb?.player_id || qb?.id}.png`;
-
-const GridCard = ({
-  qb,
-  rank,
-  showLogoBg,
-  showMovement,
-  movementData = {},
-}) => {
-  const logoPath = getLogoPath(qb.team);
-  const headshot = getHeadshotSrc(qb);
-  const logoBackgroundStyle = getLogoBackgroundStyle(qb.team, showLogoBg);
-  const rankBackgroundStyle = getRankBackgroundStyle(qb.team);
-  const movement = movementData?.[qb.id];
-
-  return (
-    <div className="inline-block">
-      {/* Card */}
-      <div className="bg-gradient-to-b from-[#2a2a2a] to-[#1f1f1f] rounded-lg overflow-hidden border border-white/25 transition-all hover:border-white/40 shadow-2xl">
-        {/* Headshot Container with overlaid rank */}
-        <div
-          className="aspect-square w-full overflow-hidden bg-[#0a0a0a] relative border-b border-white/15"
-          style={logoBackgroundStyle}
-        >
-          <img
-            src={headshot}
-            alt={qb.name}
-            className="w-full h-full object-cover transition-transform group-hover:scale-105"
-            loading="eager"
-            decoding="async"
-            crossOrigin="anonymous"
-            onError={(e) => {
-              e.target.src = '/assets/headshots/default.png';
-            }}
-          />
-          {/* Rank overlay in corner */}
-          <div className={`absolute top-2 left-2 ${rankBackgroundStyle}`}>
-            {rank}
-          </div>
-        </div>
-
-        {/* Info Section */}
-        <div className="p-3 relative bg-gradient-to-b from-[#1f1f1f] to-[#1a1a1a] border-t border-white/20">
-          <div className="text-white font-medium truncate mb-1">{qb.name}</div>
-          <div className="flex items-center gap-1.5">
-            {logoPath && (
-              <div className="w-4 h-4">
-                <img
-                  src={logoPath}
-                  alt={qb.team}
-                  className="w-full h-full object-contain"
-                  loading="eager"
-                  decoding="async"
-                  crossOrigin="anonymous"
-                  onError={(e) => {
-                    e.target.style.display = 'none';
-                  }}
-                />
-              </div>
-            )}
-            <span className="text-white/60 text-sm">
-              {qb.team?.toUpperCase() || '—'}
-            </span>
-          </div>
-
-          {/* Movement indicator positioned absolutely in bottom-right */}
-          {showMovement && movement?.moved && (
-            <div className="absolute bottom-3 right-3">
-              <RankingMovementIndicator
-                movement={movement}
-                showMovement={true}
-              />
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
+import RankingsGridCard from './components/RankingsGridCard';
+import {
+  getHeadshotSrc,
+  getLogoPath,
+} from './utils/rankingsGridCard';
 
 const QBRankingsExport = ({
   rankings,
@@ -410,9 +222,9 @@ const QBRankingsExport = ({
           {/* Grid with 6 columns x 7 rows - back to clean layout before dividers */}
           <div className="mt-6 mb-12 grid grid-cols-6 gap-x-4 gap-y-6 justify-items-center">
             {rankings.slice(0, 42).map((qb, idx) => (
-              <GridCard
+              <RankingsGridCard
                 key={qb.id || qb.player_id || idx}
-                qb={qb}
+                player={qb}
                 rank={idx + 1}
                 showLogoBg={showLogoBg}
                 showMovement={showMovement}
