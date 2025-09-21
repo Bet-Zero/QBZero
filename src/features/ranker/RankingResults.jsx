@@ -2,108 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { LayoutGrid, ListOrdered, Download, Edit3 } from 'lucide-react';
 import useImageDownload from '@/hooks/useImageDownload';
 import AdjustableRankings from './AdjustableRankings';
-
-// Mapping team abbreviations to logo file names
-const teamLogoMap = {
-  ARI: 'cardinals',
-  ATL: 'falcons',
-  BAL: 'ravens',
-  BUF: 'bills',
-  CAR: 'panthers',
-  CHI: 'bears',
-  CIN: 'bengals',
-  CLE: 'browns',
-  DAL: 'cowboys',
-  DEN: 'broncos',
-  DET: 'lions',
-  GB: 'packers',
-  HOU: 'texans',
-  IND: 'colts',
-  JAX: 'jaguars',
-  KC: 'chiefs',
-  LAC: 'chargers',
-  LAR: 'rams',
-  LAV: 'raiders', // Fix Raiders abbreviation
-  LV: 'raiders', // Support both LAV and LV
-  MIA: 'dolphins',
-  MIN: 'vikings',
-  NE: 'patriots',
-  NO: 'saints',
-  NYG: 'giants',
-  NYJ: 'jets',
-  PHI: 'eagles',
-  PIT: 'steelers',
-  SF: '49ers',
-  SEA: 'seahawks',
-  TB: 'buccaneers',
-  TEN: 'titans',
-  WAS: 'commanders',
-};
-
-// Custom positioning for specific team logos in grid view background
-// No longer needed - all logos now use center positioning
-
-// Teams whose logos occupy the top-left area and interfere with rank numbers
-const teamsWithTopLeftLogos = [
-  'LV',
-  'LAV', // Raiders
-  'ATL', // Falcons
-  'NYG', // Giants
-  'HOU', // Texans
-  'IND', // Colts
-  'CHI', // Bears
-  'ARI', // Cardinals
-  'TEN', // Titans (partial overlap)
-  'CIN', // Bengals (partial overlap)
-  'CLE', // Browns (partial overlap)
-  'JAX', // Jaguars (partial overlap)
-  'PIT', // Steelers (partial overlap)
-];
-
-// Helper function to get smart rank background styling based on team logo placement
-const getRankBackgroundStyle = (team) => {
-  const hasLogoConflict = teamsWithTopLeftLogos.includes(team);
-
-  if (hasLogoConflict) {
-    // Higher opacity background with stronger shadow for teams with logo conflicts
-    return 'bg-neutral-900/80 backdrop-blur-sm text-white font-bold text-2xl px-1.5 py-1 rounded shadow-xl border border-white/20';
-  } else {
-    // Keep the original subtle styling for teams without conflicts
-    return 'bg-neutral-600/50 backdrop-blur-sm text-white font-bold text-2xl px-1.5 py-1 rounded shadow-lg';
-  }
-};
-
-// Helper function to get logo path safely
-const getLogoPath = (team) => {
-  if (!team) return null;
-  const logoId = teamLogoMap[team] || team.toLowerCase();
-  return `/assets/logos/${logoId}.svg`;
-};
-
-// Helper function to get background positioning for team logos
-const getLogoBackgroundStyle = (team, showLogoBg) => {
-  if (!showLogoBg) {
-    return { backgroundImage: 'none' };
-  }
-
-  const logoPath = getLogoPath(team);
-  if (!logoPath) {
-    return { backgroundImage: 'none' };
-  }
-
-  // All team logos now use center positioning
-  return {
-    backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.15)), url(${logoPath})`,
-    backgroundSize: 'contain',
-    backgroundRepeat: 'no-repeat',
-    backgroundPosition: 'center',
-  };
-};
-
-const getHeadshotSrc = (player) =>
-  player?.headshotUrl ||
-  player?.imageUrl ||
-  `/assets/headshots/${player?.player_id || player?.id}.png`;
+import GridLayout from '@/components/shared/GridLayout';
+import GridStyleToggle from '@/components/shared/GridStyleToggle';
 
 // Simple grid display for final rankings. Renders a responsive list of
 // player names with their rank number. Designed to scale up to large player
@@ -111,6 +11,7 @@ const getHeadshotSrc = (player) =>
 
 const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
   const [viewType, setViewType] = useState('list'); // 'list' or 'grid'
+  const [gridStyle, setGridStyle] = useState('connected'); // 'standard' or 'connected' - default to connected for ranker results
   const [showLogoBg, setShowLogoBg] = useState(true); // Add state for logo background toggle
   const [isDownloading, setIsDownloading] = useState(false);
   const [isLocked, setIsLocked] = useState(false); // Add state to manage lock status
@@ -184,126 +85,6 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
     setIsAdjustMode(false);
   };
 
-  // Separate export-only content with fixed 6x7 layout to match QB Rankings
-  const renderExportContent = () => {
-    const renderPosterHeader = () => {
-      const updatedDate = new Date().toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-      });
-
-      return (
-        <div className="mb-6">
-          {/* Title line */}
-          <h1 className="text-[56px] md:text-[64px] font-black uppercase tracking-[0.04em] leading-none text-white">
-            QB RANKINGS
-          </h1>
-          {/* Thin underline under title - shortened and aligned with column 1 */}
-          <div className="mt-3 h-[2px] w-[28%] bg-white/20"></div>
-          {/* Subline */}
-          <div className="mt-4 text-[16px] md:text-[18px] text-white/70">
-            Updated {updatedDate}
-          </div>
-        </div>
-      );
-    };
-
-    const renderPosterFooter = () => {
-      return (
-        <div className="pt-8 border-t border-white/25">
-          <div className="flex items-center justify-between text-[12px] text-white/55">
-            <span>QBZero</span>
-            <span></span>
-          </div>
-        </div>
-      );
-    };
-
-    return (
-      <div className="min-h-screen w-full bg-neutral-950 text-white flex items-center justify-center">
-        <div className="w-[1400px] px-24 pt-20 pb-12 flex flex-col">
-          {/* Header (top-left) */}
-          {renderPosterHeader()}
-
-          {/* Grid with 6 columns x 7 rows - matching QB Rankings format */}
-          <div className="mt-6 mb-12 grid grid-cols-6 gap-x-4 gap-y-6 justify-items-center">
-            {currentRanking.slice(0, 42).map((p, idx) => {
-              const logoPath = getLogoPath(p.team);
-              const headshot = getHeadshotSrc(p);
-              const logoBackgroundStyle = getLogoBackgroundStyle(
-                p.team,
-                showLogoBg
-              );
-              const rankBackgroundStyle = getRankBackgroundStyle(p.team);
-
-              return (
-                <div key={p.id} className="w-[180px]">
-                  {/* Card with fixed width */}
-                  <div className="bg-gradient-to-b from-[#2a2a2a] to-[#1f1f1f] rounded-lg overflow-hidden border border-white/25 transition-all hover:border-white/40 shadow-2xl">
-                    {/* Headshot Container with overlaid rank - fixed aspect ratio */}
-                    <div
-                      className="w-[180px] h-[180px] overflow-hidden bg-[#0a0a0a] relative border-b border-white/15"
-                      style={logoBackgroundStyle}
-                    >
-                      <img
-                        src={headshot}
-                        alt={p.name}
-                        className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                        loading="eager"
-                        decoding="async"
-                        crossOrigin="anonymous"
-                        onError={(e) => {
-                          e.target.src = '/assets/headshots/default.png';
-                        }}
-                      />
-                      {/* Rank overlay in corner */}
-                      <div
-                        className={`absolute top-2 left-2 ${rankBackgroundStyle}`}
-                      >
-                        {idx + 1}
-                      </div>
-                    </div>
-
-                    {/* Info Section - increased height to prevent text clipping */}
-                    <div className="p-3 h-[70px] relative bg-gradient-to-b from-[#1f1f1f] to-[#1a1a1a] border-t border-white/20 flex flex-col">
-                      <div className="text-white font-medium truncate text-sm mb-1 leading-normal overflow-visible">
-                        {p.display_name || p.name}
-                      </div>
-                      <div className="flex items-center gap-1.5 mt-auto">
-                        {logoPath && (
-                          <div className="w-4 h-4 flex-shrink-0">
-                            <img
-                              src={logoPath}
-                              alt={p.team}
-                              className="w-full h-full object-contain"
-                              loading="eager"
-                              decoding="async"
-                              crossOrigin="anonymous"
-                              onError={(e) => {
-                                e.target.style.display = 'none';
-                              }}
-                            />
-                          </div>
-                        )}
-                        <span className="text-white/60 text-xs truncate">
-                          {p.team?.toUpperCase() || '—'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Footer */}
-          {renderPosterFooter()}
-        </div>
-      </div>
-    );
-  };
-
   // If in adjust mode, show the adjustable rankings component
   if (isAdjustMode) {
     return (
@@ -316,7 +97,7 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
   }
 
   const ActionButtons = () => (
-    <div className="flex gap-2 justify-center sm:justify-start">
+    <div className="flex gap-2 justify-center sm:justify-start flex-wrap">
       <button
         onClick={handleAdjustRankings}
         className="px-3 py-2 text-sm text-white bg-orange-600/80 hover:bg-orange-700 rounded flex items-center transition-colors"
@@ -327,31 +108,37 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
         <span className="sm:hidden">Adjust</span>
       </button>
       {viewType === 'grid' && (
-        <button
-          onClick={() => setShowLogoBg(!showLogoBg)}
-          className="px-3 py-2 text-sm text-white bg-white/10 rounded hover:bg-white/20 flex items-center transition-colors"
-          title={showLogoBg ? 'Hide Logo Background' : 'Show Logo Background'}
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            className="mr-1"
+        <>
+          <GridStyleToggle 
+            gridStyle={gridStyle} 
+            onChange={setGridStyle} 
+          />
+          <button
+            onClick={() => setShowLogoBg(!showLogoBg)}
+            className="px-3 py-2 text-sm text-white bg-white/10 rounded hover:bg-white/20 flex items-center transition-colors"
+            title={showLogoBg ? 'Hide Logo Background' : 'Show Logo Background'}
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-            />
-          </svg>
-          <span className="hidden sm:inline">
-            {showLogoBg ? 'Hide Logo BG' : 'Show Logo BG'}
-          </span>
-        </button>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              className="mr-1"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+              />
+            </svg>
+            <span className="hidden sm:inline">
+              {showLogoBg ? 'Hide Logo BG' : 'Show Logo BG'}
+            </span>
+          </button>
+        </>
       )}
       <button
         onClick={() => setViewType(viewType === 'grid' ? 'list' : 'grid')}
@@ -406,6 +193,27 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
     </div>
   );
 
+  // Helper functions for list view
+  const getHeadshotSrc = (player) =>
+    player?.headshotUrl ||
+    player?.imageUrl ||
+    `/assets/headshots/${player?.player_id || player?.id}.png`;
+
+  const getLogoPath = (team) => {
+    if (!team) return null;
+    const teamLogoMap = {
+      ARI: 'cardinals', ATL: 'falcons', BAL: 'ravens', BUF: 'bills', CAR: 'panthers',
+      CHI: 'bears', CIN: 'bengals', CLE: 'browns', DAL: 'cowboys', DEN: 'broncos',
+      DET: 'lions', GB: 'packers', HOU: 'texans', IND: 'colts', JAX: 'jaguars',
+      KC: 'chiefs', LAC: 'chargers', LAR: 'rams', LAV: 'raiders', LV: 'raiders',
+      MIA: 'dolphins', MIN: 'vikings', NE: 'patriots', NO: 'saints', NYG: 'giants',
+      NYJ: 'jets', PHI: 'eagles', PIT: 'steelers', SF: '49ers', SEA: 'seahawks',
+      TB: 'buccaneers', TEN: 'titans', WAS: 'commanders',
+    };
+    const logoId = teamLogoMap[team] || team.toLowerCase();
+    return `/assets/logos/${logoId}.svg`;
+  };
+
   // Calculate number of columns and items per column for list view
   const numCols = {
     base: 2, // mobile
@@ -448,109 +256,15 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
 
     if (viewType === 'grid') {
       return (
-        <div
-          className="min-h-screen w-full bg-neutral-950 text-white flex items-center justify-center"
-          ref={gridViewRef}
-        >
-          <div className="w-[1400px] px-16 pt-20 pb-12 flex flex-col">
-            {/* Header (top-left) */}
-            <div className="mb-6">
-              {/* Title line */}
-              <h1 className="text-[56px] md:text-[64px] font-black uppercase tracking-[0.04em] leading-none text-white">
-                QB RANKINGS
-              </h1>
-              {/* Thin underline under title - shortened and aligned with column 1 */}
-              <div className="mt-3 h-[2px] w-[28%] bg-white/20"></div>
-              {/* Subline */}
-              <div className="mt-4 text-[16px] md:text-[18px] text-white/70">
-                Updated{' '}
-                {new Date().toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'short',
-                  day: 'numeric',
-                })}
-              </div>
-            </div>
-
-            {/* Grid with 6 columns x 7 rows - matching QB Rankings format */}
-            <div className="mt-6 mb-12 grid grid-cols-6 gap-x-4 gap-y-6 justify-items-center">
-              {currentRanking.slice(0, 42).map((p, idx) => {
-                const logoPath = getLogoPath(p.team);
-                const headshot = getHeadshotSrc(p);
-                const logoBackgroundStyle = getLogoBackgroundStyle(
-                  p.team,
-                  showLogoBg
-                );
-                const rankBackgroundStyle = getRankBackgroundStyle(p.team);
-
-                return (
-                  <div key={p.id} className="w-[180px]">
-                    {/* Card with fixed width */}
-                    <div className="bg-gradient-to-b from-[#2a2a2a] to-[#1f1f1f] rounded-lg overflow-hidden border border-white/25 transition-all hover:border-white/40 shadow-2xl">
-                      {/* Headshot Container with overlaid rank - fixed aspect ratio */}
-                      <div
-                        className="w-[180px] h-[180px] overflow-hidden bg-[#0a0a0a] relative border-b border-white/15"
-                        style={logoBackgroundStyle}
-                      >
-                        <img
-                          src={headshot}
-                          alt={p.name}
-                          className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                          loading="eager"
-                          decoding="async"
-                          crossOrigin="anonymous"
-                          onError={(e) => {
-                            e.target.src = '/assets/headshots/default.png';
-                          }}
-                        />
-                        {/* Rank overlay in corner */}
-                        <div
-                          className={`absolute top-2 left-2 ${rankBackgroundStyle}`}
-                        >
-                          {idx + 1}
-                        </div>
-                      </div>
-
-                      {/* Info Section - increased height to prevent text clipping */}
-                      <div className="p-3 h-[70px] relative bg-gradient-to-b from-[#1f1f1f] to-[#1a1a1a] border-t border-white/20 flex flex-col">
-                        <div className="text-white font-medium truncate text-sm mb-1 leading-normal overflow-visible">
-                          {p.display_name || p.name}
-                        </div>
-                        <div className="flex items-center gap-1.5 mt-auto">
-                          {logoPath && (
-                            <div className="w-4 h-4 flex-shrink-0">
-                              <img
-                                src={logoPath}
-                                alt={p.team}
-                                className="w-full h-full object-contain"
-                                loading="eager"
-                                decoding="async"
-                                crossOrigin="anonymous"
-                                onError={(e) => {
-                                  e.target.style.display = 'none';
-                                }}
-                              />
-                            </div>
-                          )}
-                          <span className="text-white/60 text-xs truncate">
-                            {p.team?.toUpperCase() || '—'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Footer */}
-            <div className="pt-8 border-t border-white/25">
-              <div className="flex items-center justify-between text-[12px] text-white/55">
-                <span>QBZero</span>
-                <span></span>
-              </div>
-            </div>
-          </div>
+        <div ref={gridViewRef}>
+          <GridLayout
+            players={currentRanking}
+            gridStyle={gridStyle}
+            showLogoBg={showLogoBg}
+            showMovement={false}
+            movementData={{}}
+            title="QB RANKINGS"
+          />
         </div>
       );
     }
