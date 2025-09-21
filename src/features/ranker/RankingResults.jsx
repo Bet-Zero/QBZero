@@ -105,6 +105,69 @@ const getHeadshotSrc = (player) =>
   player?.imageUrl ||
   `/assets/headshots/${player?.player_id || player?.id}.png`;
 
+const GridCard = ({ player, rank, showLogoBg }) => {
+  const logoPath = getLogoPath(player.team);
+  const headshot = getHeadshotSrc(player);
+  const logoBackgroundStyle = getLogoBackgroundStyle(
+    player.team,
+    showLogoBg
+  );
+  const rankBackgroundStyle = getRankBackgroundStyle(player.team);
+  const displayName = player.display_name || player.name;
+
+  return (
+    <div className="inline-block w-full">
+      <div className="bg-gradient-to-b from-[#2a2a2a] to-[#1f1f1f] rounded-lg overflow-hidden border border-white/25 transition-all hover:border-white/40 shadow-2xl">
+        <div
+          className="aspect-square w-full overflow-hidden bg-[#0a0a0a] relative border-b border-white/15"
+          style={logoBackgroundStyle}
+        >
+          <img
+            src={headshot}
+            alt={displayName}
+            className="w-full h-full object-cover transition-transform group-hover:scale-105"
+            loading="eager"
+            decoding="async"
+            crossOrigin="anonymous"
+            onError={(e) => {
+              e.target.src = '/assets/headshots/default.png';
+            }}
+          />
+          <div className={`absolute top-2 left-2 ${rankBackgroundStyle}`}>
+            {rank}
+          </div>
+        </div>
+
+        <div className="p-3 relative bg-gradient-to-b from-[#1f1f1f] to-[#1a1a1a] border-t border-white/20">
+          <div className="text-white font-medium truncate mb-1">
+            {displayName}
+          </div>
+          <div className="flex items-center gap-1.5">
+            {logoPath && (
+              <div className="w-4 h-4">
+                <img
+                  src={logoPath}
+                  alt={player.team}
+                  className="w-full h-full object-contain"
+                  loading="eager"
+                  decoding="async"
+                  crossOrigin="anonymous"
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                  }}
+                />
+              </div>
+            )}
+            <span className="text-white/60 text-sm">
+              {player.team?.toUpperCase() || '—'}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Simple grid display for final rankings. Renders a responsive list of
 // player names with their rank number. Designed to scale up to large player
 // pools by using a multi-column layout.
@@ -228,73 +291,14 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
 
           {/* Grid with 6 columns x 7 rows - matching QB Rankings format */}
           <div className="mt-6 mb-12 grid grid-cols-6 gap-x-4 gap-y-6 justify-items-center">
-            {currentRanking.slice(0, 42).map((p, idx) => {
-              const logoPath = getLogoPath(p.team);
-              const headshot = getHeadshotSrc(p);
-              const logoBackgroundStyle = getLogoBackgroundStyle(
-                p.team,
-                showLogoBg
-              );
-              const rankBackgroundStyle = getRankBackgroundStyle(p.team);
-
-              return (
-                <div key={p.id} className="w-[180px]">
-                  {/* Card with fixed width */}
-                  <div className="bg-gradient-to-b from-[#2a2a2a] to-[#1f1f1f] rounded-lg overflow-hidden border border-white/25 transition-all hover:border-white/40 shadow-2xl">
-                    {/* Headshot Container with overlaid rank - fixed aspect ratio */}
-                    <div
-                      className="w-[180px] h-[180px] overflow-hidden bg-[#0a0a0a] relative border-b border-white/15"
-                      style={logoBackgroundStyle}
-                    >
-                      <img
-                        src={headshot}
-                        alt={p.name}
-                        className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                        loading="eager"
-                        decoding="async"
-                        crossOrigin="anonymous"
-                        onError={(e) => {
-                          e.target.src = '/assets/headshots/default.png';
-                        }}
-                      />
-                      {/* Rank overlay in corner */}
-                      <div
-                        className={`absolute top-2 left-2 ${rankBackgroundStyle}`}
-                      >
-                        {idx + 1}
-                      </div>
-                    </div>
-
-                    {/* Info Section - increased height to prevent text clipping */}
-                    <div className="p-3 h-[70px] relative bg-gradient-to-b from-[#1f1f1f] to-[#1a1a1a] border-t border-white/20 flex flex-col">
-                      <div className="text-white font-medium truncate text-sm mb-1 leading-normal overflow-visible">
-                        {p.display_name || p.name}
-                      </div>
-                      <div className="flex items-center gap-1.5 mt-auto">
-                        {logoPath && (
-                          <div className="w-4 h-4 flex-shrink-0">
-                            <img
-                              src={logoPath}
-                              alt={p.team}
-                              className="w-full h-full object-contain"
-                              loading="eager"
-                              decoding="async"
-                              crossOrigin="anonymous"
-                              onError={(e) => {
-                                e.target.style.display = 'none';
-                              }}
-                            />
-                          </div>
-                        )}
-                        <span className="text-white/60 text-xs truncate">
-                          {p.team?.toUpperCase() || '—'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+            {currentRanking.slice(0, 42).map((player, idx) => (
+              <GridCard
+                key={player.id || player.player_id || player.name || idx}
+                player={player}
+                rank={idx + 1}
+                showLogoBg={showLogoBg}
+              />
+            ))}
           </div>
 
           {/* Footer */}
@@ -474,73 +478,14 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
 
             {/* Grid with 6 columns x 7 rows - matching QB Rankings format */}
             <div className="mt-6 mb-12 grid grid-cols-6 gap-x-4 gap-y-6 justify-items-center">
-              {currentRanking.slice(0, 42).map((p, idx) => {
-                const logoPath = getLogoPath(p.team);
-                const headshot = getHeadshotSrc(p);
-                const logoBackgroundStyle = getLogoBackgroundStyle(
-                  p.team,
-                  showLogoBg
-                );
-                const rankBackgroundStyle = getRankBackgroundStyle(p.team);
-
-                return (
-                  <div key={p.id} className="w-[180px]">
-                    {/* Card with fixed width */}
-                    <div className="bg-gradient-to-b from-[#2a2a2a] to-[#1f1f1f] rounded-lg overflow-hidden border border-white/25 transition-all hover:border-white/40 shadow-2xl">
-                      {/* Headshot Container with overlaid rank - fixed aspect ratio */}
-                      <div
-                        className="w-[180px] h-[180px] overflow-hidden bg-[#0a0a0a] relative border-b border-white/15"
-                        style={logoBackgroundStyle}
-                      >
-                        <img
-                          src={headshot}
-                          alt={p.name}
-                          className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                          loading="eager"
-                          decoding="async"
-                          crossOrigin="anonymous"
-                          onError={(e) => {
-                            e.target.src = '/assets/headshots/default.png';
-                          }}
-                        />
-                        {/* Rank overlay in corner */}
-                        <div
-                          className={`absolute top-2 left-2 ${rankBackgroundStyle}`}
-                        >
-                          {idx + 1}
-                        </div>
-                      </div>
-
-                      {/* Info Section - increased height to prevent text clipping */}
-                      <div className="p-3 h-[70px] relative bg-gradient-to-b from-[#1f1f1f] to-[#1a1a1a] border-t border-white/20 flex flex-col">
-                        <div className="text-white font-medium truncate text-sm mb-1 leading-normal overflow-visible">
-                          {p.display_name || p.name}
-                        </div>
-                        <div className="flex items-center gap-1.5 mt-auto">
-                          {logoPath && (
-                            <div className="w-4 h-4 flex-shrink-0">
-                              <img
-                                src={logoPath}
-                                alt={p.team}
-                                className="w-full h-full object-contain"
-                                loading="eager"
-                                decoding="async"
-                                crossOrigin="anonymous"
-                                onError={(e) => {
-                                  e.target.style.display = 'none';
-                                }}
-                              />
-                            </div>
-                          )}
-                          <span className="text-white/60 text-xs truncate">
-                            {p.team?.toUpperCase() || '—'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+              {currentRanking.slice(0, 42).map((player, idx) => (
+                <GridCard
+                  key={player.id || player.player_id || player.name || idx}
+                  player={player}
+                  rank={idx + 1}
+                  showLogoBg={showLogoBg}
+                />
+              ))}
             </div>
 
             {/* Footer */}
