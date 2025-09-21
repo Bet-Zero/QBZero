@@ -27,7 +27,7 @@ const RankingsGridCard = ({
   const movement = movementData?.[playerId];
 
   return (
-    <div className="inline-block w-[198px]">
+    <div className="inline-block">
       <div className="bg-gradient-to-b from-[#2a2a2a] to-[#1f1f1f] rounded-lg overflow-hidden border border-white/25 transition-all hover:border-white/40 shadow-2xl">
         <div
           className="aspect-square w-full overflow-hidden bg-[#0a0a0a] relative border-b border-white/15"
