@@ -42,25 +42,46 @@ const GridLayout = ({
     );
   };
 
-  const CardComponent = gridStyle === 'standard' ? StandardGridCard : ConnectedGridCard;
+  const renderStandardGrid = () => {
+    return (
+      <div className="mt-6 mb-12 grid grid-cols-6 gap-x-4 gap-y-6 justify-items-center">
+        {players.slice(0, 42).map((player, idx) => (
+          <StandardGridCard
+            key={player.id || player.player_id || idx}
+            player={player}
+            rank={idx + 1}
+            showLogoBg={showLogoBg}
+            showMovement={showMovement}
+            movementData={movementData}
+          />
+        ))}
+      </div>
+    );
+  };
+
+  const renderConnectedGrid = () => {
+    return (
+      <div className="mt-6 mb-12 grid grid-cols-6 gap-x-1 gap-y-3 justify-items-center">
+        {players.slice(0, 42).map((player, idx) => (
+          <ConnectedGridCard
+            key={player.id || player.player_id || idx}
+            player={player}
+            rank={idx + 1}
+            showLogoBg={showLogoBg}
+            showMovement={showMovement}
+            movementData={movementData}
+          />
+        ))}
+      </div>
+    );
+  };
 
   return (
     <div className={`min-h-screen w-full bg-neutral-950 text-white flex items-center justify-center ${className}`}>
       <div className="w-[1400px] px-16 pt-20 pb-12 flex flex-col">
         {renderPosterHeader()}
         
-        <div className="mt-6 mb-12 grid grid-cols-6 gap-x-4 gap-y-6 justify-items-center">
-          {players.slice(0, 42).map((player, idx) => (
-            <CardComponent
-              key={player.id || player.player_id || idx}
-              player={player}
-              rank={idx + 1}
-              showLogoBg={showLogoBg}
-              showMovement={showMovement}
-              movementData={movementData}
-            />
-          ))}
-        </div>
+        {gridStyle === 'standard' ? renderStandardGrid() : renderConnectedGrid()}
 
         {renderPosterFooter()}
       </div>
