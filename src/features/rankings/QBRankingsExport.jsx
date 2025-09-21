@@ -430,7 +430,7 @@ const QBRankingsExport = ({
               ))}
             </div>
           ) : (
-            <div className="mt-6 mb-12 grid grid-cols-6 gap-x-1 gap-y-3 justify-items-center">
+            <div className="mt-6 mb-12 grid grid-cols-6 gap-x-4 gap-y-6 justify-items-center">
               {rankings.slice(0, 42).map((qb, idx) => {
                 const logoPath = getLogoPath(qb.team);
                 const headshot = getHeadshotSrc(qb);
@@ -440,7 +440,7 @@ const QBRankingsExport = ({
 
                 return (
                   <div key={qb.id || qb.player_id || idx} className="w-[180px]">
-                    {/* Card with fixed width */}
+                    {/* Card with fixed width - Ranker Results style */}
                     <div className="bg-gradient-to-b from-[#2a2a2a] to-[#1f1f1f] rounded-lg overflow-hidden border border-white/25 transition-all hover:border-white/40 shadow-2xl">
                       {/* Headshot Container with overlaid rank - fixed aspect ratio */}
                       <div

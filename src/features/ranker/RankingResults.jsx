@@ -362,7 +362,7 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
 
             {/* Grid with 6 columns x 7 rows - conditional rendering based on grid style */}
             {gridStyle === 'connected' ? (
-              <div className="mt-6 mb-12 grid grid-cols-6 gap-x-1 gap-y-3 justify-items-center">
+              <div className="mt-6 mb-12 grid grid-cols-6 gap-x-4 gap-y-6 justify-items-center">
                 {currentRanking.slice(0, 42).map((p, idx) => {
                   const logoPath = getLogoPath(p.team);
                   const headshot = getHeadshotSrc(p);
@@ -440,7 +440,7 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
                   const rankBackgroundStyle = getRankBackgroundStyle(p.team);
 
                   return (
-                    <div key={p.id} className="inline-block">
+                    <div key={p.id}>
                       {/* Card - standard QB Rankings style */}
                       <div className="bg-gradient-to-b from-[#2a2a2a] to-[#1f1f1f] rounded-lg overflow-hidden border border-white/25 transition-all hover:border-white/40 shadow-2xl">
                         {/* Headshot Container with overlaid rank */}
