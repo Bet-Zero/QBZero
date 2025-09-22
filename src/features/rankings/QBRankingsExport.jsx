@@ -1,199 +1,9 @@
 import React, { useState, useRef } from 'react';
 import { LayoutGrid, ListOrdered, Download, X, TrendingUp } from 'lucide-react';
 import useImageDownload from '@/hooks/useImageDownload';
-import RankingMovementIndicator from '@/components/shared/RankingMovementIndicator';
-
-// Mapping team abbreviations to logo file names (copied from RankingResults)
-const teamLogoMap = {
-  ARI: 'cardinals',
-  ATL: 'falcons',
-  BAL: 'ravens',
-  BUF: 'bills',
-  CAR: 'panthers',
-  CHI: 'bears',
-  CIN: 'bengals',
-  CLE: 'browns',
-  DAL: 'cowboys',
-  DEN: 'broncos',
-  DET: 'lions',
-  GB: 'packers',
-  HOU: 'texans',
-  IND: 'colts',
-  JAX: 'jaguars',
-  KC: 'chiefs',
-  LAC: 'chargers',
-  LAR: 'rams',
-  LAV: 'raiders',
-  LV: 'raiders',
-  MIA: 'dolphins',
-  MIN: 'vikings',
-  NE: 'patriots',
-  NO: 'saints',
-  NYG: 'giants',
-  NYJ: 'jets',
-  PHI: 'eagles',
-  PIT: 'steelers',
-  SF: '49ers',
-  SEA: 'seahawks',
-  TB: 'buccaneers',
-  TEN: 'titans',
-  WAS: 'commanders',
-};
-
-// Custom positioning for specific team logos in grid view background (copied from RankingResults)
-const teamLogoPositioning = {
-  DAL: { x: 55, y: 0 },
-  NO: { x: 125, y: 0 },
-  DET: { x: 0, y: 75 },
-  PHI: { x: 120, y: 0 },
-  MIN: { x: 80, y: 140 },
-  MIA: { x: 60, y: 60 },
-  NE: { x: 0, y: 20 },
-  BUF: { x: 80, y: 30 },
-  CAR: { x: 20, y: 50 },
-  TB: { x: 110, y: 60 },
-};
-
-// Teams whose logos occupy the top-left area and interfere with rank numbers
-const teamsWithTopLeftLogos = [
-  'LV',
-  'LAV', // Raiders
-  'ATL', // Falcons
-  'NYG', // Giants
-  'HOU', // Texans
-  'IND', // Colts
-  'CHI', // Bears
-  'ARI', // Cardinals
-  'TEN', // Titans (partial overlap)
-  'CIN', // Bengals (partial overlap)
-  'CLE', // Browns (partial overlap)
-  'JAX', // Jaguars (partial overlap)
-  'PIT', // Steelers (partial overlap)
-];
-
-// Helper function to get smart rank background styling based on team logo placement
-const getRankBackgroundStyle = (team) => {
-  const hasLogoConflict = teamsWithTopLeftLogos.includes(team);
-
-  if (hasLogoConflict) {
-    // Higher opacity background with stronger shadow for teams with logo conflicts
-    return 'bg-neutral-900/80 backdrop-blur-sm text-white font-bold text-2xl px-1.5 py-1 rounded shadow-xl border border-white/20';
-  } else {
-    // Keep the original subtle styling for teams without conflicts
-    return 'bg-neutral-600/50 backdrop-blur-sm text-white font-bold text-2xl px-1.5 py-1 rounded shadow-lg';
-  }
-};
-
-// Helper function to get logo path safely
-const getLogoPath = (team) => {
-  if (!team) return null;
-  const logoId = teamLogoMap[team] || team.toLowerCase();
-  return `/assets/logos/${logoId}.svg`;
-};
-
-// Helper function to get background positioning for team logos - CENTERED VERSION for personal rankings
-const getLogoBackgroundStyle = (team, showLogoBg) => {
-  if (!showLogoBg) {
-    return { backgroundImage: 'none' };
-  }
-
-  const logoPath = getLogoPath(team);
-  if (!logoPath) {
-    return { backgroundImage: 'none' };
-  }
-
-  // Always center logos for personal rankings export (ignore custom positioning)
-  // Use a darker gray overlay (instead of the original light gray) for better contrast
-  return {
-    backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.15)), url(${logoPath})`,
-    backgroundSize: 'contain',
-    backgroundRepeat: 'no-repeat',
-    backgroundPosition: 'center',
-  };
-};
-
-const getHeadshotSrc = (qb) =>
-  qb?.headshotUrl ||
-  qb?.imageUrl ||
-  `/assets/headshots/${qb?.player_id || qb?.id}.png`;
-
-const GridCard = ({
-  qb,
-  rank,
-  showLogoBg,
-  showMovement,
-  movementData = {},
-}) => {
-  const logoPath = getLogoPath(qb.team);
-  const headshot = getHeadshotSrc(qb);
-  const logoBackgroundStyle = getLogoBackgroundStyle(qb.team, showLogoBg);
-  const rankBackgroundStyle = getRankBackgroundStyle(qb.team);
-  const movement = movementData?.[qb.id];
-
-  return (
-    <div className="inline-block">
-      {/* Card */}
-      <div className="bg-gradient-to-b from-[#2a2a2a] to-[#1f1f1f] rounded-lg overflow-hidden border border-white/25 transition-all hover:border-white/40 shadow-2xl">
-        {/* Headshot Container with overlaid rank */}
-        <div
-          className="aspect-square w-full overflow-hidden bg-[#0a0a0a] relative border-b border-white/15"
-          style={logoBackgroundStyle}
-        >
-          <img
-            src={headshot}
-            alt={qb.name}
-            className="w-full h-full object-cover transition-transform group-hover:scale-105"
-            loading="eager"
-            decoding="async"
-            crossOrigin="anonymous"
-            onError={(e) => {
-              e.target.src = '/assets/headshots/default.png';
-            }}
-          />
-          {/* Rank overlay in corner */}
-          <div className={`absolute top-2 left-2 ${rankBackgroundStyle}`}>
-            {rank}
-          </div>
-        </div>
-
-        {/* Info Section */}
-        <div className="p-3 relative bg-gradient-to-b from-[#1f1f1f] to-[#1a1a1a] border-t border-white/20">
-          <div className="text-white font-medium truncate mb-1">{qb.name}</div>
-          <div className="flex items-center gap-1.5">
-            {logoPath && (
-              <div className="w-4 h-4">
-                <img
-                  src={logoPath}
-                  alt={qb.team}
-                  className="w-full h-full object-contain"
-                  loading="eager"
-                  decoding="async"
-                  crossOrigin="anonymous"
-                  onError={(e) => {
-                    e.target.style.display = 'none';
-                  }}
-                />
-              </div>
-            )}
-            <span className="text-white/60 text-sm">
-              {qb.team?.toUpperCase() || '—'}
-            </span>
-          </div>
-
-          {/* Movement indicator positioned absolutely in bottom-right */}
-          {showMovement && movement?.moved && (
-            <div className="absolute bottom-3 right-3">
-              <RankingMovementIndicator
-                movement={movement}
-                showMovement={true}
-              />
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
+import RankingsPoster from '@/features/rankings/components/RankingsPoster';
+import RankingsListView from '@/features/rankings/components/RankingsListView';
+import { getDisplayName } from '@/features/rankings/utils/rankingTemplateUtils';
 
 const QBRankingsExport = ({
   rankings,
@@ -201,19 +11,23 @@ const QBRankingsExport = ({
   onClose,
   movementData = {},
 }) => {
-  const [viewType, setViewType] = useState('grid'); // 'list' or 'grid'
+  const [viewType, setViewType] = useState('grid');
   const [showLogoBg, setShowLogoBg] = useState(true);
   const [showMovement, setShowMovement] = useState(
     Object.keys(movementData).length > 0
   );
   const [isDownloading, setIsDownloading] = useState(false);
-  const shareViewRef = useRef(null);
-  const exportViewRef = useRef(null);
-  const activeDownloadRef = viewType === 'grid' ? exportViewRef : shareViewRef;
-  const downloadImage = useImageDownload(activeDownloadRef);
+
+  const gridViewRef = useRef(null);
+  const listViewRef = useRef(null);
+
+  const downloadGridImage = useImageDownload(gridViewRef);
+  const downloadListImage = useImageDownload(listViewRef);
 
   const handleCopy = () => {
-    const text = rankings.map((qb, idx) => `#${idx + 1} ${qb.name}`).join('\n');
+    const text = rankings
+      .map((qb, index) => `#${index + 1} ${getDisplayName(qb)}`)
+      .join('\n');
     navigator.clipboard.writeText(text).catch(() => {});
   };
 
@@ -227,11 +41,19 @@ const QBRankingsExport = ({
       })
       .replace(/,/g, '');
 
+    const safeName = (rankingName || 'qb-rankings')
+      .toLowerCase()
+      .replace(/[^a-z0-9-]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .replace(/-{2,}/g, '-');
+
     try {
-      // For grid view, use the visible element directly instead of hidden export
-      const downloadRef = viewType === 'grid' ? shareViewRef : shareViewRef;
-      const downloadImageFn = useImageDownload(downloadRef);
-      await downloadImageFn(`${rankingName || 'qb-rankings'}-${date}.png`);
+      const filename = `${safeName || 'qb-rankings'}-${date}.png`;
+      if (viewType === 'grid') {
+        await downloadGridImage(filename);
+      } else {
+        await downloadListImage(filename);
+      }
     } finally {
       setIsDownloading(false);
     }
@@ -284,9 +106,7 @@ const QBRankingsExport = ({
       <button
         onClick={() => setViewType(viewType === 'grid' ? 'list' : 'grid')}
         className="px-3 py-2 text-sm text-white bg-white/10 rounded hover:bg-white/20 flex items-center transition-colors"
-        title={
-          viewType === 'grid' ? 'Switch to List View' : 'Switch to Grid View'
-        }
+        title={viewType === 'grid' ? 'Switch to List View' : 'Switch to Grid View'}
       >
         {viewType === 'grid' ? (
           <>
@@ -303,13 +123,14 @@ const QBRankingsExport = ({
       <button
         onClick={handleDownloadImage}
         disabled={isDownloading}
-        className="px-3 py-2 text-sm text-white bg-white/10 rounded hover:bg-white/20 flex items-center transition-colors disabled:opacity-50"
+        className="px-3 py-2 text-sm text-white bg-white/10 rounded hover:bg-white/20 flex items-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         title="Download Image"
       >
         <Download size={16} className="mr-1" />
         <span className="hidden sm:inline">
-          {isDownloading ? 'Downloading...' : 'Download'}
+          {isDownloading ? 'Downloading…' : 'Download'}
         </span>
+        <span className="sm:hidden">DL</span>
       </button>
       <button
         onClick={handleCopy}
@@ -337,298 +158,32 @@ const QBRankingsExport = ({
     </div>
   );
 
-  // Calculate number of columns and items per column for list view
-  const numCols = {
-    base: 2, // mobile
-    sm: 3, // tablet
-    md: 4, // desktop
-  };
-
-  // Create column arrays for list view
-  const createColumns = (cols) => {
-    const itemsPerCol = Math.ceil(rankings.length / cols);
-    const columns = Array(cols)
-      .fill()
-      .map(() => []);
-
-    rankings.forEach((qb, idx) => {
-      const colIndex = Math.floor(idx / itemsPerCol);
-      if (colIndex < cols) {
-        columns[colIndex].push({ qb, rank: idx + 1 });
-      }
-    });
-
-    return columns;
-  };
-
-  const renderPosterHeader = () => {
-    const updatedDate = new Date().toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
-
-    return (
-      <div className="mb-6">
-        {/* Title line */}
-        <h1 className="text-[56px] md:text-[64px] font-black uppercase tracking-[0.04em] leading-none text-white">
-          NFL QB RANKINGS
-        </h1>
-        {/* Thin underline under title - shortened and aligned with column 1 */}
-        <div className="mt-3 h-[2px] w-[28%] bg-white/20"></div>
-        {/* Subline */}
-        <div className="mt-4 text-[16px] md:text-[18px] text-white/70">
-          Updated {updatedDate}
-        </div>
-      </div>
-    );
-  };
-
-  const renderPosterFooter = () => {
-    return (
-      <div className="pt-8 border-t border-white/25">
-        <div className="flex items-center justify-between text-[12px] text-white/55">
-          <span>QBZero</span>
-          <span></span>
-        </div>
-      </div>
-    );
-  };
-
-  const renderGridLayout = (isExport = false) => {
-    const containerRef = isExport ? exportViewRef : shareViewRef;
-
-    return (
-      <div className="min-h-screen w-full bg-neutral-950 text-white flex items-center justify-center">
-        <div
-          ref={containerRef}
-          className="w-[1400px] px-16 pt-20 pb-12 flex flex-col"
-        >
-          {/* Header (top-left) */}
-          {renderPosterHeader()}
-
-          {/* Grid with 6 columns x 7 rows - back to clean layout before dividers */}
-          <div className="mt-6 mb-12 grid grid-cols-6 gap-x-4 gap-y-6 justify-items-center">
-            {rankings.slice(0, 42).map((qb, idx) => (
-              <GridCard
-                key={qb.id || qb.player_id || idx}
-                qb={qb}
-                rank={idx + 1}
-                showLogoBg={showLogoBg}
-                showMovement={showMovement}
-                movementData={movementData}
-              />
-            ))}
-          </div>
-
-          {/* Footer */}
-          {renderPosterFooter()}
-        </div>
-      </div>
-    );
-  };
-
   const renderContent = () => {
     if (viewType === 'grid') {
-      return renderGridLayout(false);
+      return (
+        <RankingsPoster
+          players={rankings}
+          showLogoBg={showLogoBg}
+          showMovement={showMovement}
+          movementData={movementData}
+          containerRef={gridViewRef}
+          title={(rankingName || 'NFL QB RANKINGS').toUpperCase()}
+        />
+      );
     }
 
-    // List view remains unchanged
     return (
-      <div
-        ref={shareViewRef}
-        className="bg-neutral-900 p-6 rounded-lg border border-white/10"
-      >
-        <div className="text-center mb-6">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 bg-clip-text text-transparent mb-2">
-            NFL QB Rankings
-          </h1>
-          <div className="text-sm text-white/60 italic">
-            {new Date().toLocaleDateString(undefined, {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-            })}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-2 gap-y-1">
-          {/* Mobile columns (2) */}
-          {createColumns(numCols.base).map((column, colIndex) => (
-            <div key={colIndex} className="flex flex-col gap-1 sm:hidden">
-              {column.map(({ qb: columnQB, rank }) => {
-                const headshot = getHeadshotSrc(columnQB);
-                const logoPath = getLogoPath(columnQB.team);
-
-                return (
-                  <div
-                    key={columnQB.id || columnQB.player_id || columnQB.name}
-                    className="bg-white/5 rounded p-2 flex items-center gap-2"
-                  >
-                    <div className="w-8 h-8 flex items-center justify-center bg-white/10 rounded-full font-bold text-white/80">
-                      {rank}
-                    </div>
-                    <img
-                      src={headshot}
-                      alt={columnQB.name}
-                      className="w-10 h-10 rounded-full object-cover"
-                      loading="eager"
-                      decoding="async"
-                      crossOrigin="anonymous"
-                      onError={(e) => {
-                        e.target.src = '/assets/headshots/default.png';
-                      }}
-                    />
-                    <div className="flex-1 truncate text-sm">
-                      <div className="font-medium text-white truncate">
-                        {columnQB.name}
-                      </div>
-                      <div className="flex items-center gap-1 text-white/60 text-xs">
-                        {logoPath && (
-                          <div className="w-4 h-4">
-                            <img
-                              src={logoPath}
-                              alt={columnQB.team}
-                              className="w-full h-full object-contain"
-                              loading="eager"
-                              decoding="async"
-                              crossOrigin="anonymous"
-                              onError={(e) => {
-                                e.target.style.display = 'none';
-                              }}
-                            />
-                          </div>
-                        )}
-                        <span>{columnQB.team?.toUpperCase() || '—'}</span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ))}
-
-          {/* Tablet columns (3) */}
-          {createColumns(numCols.sm).map((column, colIndex) => (
-            <div
-              key={colIndex}
-              className="hidden sm:flex md:hidden flex-col gap-1"
-            >
-              {column.map(({ qb: columnQB, rank }) => {
-                const headshot = getHeadshotSrc(columnQB);
-                const logoPath = getLogoPath(columnQB.team);
-
-                return (
-                  <div
-                    key={columnQB.id || columnQB.player_id || columnQB.name}
-                    className="bg-white/5 rounded p-2 flex items-center gap-2"
-                  >
-                    <div className="w-8 h-8 flex items-center justify-center bg-white/10 rounded-full font-bold text-white/80">
-                      {rank}
-                    </div>
-                    <img
-                      src={headshot}
-                      alt={columnQB.name}
-                      className="w-10 h-10 rounded-full object-cover"
-                      loading="eager"
-                      decoding="async"
-                      crossOrigin="anonymous"
-                      onError={(e) => {
-                        e.target.src = '/assets/headshots/default.png';
-                      }}
-                    />
-                    <div className="flex-1 truncate text-sm">
-                      <div className="font-medium text-white truncate">
-                        {columnQB.name}
-                      </div>
-                      <div className="flex items-center gap-1 text-white/60 text-xs">
-                        {logoPath && (
-                          <div className="w-4 h-4">
-                            <img
-                              src={logoPath}
-                              alt={columnQB.team}
-                              className="w-full h-full object-contain"
-                              loading="eager"
-                              decoding="async"
-                              crossOrigin="anonymous"
-                              onError={(e) => {
-                                e.target.style.display = 'none';
-                              }}
-                            />
-                          </div>
-                        )}
-                        <span>{columnQB.team?.toUpperCase() || '—'}</span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ))}
-
-          {/* Desktop columns (4) */}
-          {createColumns(numCols.md).map((column, colIndex) => (
-            <div key={colIndex} className="hidden md:flex flex-col gap-1">
-              {column.map(({ qb: columnQB, rank }) => {
-                const headshot = getHeadshotSrc(columnQB);
-                const logoPath = getLogoPath(columnQB.team);
-
-                return (
-                  <div
-                    key={columnQB.id || columnQB.player_id || columnQB.name}
-                    className="bg-white/5 rounded p-2 flex items-center gap-2"
-                  >
-                    <div className="w-8 h-8 flex items-center justify-center bg-white/10 rounded-full font-bold text-white/80">
-                      {rank}
-                    </div>
-                    <img
-                      src={headshot}
-                      alt={columnQB.name}
-                      className="w-10 h-10 rounded-full object-cover"
-                      loading="eager"
-                      decoding="async"
-                      crossOrigin="anonymous"
-                      onError={(e) => {
-                        e.target.src = '/assets/headshots/default.png';
-                      }}
-                    />
-                    <div className="flex-1 truncate text-sm">
-                      <div className="font-medium text-white truncate">
-                        {columnQB.name}
-                      </div>
-                      <div className="flex items-center gap-1 text-white/60 text-xs">
-                        {logoPath && (
-                          <div className="w-4 h-4">
-                            <img
-                              src={logoPath}
-                              alt={columnQB.team}
-                              className="w-full h-full object-contain"
-                              loading="eager"
-                              decoding="async"
-                              crossOrigin="anonymous"
-                              onError={(e) => {
-                                e.target.style.display = 'none';
-                              }}
-                            />
-                          </div>
-                        )}
-                        <span>{columnQB.team?.toUpperCase() || '—'}</span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ))}
-        </div>
-      </div>
+      <RankingsListView
+        ref={listViewRef}
+        players={rankings}
+        title={rankingName || 'NFL QB Rankings'}
+      />
     );
   };
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-neutral-900 rounded-xl border border-white/20 w-full max-w-7xl max-h-[90vh] overflow-hidden">
-        {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-white/10">
           <div className="flex items-center gap-3">
             <Download className="text-blue-500" size={24} />
@@ -647,12 +202,10 @@ const QBRankingsExport = ({
           </button>
         </div>
 
-        {/* Action Buttons */}
         <div className="p-6 border-b border-white/10">
           <ActionButtons />
         </div>
 
-        {/* Content */}
         <div className="overflow-y-auto max-h-[calc(90vh-200px)]">
           {renderContent()}
         </div>
