@@ -1,7 +1,8 @@
 import React, { useState, useRef } from 'react';
 import { LayoutGrid, ListOrdered, Download, X, TrendingUp } from 'lucide-react';
 import useImageDownload from '@/hooks/useImageDownload';
-import RankingMovementIndicator from '@/components/shared/RankingMovementIndicator';
+import QBRankingsGridLayout from '@/components/shared/QBRankingsGridLayout';
+import RankingsHeader from '@/components/shared/RankingsHeader';
 
 // Mapping team abbreviations to logo file names (copied from RankingResults)
 const teamLogoMap = {
@@ -399,32 +400,16 @@ const QBRankingsExport = ({
     const containerRef = isExport ? exportViewRef : shareViewRef;
 
     return (
-      <div className="min-h-screen w-full bg-neutral-950 text-white flex items-center justify-center">
-        <div
-          ref={containerRef}
-          className="w-[1400px] px-16 pt-20 pb-12 flex flex-col"
-        >
-          {/* Header (top-left) */}
-          {renderPosterHeader()}
-
-          {/* Grid with 6 columns x 7 rows - back to clean layout before dividers */}
-          <div className="mt-6 mb-12 grid grid-cols-6 gap-x-4 gap-y-6 justify-items-center">
-            {rankings.slice(0, 42).map((qb, idx) => (
-              <GridCard
-                key={qb.id || qb.player_id || idx}
-                qb={qb}
-                rank={idx + 1}
-                showLogoBg={showLogoBg}
-                showMovement={showMovement}
-                movementData={movementData}
-              />
-            ))}
-          </div>
-
-          {/* Footer */}
-          {renderPosterFooter()}
-        </div>
-      </div>
+      <QBRankingsGridLayout
+        players={rankings}
+        title="NFL QB RANKINGS"
+        showLogoBg={showLogoBg}
+        showMovement={showMovement}
+        movementData={movementData}
+        containerRef={containerRef}
+        maxItems={42}
+        showFooter={true}
+      />
     );
   };
 
@@ -439,18 +424,7 @@ const QBRankingsExport = ({
         ref={shareViewRef}
         className="bg-neutral-900 p-6 rounded-lg border border-white/10"
       >
-        <div className="text-center mb-6">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 bg-clip-text text-transparent mb-2">
-            NFL QB Rankings
-          </h1>
-          <div className="text-sm text-white/60 italic">
-            {new Date().toLocaleDateString(undefined, {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-            })}
-          </div>
-        </div>
+        <RankingsHeader title="NFL QB Rankings" showDate={true} compact={true} />
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-2 gap-y-1">
           {/* Mobile columns (2) */}
