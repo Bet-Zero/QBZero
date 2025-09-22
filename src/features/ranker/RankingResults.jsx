@@ -457,7 +457,7 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
             <div className="mb-6">
               {/* Title line */}
               <h1 className="text-[56px] md:text-[64px] font-black uppercase tracking-[0.04em] leading-none text-white">
-                QB RANKINGS
+                NFL QB RANKINGS
               </h1>
               {/* Thin underline under title - shortened and aligned with column 1 */}
               <div className="mt-3 h-[2px] w-[28%] bg-white/20"></div>
@@ -484,17 +484,17 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
                 const rankBackgroundStyle = getRankBackgroundStyle(p.team);
 
                 return (
-                  <div key={p.id} className="w-[180px]">
-                    {/* Card with fixed width */}
+                  <div key={p.id} className="inline-block">
+                    {/* Card */}
                     <div className="bg-gradient-to-b from-[#2a2a2a] to-[#1f1f1f] rounded-lg overflow-hidden border border-white/25 transition-all hover:border-white/40 shadow-2xl">
-                      {/* Headshot Container with overlaid rank - fixed aspect ratio */}
+                      {/* Headshot Container with overlaid rank */}
                       <div
-                        className="w-[180px] h-[180px] overflow-hidden bg-[#0a0a0a] relative border-b border-white/15"
+                        className="aspect-square w-full overflow-hidden bg-[#0a0a0a] relative border-b border-white/15"
                         style={logoBackgroundStyle}
                       >
                         <img
                           src={headshot}
-                          alt={p.name}
+                          alt={p.display_name || p.name}
                           className="w-full h-full object-cover transition-transform group-hover:scale-105"
                           loading="eager"
                           decoding="async"
@@ -511,14 +511,12 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
                         </div>
                       </div>
 
-                      {/* Info Section - increased height to prevent text clipping */}
-                      <div className="p-3 h-[70px] relative bg-gradient-to-b from-[#1f1f1f] to-[#1a1a1a] border-t border-white/20 flex flex-col">
-                        <div className="text-white font-medium truncate text-sm mb-1 leading-normal overflow-visible">
-                          {p.display_name || p.name}
-                        </div>
-                        <div className="flex items-center gap-1.5 mt-auto">
+                      {/* Info Section */}
+                      <div className="p-3 relative bg-gradient-to-b from-[#1f1f1f] to-[#1a1a1a] border-t border-white/20">
+                        <div className="text-white font-medium truncate mb-1">{p.display_name || p.name}</div>
+                        <div className="flex items-center gap-1.5">
                           {logoPath && (
-                            <div className="w-4 h-4 flex-shrink-0">
+                            <div className="w-4 h-4">
                               <img
                                 src={logoPath}
                                 alt={p.team}
@@ -532,7 +530,7 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
                               />
                             </div>
                           )}
-                          <span className="text-white/60 text-xs truncate">
+                          <span className="text-white/60 text-sm">
                             {p.team?.toUpperCase() || '—'}
                           </span>
                         </div>
