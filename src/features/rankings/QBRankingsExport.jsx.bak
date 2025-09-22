@@ -1,13 +1,16 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { LayoutGrid, ListOrdered, Download, Edit3 } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { LayoutGrid, ListOrdered, Download, X, TrendingUp } from 'lucide-react';
 import useImageDownload from '@/hooks/useImageDownload';
-import AdjustableRankings from './AdjustableRankings';
+import RankingMovementIndicator from '@/components/shared/RankingMovementIndicator';
+import GridCard from '@/components/shared/GridCard';
+import RankingsHeader from '@/components/shared/RankingsHeader';
+import RankingsFooter from '@/components/shared/RankingsFooter';
 import QBRankingsGridLayout from '@/components/shared/QBRankingsGridLayout';
 
-const getHeadshotSrc = (player) =>
-  player?.headshotUrl ||
-  player?.imageUrl ||
-  `/assets/headshots/${player?.player_id || player?.id}.png`;
+const getHeadshotSrc = (qb) =>
+  qb?.headshotUrl ||
+  qb?.imageUrl ||
+  `/assets/headshots/${qb?.player_id || qb?.id}.png`;
 
 // Helper function to get logo path safely  
 const getLogoPath = (team) => {
@@ -25,51 +28,26 @@ const getLogoPath = (team) => {
   return `/assets/logos/${logoId}.svg`;
 };
 
-// Simple grid display for final rankings. Renders a responsive list of
-// player names with their rank number. Designed to scale up to large player
-// pools by using a multi-column layout.
-
-const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
-  const [viewType, setViewType] = useState('list'); // 'list' or 'grid'
-  const [showLogoBg, setShowLogoBg] = useState(true); // Add state for logo background toggle
+const QBRankingsExport = ({
+  rankings,
+  rankingName,
+  onClose,
+  movementData = {},
+}) => {
+  const [viewType, setViewType] = useState('grid'); // 'list' or 'grid'
+  const [showLogoBg, setShowLogoBg] = useState(true);
+  const [showMovement, setShowMovement] = useState(
+    Object.keys(movementData).length > 0
+  );
   const [isDownloading, setIsDownloading] = useState(false);
-  const [isLocked, setIsLocked] = useState(false); // Add state to manage lock status
-  const [isAdjustMode, setIsAdjustMode] = useState(false);
-  const [currentRanking, setCurrentRanking] = useState(ranking);
-  const gridViewRef = useRef(null); // Ref for the visible grid view
-  const downloadImage = useImageDownload(gridViewRef); // Use grid view ref for downloads
-
-  useEffect(() => {
-    setIsLocked(false); // Unlock the page by default
-  }, []);
-
-  // Update current ranking when prop changes
-  useEffect(() => {
-    setCurrentRanking(ranking);
-  }, [ranking]);
+  const shareViewRef = useRef(null);
+  const exportViewRef = useRef(null);
+  const activeDownloadRef = viewType === 'grid' ? exportViewRef : shareViewRef;
+  const downloadImage = useImageDownload(activeDownloadRef);
 
   const handleCopy = () => {
-    const text = currentRanking
-      .map((p, idx) => `#${idx + 1} ${p.display_name || p.name}`)
-      .join('\n');
+    const text = rankings.map((qb, idx) => `#${idx + 1} ${qb.name}`).join('\n');
     navigator.clipboard.writeText(text).catch(() => {});
-  };
-
-  const handleExportCSV = () => {
-    const rows = currentRanking
-      .map(
-        (p, idx) =>
-          `${idx + 1},"${(p.display_name || p.name).replace(/"/g, '""')}"`
-      )
-      .join('\n');
-    const csv = `Rank,Name\n${rows}`;
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'ranking.csv';
-    link.click();
-    URL.revokeObjectURL(url);
   };
 
   const handleDownloadImage = async () => {
@@ -81,51 +59,19 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
         day: 'numeric',
       })
       .replace(/,/g, '');
+
     try {
-      await downloadImage(`qb-rankings-${date}.png`);
+      // For grid view, use the visible element directly instead of hidden export
+      const downloadRef = viewType === 'grid' ? shareViewRef : shareViewRef;
+      const downloadImageFn = useImageDownload(downloadRef);
+      await downloadImageFn(`${rankingName || 'qb-rankings'}-${date}.png`);
     } finally {
       setIsDownloading(false);
     }
   };
 
-  const handleAdjustRankings = () => {
-    setIsAdjustMode(true);
-  };
-
-  const handleSaveAdjustments = (adjustedRanking) => {
-    setCurrentRanking(adjustedRanking);
-    setIsAdjustMode(false);
-    if (onRankingAdjusted) {
-      onRankingAdjusted(adjustedRanking);
-    }
-  };
-
-  const handleCancelAdjustments = () => {
-    setIsAdjustMode(false);
-  };
-
-  // If in adjust mode, show the adjustable rankings component
-  if (isAdjustMode) {
-    return (
-      <AdjustableRankings
-        initialRanking={currentRanking}
-        onSave={handleSaveAdjustments}
-        onCancel={handleCancelAdjustments}
-      />
-    );
-  }
-
   const ActionButtons = () => (
     <div className="flex gap-2 justify-center sm:justify-start">
-      <button
-        onClick={handleAdjustRankings}
-        className="px-3 py-2 text-sm text-white bg-orange-600/80 hover:bg-orange-700 rounded flex items-center transition-colors"
-        title="Adjust Rankings"
-      >
-        <Edit3 size={16} className="mr-1" />
-        <span className="hidden sm:inline">Adjust Rankings</span>
-        <span className="sm:hidden">Adjust</span>
-      </button>
       {viewType === 'grid' && (
         <button
           onClick={() => setShowLogoBg(!showLogoBg)}
@@ -153,6 +99,21 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
           </span>
         </button>
       )}
+      {Object.keys(movementData).length > 0 && (
+        <button
+          onClick={() => setShowMovement(!showMovement)}
+          className={`px-3 py-2 text-sm text-white rounded hover:bg-white/20 flex items-center transition-colors ${
+            showMovement ? 'bg-green-600/80 hover:bg-green-700' : 'bg-white/10'
+          }`}
+          title={showMovement ? 'Hide Movement' : 'Show Movement'}
+        >
+          <TrendingUp size={16} className="mr-1" />
+          <span className="hidden sm:inline">
+            {showMovement ? 'Hide Movement' : 'Show Movement'}
+          </span>
+          <span className="sm:hidden">Movement</span>
+        </button>
+      )}
       <button
         onClick={() => setViewType(viewType === 'grid' ? 'list' : 'grid')}
         className="px-3 py-2 text-sm text-white bg-white/10 rounded hover:bg-white/20 flex items-center transition-colors"
@@ -174,11 +135,14 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
       </button>
       <button
         onClick={handleDownloadImage}
-        className="px-3 py-2 text-sm text-white bg-white/10 rounded hover:bg-white/20 flex items-center transition-colors"
+        disabled={isDownloading}
+        className="px-3 py-2 text-sm text-white bg-white/10 rounded hover:bg-white/20 flex items-center transition-colors disabled:opacity-50"
         title="Download Image"
       >
         <Download size={16} className="mr-1" />
-        <span className="hidden sm:inline">Download</span>
+        <span className="hidden sm:inline">
+          {isDownloading ? 'Downloading...' : 'Download'}
+        </span>
       </button>
       <button
         onClick={handleCopy}
@@ -215,68 +179,65 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
 
   // Create column arrays for list view
   const createColumns = (cols) => {
-    const itemsPerCol = Math.ceil(currentRanking.length / cols);
+    const itemsPerCol = Math.ceil(rankings.length / cols);
     const columns = Array(cols)
       .fill()
       .map(() => []);
 
-    currentRanking.forEach((player, idx) => {
+    rankings.forEach((qb, idx) => {
       const colIndex = Math.floor(idx / itemsPerCol);
       if (colIndex < cols) {
-        columns[colIndex].push({ player, rank: idx + 1 });
+        columns[colIndex].push({ qb, rank: idx + 1 });
       }
     });
 
     return columns;
   };
 
-  const renderContent = () => {
-    const sharedHeader = (
-      <div className="text-center mb-6">
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 bg-clip-text text-transparent mb-2">
-          QB Rankings 2025
-        </h1>
-        <div className="text-sm text-white/60 italic">
-          {new Date().toLocaleDateString(undefined, {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-          })}
-        </div>
-      </div>
-    );
+  // List view content rendering  
+  const renderListViewContent = () => {
 
+  const renderGridLayout = (isExport = false) => {
+    const containerRef = isExport ? exportViewRef : shareViewRef;
+
+    return (
+      <QBRankingsGridLayout
+        players={rankings}
+        title="NFL QB RANKINGS"
+        showLogoBg={showLogoBg}
+        showMovement={showMovement}
+        movementData={movementData}
+        containerRef={containerRef}
+        maxItems={42}
+        showFooter={true}
+      />
+    );
+  };
+
+  const renderContent = () => {
     if (viewType === 'grid') {
-      return (
-        <QBRankingsGridLayout
-          players={currentRanking}
-          title="QB RANKINGS"
-          showLogoBg={showLogoBg}
-          showMovement={false}
-          movementData={{}}
-          containerRef={gridViewRef}
-          maxItems={42}
-          showFooter={true}
-        />
-      );
+      return renderGridLayout(false);
     }
 
-    // List view
+    // List view 
     return (
-      <div className="bg-neutral-900 p-6 rounded-lg border border-white/10">
-        {sharedHeader}
+      <div
+        ref={shareViewRef}
+        className="bg-neutral-900 p-6 rounded-lg border border-white/10"
+      >
+        <RankingsHeader title="NFL QB Rankings" showDate={true} compact={true} />
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-2 gap-y-1">
           {/* Mobile columns (2) */}
           {createColumns(numCols.base).map((column, colIndex) => (
             <div key={colIndex} className="flex flex-col gap-1 sm:hidden">
-              {column.map(({ player: p, rank }) => {
-                const headshot = getHeadshotSrc(p);
-                const logoPath = getLogoPath(p.team);
+              {column.map(({ qb: columnQB, rank }) => {
+                const headshot = getHeadshotSrc(columnQB);
+                const logoPath = getLogoPath(columnQB.team);
 
                 return (
                   <div
-                    key={p.id}
+                    key={columnQB.id || columnQB.player_id || columnQB.name}
                     className="bg-white/5 rounded p-2 flex items-center gap-2"
                   >
                     <div className="w-8 h-8 flex items-center justify-center bg-white/10 rounded-full font-bold text-white/80">
@@ -284,7 +245,7 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
                     </div>
                     <img
                       src={headshot}
-                      alt=""
+                      alt={columnQB.name}
                       className="w-10 h-10 rounded-full object-cover"
                       loading="eager"
                       decoding="async"
@@ -295,14 +256,14 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
                     />
                     <div className="flex-1 truncate text-sm">
                       <div className="font-medium text-white truncate">
-                        {p.display_name || p.name}
+                        {columnQB.name}
                       </div>
                       <div className="flex items-center gap-1 text-white/60 text-xs">
                         {logoPath && (
                           <div className="w-4 h-4">
                             <img
                               src={logoPath}
-                              alt={p.team}
+                              alt={columnQB.team}
                               className="w-full h-full object-contain"
                               loading="eager"
                               decoding="async"
@@ -313,7 +274,7 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
                             />
                           </div>
                         )}
-                        <span>{p.team?.toUpperCase() || '—'}</span>
+                        <span>{columnQB.team?.toUpperCase() || '—'}</span>
                       </div>
                     </div>
                   </div>
@@ -328,13 +289,13 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
               key={colIndex}
               className="hidden sm:flex md:hidden flex-col gap-1"
             >
-              {column.map(({ player: p, rank }) => {
-                const headshot = getHeadshotSrc(p);
-                const logoPath = getLogoPath(p.team);
+              {column.map(({ qb: columnQB, rank }) => {
+                const headshot = getHeadshotSrc(columnQB);
+                const logoPath = getLogoPath(columnQB.team);
 
                 return (
                   <div
-                    key={p.id}
+                    key={columnQB.id || columnQB.player_id || columnQB.name}
                     className="bg-white/5 rounded p-2 flex items-center gap-2"
                   >
                     <div className="w-8 h-8 flex items-center justify-center bg-white/10 rounded-full font-bold text-white/80">
@@ -342,7 +303,7 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
                     </div>
                     <img
                       src={headshot}
-                      alt=""
+                      alt={columnQB.name}
                       className="w-10 h-10 rounded-full object-cover"
                       loading="eager"
                       decoding="async"
@@ -353,14 +314,14 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
                     />
                     <div className="flex-1 truncate text-sm">
                       <div className="font-medium text-white truncate">
-                        {p.display_name || p.name}
+                        {columnQB.name}
                       </div>
                       <div className="flex items-center gap-1 text-white/60 text-xs">
                         {logoPath && (
                           <div className="w-4 h-4">
                             <img
                               src={logoPath}
-                              alt={p.team}
+                              alt={columnQB.team}
                               className="w-full h-full object-contain"
                               loading="eager"
                               decoding="async"
@@ -371,7 +332,7 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
                             />
                           </div>
                         )}
-                        <span>{p.team?.toUpperCase() || '—'}</span>
+                        <span>{columnQB.team?.toUpperCase() || '—'}</span>
                       </div>
                     </div>
                   </div>
@@ -383,13 +344,13 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
           {/* Desktop columns (4) */}
           {createColumns(numCols.md).map((column, colIndex) => (
             <div key={colIndex} className="hidden md:flex flex-col gap-1">
-              {column.map(({ player: p, rank }) => {
-                const headshot = getHeadshotSrc(p);
-                const logoPath = getLogoPath(p.team);
+              {column.map(({ qb: columnQB, rank }) => {
+                const headshot = getHeadshotSrc(columnQB);
+                const logoPath = getLogoPath(columnQB.team);
 
                 return (
                   <div
-                    key={p.id}
+                    key={columnQB.id || columnQB.player_id || columnQB.name}
                     className="bg-white/5 rounded p-2 flex items-center gap-2"
                   >
                     <div className="w-8 h-8 flex items-center justify-center bg-white/10 rounded-full font-bold text-white/80">
@@ -397,7 +358,7 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
                     </div>
                     <img
                       src={headshot}
-                      alt=""
+                      alt={columnQB.name}
                       className="w-10 h-10 rounded-full object-cover"
                       loading="eager"
                       decoding="async"
@@ -408,14 +369,14 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
                     />
                     <div className="flex-1 truncate text-sm">
                       <div className="font-medium text-white truncate">
-                        {p.display_name || p.name}
+                        {columnQB.name}
                       </div>
                       <div className="flex items-center gap-1 text-white/60 text-xs">
                         {logoPath && (
                           <div className="w-4 h-4">
                             <img
                               src={logoPath}
-                              alt={p.team}
+                              alt={columnQB.team}
                               className="w-full h-full object-contain"
                               loading="eager"
                               decoding="async"
@@ -426,7 +387,7 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
                             />
                           </div>
                         )}
-                        <span>{p.team?.toUpperCase() || '—'}</span>
+                        <span>{columnQB.team?.toUpperCase() || '—'}</span>
                       </div>
                     </div>
                   </div>
@@ -440,51 +401,39 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
   };
 
   return (
-    <div className="mt-6 mx-auto max-w-5xl px-4">
-      {/* Header with title and desktop buttons */}
-      <div className="flex flex-col items-center mb-4 mt-8 sm:mt-12 gap-3 sm:flex-row sm:justify-between sm:gap-4">
-        {/* Desktop buttons - hidden on mobile */}
-        <div className="hidden sm:block">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-neutral-900 rounded-xl border border-white/20 w-full max-w-7xl max-h-[90vh] overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-white/10">
+          <div className="flex items-center gap-3">
+            <Download className="text-blue-500" size={24} />
+            <div>
+              <h2 className="text-xl font-bold text-white">Export Rankings</h2>
+              <p className="text-white/60 text-sm">
+                Choose your export format and download your rankings
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-white/10 rounded-lg transition-all"
+          >
+            <X className="text-white/60" size={20} />
+          </button>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="p-6 border-b border-white/10">
           <ActionButtons />
         </div>
-      </div>
 
-      {/* Visible display content with responsive layout */}
-      {renderContent()}
-
-      {/* Mobile buttons - shown only on mobile, positioned after rankings */}
-      <div className="mt-6 sm:hidden">
-        <ActionButtons />
-      </div>
-
-      {/* CSV Export button at bottom */}
-      <div className="flex justify-center mt-6 mb-6">
-        <button
-          onClick={handleExportCSV}
-          className="px-4 py-2 text-sm text-white bg-white/10 rounded hover:bg-white/20 flex items-center transition-colors"
-          title="Export as CSV"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            className="mr-2"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2z"
-            />
-          </svg>
-          Export to CSV
-        </button>
+        {/* Content */}
+        <div className="overflow-y-auto max-h-[calc(90vh-200px)]">
+          {renderContent()}
+        </div>
       </div>
     </div>
   );
 };
 
-export default RankingResults;
+export default QBRankingsExport;
