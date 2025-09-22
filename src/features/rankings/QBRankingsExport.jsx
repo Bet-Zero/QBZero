@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { LayoutGrid, ListOrdered, Download, X, TrendingUp } from 'lucide-react';
 import useImageDownload from '@/hooks/useImageDownload';
-import RankingMovementIndicator from '@/components/shared/RankingMovementIndicator';
+import RankingGridCard from '@/components/shared/RankingGridCard';
 
 // Mapping team abbreviations to logo file names (copied from RankingResults)
 const teamLogoMap = {
@@ -116,84 +116,6 @@ const getHeadshotSrc = (qb) =>
   qb?.headshotUrl ||
   qb?.imageUrl ||
   `/assets/headshots/${qb?.player_id || qb?.id}.png`;
-
-const GridCard = ({
-  qb,
-  rank,
-  showLogoBg,
-  showMovement,
-  movementData = {},
-}) => {
-  const logoPath = getLogoPath(qb.team);
-  const headshot = getHeadshotSrc(qb);
-  const logoBackgroundStyle = getLogoBackgroundStyle(qb.team, showLogoBg);
-  const rankBackgroundStyle = getRankBackgroundStyle(qb.team);
-  const movement = movementData?.[qb.id];
-
-  return (
-    <div className="inline-block">
-      {/* Card */}
-      <div className="bg-gradient-to-b from-[#2a2a2a] to-[#1f1f1f] rounded-lg overflow-hidden border border-white/25 transition-all hover:border-white/40 shadow-2xl">
-        {/* Headshot Container with overlaid rank */}
-        <div
-          className="aspect-square w-full overflow-hidden bg-[#0a0a0a] relative border-b border-white/15"
-          style={logoBackgroundStyle}
-        >
-          <img
-            src={headshot}
-            alt={qb.name}
-            className="w-full h-full object-cover transition-transform group-hover:scale-105"
-            loading="eager"
-            decoding="async"
-            crossOrigin="anonymous"
-            onError={(e) => {
-              e.target.src = '/assets/headshots/default.png';
-            }}
-          />
-          {/* Rank overlay in corner */}
-          <div className={`absolute top-2 left-2 ${rankBackgroundStyle}`}>
-            {rank}
-          </div>
-        </div>
-
-        {/* Info Section */}
-        <div className="p-3 relative bg-gradient-to-b from-[#1f1f1f] to-[#1a1a1a] border-t border-white/20">
-          <div className="text-white font-medium truncate mb-1">{qb.name}</div>
-          <div className="flex items-center gap-1.5">
-            {logoPath && (
-              <div className="w-4 h-4">
-                <img
-                  src={logoPath}
-                  alt={qb.team}
-                  className="w-full h-full object-contain"
-                  loading="eager"
-                  decoding="async"
-                  crossOrigin="anonymous"
-                  onError={(e) => {
-                    e.target.style.display = 'none';
-                  }}
-                />
-              </div>
-            )}
-            <span className="text-white/60 text-sm">
-              {qb.team?.toUpperCase() || '—'}
-            </span>
-          </div>
-
-          {/* Movement indicator positioned absolutely in bottom-right */}
-          {showMovement && movement?.moved && (
-            <div className="absolute bottom-3 right-3">
-              <RankingMovementIndicator
-                movement={movement}
-                showMovement={true}
-              />
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
 
 const QBRankingsExport = ({
   rankings,
@@ -410,13 +332,19 @@ const QBRankingsExport = ({
           {/* Grid with 6 columns x 7 rows - back to clean layout before dividers */}
           <div className="mt-6 mb-12 grid grid-cols-6 gap-x-4 gap-y-6 justify-items-center">
             {rankings.slice(0, 42).map((qb, idx) => (
-              <GridCard
+              <RankingGridCard
                 key={qb.id || qb.player_id || idx}
-                qb={qb}
+                player={qb}
                 rank={idx + 1}
-                showLogoBg={showLogoBg}
+                headshotSrc={getHeadshotSrc(qb)}
+                logoPath={getLogoPath(qb.team)}
+                logoBackgroundStyle={getLogoBackgroundStyle(
+                  qb.team,
+                  showLogoBg
+                )}
+                rankBackgroundClass={getRankBackgroundStyle(qb.team)}
                 showMovement={showMovement}
-                movementData={movementData}
+                movement={movementData?.[qb.id]}
               />
             ))}
           </div>
