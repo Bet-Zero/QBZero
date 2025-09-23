@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { LayoutGrid, ListOrdered, Download, X, TrendingUp } from 'lucide-react';
 import useImageDownload from '@/hooks/useImageDownload';
 import RankingMovementIndicator from '@/components/shared/RankingMovementIndicator';
+import PropTypes from 'prop-types';
 import {
   getLogoPath,
   getLogoBackgroundStyle,
@@ -90,6 +91,14 @@ const GridCard = ({
   );
 };
 
+GridCard.propTypes = {
+  player: PropTypes.object.isRequired,
+  rank: PropTypes.number.isRequired,
+  showLogoBg: PropTypes.bool.isRequired,
+  showMovement: PropTypes.bool.isRequired,
+  movementData: PropTypes.object,
+};
+
 const RankingsExportModal = ({
   rankings = [],
   rankingName = 'QB Rankings',
@@ -106,9 +115,8 @@ const RankingsExportModal = ({
   const [isDownloading, setIsDownloading] = useState(false);
   const shareViewRef = useRef(null);
   const exportViewRef = useRef(null);
-  const activeDownloadRef = viewType === 'grid' ? exportViewRef : shareViewRef;
-  const downloadImage = useImageDownload(activeDownloadRef);
-
+  const downloadImageHook = useImageDownload(shareViewRef);
+  
   const handleCopy = () => {
     const text = rankings
       .map((item, idx) => {
@@ -130,10 +138,8 @@ const RankingsExportModal = ({
       .replace(/,/g, '');
 
     try {
-      // For grid view, use the visible element directly instead of hidden export
-      const downloadRef = viewType === 'grid' ? shareViewRef : shareViewRef;
-      const downloadImageFn = useImageDownload(downloadRef);
-      await downloadImageFn(`${rankingName || 'qb-rankings'}-${date}.png`);
+      // Use the hook-based download function
+      await downloadImageHook(`${rankingName || 'qb-rankings'}-${date}.png`);
     } finally {
       setIsDownloading(false);
     }
@@ -545,6 +551,15 @@ const RankingsExportModal = ({
       </div>
     </div>
   );
+};
+
+RankingsExportModal.propTypes = {
+  rankings: PropTypes.array,
+  rankingName: PropTypes.string,
+  onClose: PropTypes.func.isRequired,
+  movementData: PropTypes.object,
+  title: PropTypes.string,
+  subtitle: PropTypes.string,
 };
 
 export default RankingsExportModal;

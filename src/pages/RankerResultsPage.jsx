@@ -61,7 +61,7 @@ const RankerResultsPage = () => {
                 No Results Available
               </h1>
               <p className="text-white/60 text-lg mb-8">
-                It looks like you haven't completed a ranking session yet, or
+                It looks like you haven&apos;t completed a ranking session yet, or
                 your results were cleared.
               </p>
             </div>
