@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useRankerContext } from '@/context/RankerContext';
-import RankingResults from '@/features/ranker/RankingResults';
 import ComparisonMatrixDrawer from '@/features/ranker/ComparisonMatrixDrawer';
 import RankerNavBar from '@/components/ranker/RankerNavBar';
 import RankingsExportModal from '@/components/shared/RankingsExportModal';
@@ -20,7 +19,7 @@ const RankerResultsPage = () => {
   } = useRankerContext();
 
   const [showRecoveryOptions, setShowRecoveryOptions] = useState(false);
-  const [showExportModal, setShowExportModal] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(true); // Open modal by default
 
   useEffect(() => {
     setCurrentPhase('results');
@@ -119,7 +118,7 @@ const RankerResultsPage = () => {
               onClick={() => setShowExportModal(true)}
               className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-semibold transition-colors"
             >
-              📤 Export Rankings
+              📊 View Rankings
             </button>
           </div>
 
@@ -133,11 +132,71 @@ const RankerResultsPage = () => {
           </div>
         </div>
 
-        {/* Results */}
-        <RankingResults
-          ranking={finalRanking}
-          onRankingAdjusted={handleRankingAdjusted}
-        />
+        {/* Content when modal is closed - Navigation options instead of duplicate results */}
+        {!showExportModal && (
+          <div className="text-center py-12">
+            <div className="bg-white/5 rounded-xl p-8 border border-white/10 max-w-2xl mx-auto">
+              <h2 className="text-2xl font-bold text-white mb-4">
+                🎉 Ranking Complete!
+              </h2>
+              <p className="text-white/60 mb-6">
+                Your rankings have been successfully created. Choose what you'd like to do next:
+              </p>
+              
+              <div className="grid gap-4 max-w-md mx-auto">
+                <button
+                  onClick={() => setShowExportModal(true)}
+                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-semibold transition-colors flex items-center justify-center gap-2"
+                >
+                  📊 View & Manage Rankings
+                  <span className="text-xs bg-blue-800 px-2 py-1 rounded">Recommended</span>
+                </button>
+                
+                <button
+                  onClick={handleStartNew}
+                  className="px-6 py-3 bg-green-600 hover:bg-green-700 rounded-lg text-white font-semibold transition-colors"
+                >
+                  🚀 Start New Ranking
+                </button>
+                
+                <button
+                  onClick={handleShareResults}
+                  className="px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg text-white font-semibold transition-colors"
+                >
+                  🔗 Share Results
+                </button>
+                
+                <Link
+                  to="/ranker"
+                  className="px-6 py-3 bg-white/10 hover:bg-white/20 rounded-lg text-white font-semibold transition-colors block text-center"
+                >
+                  ← Back to Ranker Home
+                </Link>
+              </div>
+              
+              <div className="text-sm text-white/40 mt-6">
+                All ranking management features are available in the "View & Manage Rankings" modal
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Placeholder content when modal is open */}
+        {showExportModal && (
+          <div className="text-center py-12">
+            <div className="bg-white/5 rounded-xl p-8 border border-white/10 max-w-2xl mx-auto">
+              <h2 className="text-2xl font-bold text-white mb-4">
+                Your Rankings Are Ready!
+              </h2>
+              <p className="text-white/60 mb-6">
+                View your ranking results in the modal above. You can adjust rankings, change the view, and export your results.
+              </p>
+              <div className="text-sm text-white/40">
+                Close the modal to see navigation options.
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="text-white/30 mt-8 text-center text-sm italic px-4">
           Ranking created on{' '}
@@ -162,8 +221,9 @@ const RankerResultsPage = () => {
             rankings={finalRanking}
             rankingName="QB Rankings from Ranker"
             onClose={() => setShowExportModal(false)}
-            title="Export Ranker Results"
-            subtitle="Export your ranking results in different formats"
+            title="Ranker Results"
+            subtitle="View, adjust, and export your ranking results"
+            onRankingAdjusted={handleRankingAdjusted}
           />
         )}
       </div>

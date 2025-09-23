@@ -1,7 +1,8 @@
 import React, { useState, useRef } from 'react';
-import { LayoutGrid, ListOrdered, Download, X, TrendingUp } from 'lucide-react';
+import { LayoutGrid, ListOrdered, Download, X, TrendingUp, Edit3 } from 'lucide-react';
 import useImageDownload from '@/hooks/useImageDownload';
 import RankingMovementIndicator from '@/components/shared/RankingMovementIndicator';
+import AdjustableRankings from '@/features/ranker/AdjustableRankings';
 import PropTypes from 'prop-types';
 import {
   getLogoPath,
@@ -106,6 +107,7 @@ const RankingsExportModal = ({
   movementData = {},
   title = 'Export Rankings',
   subtitle = 'Choose your export format and download your rankings',
+  onRankingAdjusted,
 }) => {
   const [viewType, setViewType] = useState('grid'); // 'list' or 'grid'
   const [showLogoBg, setShowLogoBg] = useState(true);
@@ -113,12 +115,35 @@ const RankingsExportModal = ({
     Object.keys(movementData).length > 0
   );
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isAdjustMode, setIsAdjustMode] = useState(false);
+  const [currentRanking, setCurrentRanking] = useState(rankings);
   const shareViewRef = useRef(null);
   const exportViewRef = useRef(null);
   const downloadImageHook = useImageDownload(shareViewRef);
   
+  // Update current ranking when prop changes
+  React.useEffect(() => {
+    setCurrentRanking(rankings);
+  }, [rankings]);
+
+  const handleAdjustRankings = () => {
+    setIsAdjustMode(true);
+  };
+
+  const handleSaveAdjustments = (adjustedRanking) => {
+    setCurrentRanking(adjustedRanking);
+    setIsAdjustMode(false);
+    if (onRankingAdjusted) {
+      onRankingAdjusted(adjustedRanking);
+    }
+  };
+
+  const handleCancelAdjustments = () => {
+    setIsAdjustMode(false);
+  };
+
   const handleCopy = () => {
-    const text = rankings
+    const text = currentRanking
       .map((item, idx) => {
         const player = item.qb || item.player || item;
         return `#${idx + 1} ${player.name || player.display_name}`;
@@ -147,6 +172,15 @@ const RankingsExportModal = ({
 
   const ActionButtons = () => (
     <div className="flex gap-2 justify-center sm:justify-start">
+      <button
+        onClick={handleAdjustRankings}
+        className="px-3 py-2 text-sm text-white bg-orange-600/80 hover:bg-orange-700 rounded flex items-center transition-colors"
+        title="Adjust Rankings"
+      >
+        <Edit3 size={16} className="mr-1" />
+        <span className="hidden sm:inline">Adjust Rankings</span>
+        <span className="sm:hidden">Adjust</span>
+      </button>
       {viewType === 'grid' && (
         <button
           onClick={() => setShowLogoBg(!showLogoBg)}
@@ -300,7 +334,7 @@ const RankingsExportModal = ({
 
           {/* Grid with 6 columns x 7 rows - back to clean layout before dividers */}
           <div className="mt-6 mb-12 grid grid-cols-6 gap-x-4 gap-y-6 justify-items-center">
-            {rankings.slice(0, 42).map((item, idx) => {
+            {currentRanking.slice(0, 42).map((item, idx) => {
               const player = item.qb || item.player || item;
               return (
                 <GridCard
@@ -348,7 +382,7 @@ const RankingsExportModal = ({
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-2 gap-y-1">
           {/* Mobile columns (2) */}
-          {createColumns(rankings, numCols.base).map((column, colIndex) => (
+          {createColumns(currentRanking, numCols.base).map((column, colIndex) => (
             <div key={colIndex} className="flex flex-col gap-1 sm:hidden">
               {column.map(({ player: columnPlayer, rank }) => {
                 const headshot = getHeadshotSrc(columnPlayer);
@@ -403,7 +437,7 @@ const RankingsExportModal = ({
           ))}
 
           {/* Tablet columns (3) */}
-          {createColumns(rankings, numCols.sm).map((column, colIndex) => (
+          {createColumns(currentRanking, numCols.sm).map((column, colIndex) => (
             <div
               key={colIndex}
               className="hidden sm:flex md:hidden flex-col gap-1"
@@ -461,7 +495,7 @@ const RankingsExportModal = ({
           ))}
 
           {/* Desktop columns (4) */}
-          {createColumns(rankings, numCols.md).map((column, colIndex) => (
+          {createColumns(currentRanking, numCols.md).map((column, colIndex) => (
             <div key={colIndex} className="hidden md:flex flex-col gap-1">
               {column.map(({ player: columnPlayer, rank }) => {
                 const headshot = getHeadshotSrc(columnPlayer);
@@ -539,14 +573,24 @@ const RankingsExportModal = ({
           </button>
         </div>
 
-        {/* Action Buttons */}
-        <div className="p-6 border-b border-white/10">
-          <ActionButtons />
-        </div>
+        {/* Action Buttons - Only show if not in adjust mode */}
+        {!isAdjustMode && (
+          <div className="p-6 border-b border-white/10">
+            <ActionButtons />
+          </div>
+        )}
 
         {/* Content */}
         <div className="overflow-y-auto max-h-[calc(90vh-200px)]">
-          {renderContent()}
+          {isAdjustMode ? (
+            <AdjustableRankings
+              initialRanking={currentRanking}
+              onSave={handleSaveAdjustments}
+              onCancel={handleCancelAdjustments}
+            />
+          ) : (
+            renderContent()
+          )}
         </div>
       </div>
     </div>
@@ -560,6 +604,7 @@ RankingsExportModal.propTypes = {
   movementData: PropTypes.object,
   title: PropTypes.string,
   subtitle: PropTypes.string,
+  onRankingAdjusted: PropTypes.func,
 };
 
 export default RankingsExportModal;
