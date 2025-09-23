@@ -4,6 +4,7 @@ import { useRankerContext } from '@/context/RankerContext';
 import RankingResults from '@/features/ranker/RankingResults';
 import ComparisonMatrixDrawer from '@/features/ranker/ComparisonMatrixDrawer';
 import RankerNavBar from '@/components/ranker/RankerNavBar';
+import RankingsExportModal from '@/components/shared/RankingsExportModal';
 
 const RankerResultsPage = () => {
   const navigate = useNavigate();
@@ -19,6 +20,7 @@ const RankerResultsPage = () => {
   } = useRankerContext();
 
   const [showRecoveryOptions, setShowRecoveryOptions] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
 
   useEffect(() => {
     setCurrentPhase('results');
@@ -113,6 +115,12 @@ const RankerResultsPage = () => {
             >
               🔗 Share Results
             </button>
+            <button
+              onClick={() => setShowExportModal(true)}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-semibold transition-colors"
+            >
+              📤 Export Rankings
+            </button>
           </div>
 
           <div className="flex gap-3">
@@ -145,6 +153,17 @@ const RankerResultsPage = () => {
           <ComparisonMatrixDrawer
             players={playerPool}
             comparisons={comparisonResults}
+          />
+        )}
+
+        {/* Export Modal */}
+        {showExportModal && (
+          <RankingsExportModal
+            rankings={finalRanking}
+            rankingName="QB Rankings from Ranker"
+            onClose={() => setShowExportModal(false)}
+            title="Export Ranker Results"
+            subtitle="Export your ranking results in different formats"
           />
         )}
       </div>
