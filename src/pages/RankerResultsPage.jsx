@@ -20,7 +20,7 @@ const RankerResultsPage = () => {
   } = useRankerContext();
 
   const [showRecoveryOptions, setShowRecoveryOptions] = useState(false);
-  const [showExportModal, setShowExportModal] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(true); // Open modal by default
 
   useEffect(() => {
     setCurrentPhase('results');
@@ -119,7 +119,7 @@ const RankerResultsPage = () => {
               onClick={() => setShowExportModal(true)}
               className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-semibold transition-colors"
             >
-              📤 Export Rankings
+              📊 View Rankings
             </button>
           </div>
 
@@ -133,11 +133,30 @@ const RankerResultsPage = () => {
           </div>
         </div>
 
-        {/* Results */}
-        <RankingResults
-          ranking={finalRanking}
-          onRankingAdjusted={handleRankingAdjusted}
-        />
+        {/* Results - only show when modal is closed */}
+        {!showExportModal && (
+          <RankingResults
+            ranking={finalRanking}
+            onRankingAdjusted={handleRankingAdjusted}
+          />
+        )}
+
+        {/* Placeholder content when modal is open */}
+        {showExportModal && (
+          <div className="text-center py-12">
+            <div className="bg-white/5 rounded-xl p-8 border border-white/10 max-w-2xl mx-auto">
+              <h2 className="text-2xl font-bold text-white mb-4">
+                Your Rankings Are Ready!
+              </h2>
+              <p className="text-white/60 mb-6">
+                View your ranking results in the modal above. You can adjust rankings, change the view, and export your results.
+              </p>
+              <div className="text-sm text-white/40">
+                Close the modal to see an inline preview.
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="text-white/30 mt-8 text-center text-sm italic px-4">
           Ranking created on{' '}
@@ -162,8 +181,9 @@ const RankerResultsPage = () => {
             rankings={finalRanking}
             rankingName="QB Rankings from Ranker"
             onClose={() => setShowExportModal(false)}
-            title="Export Ranker Results"
-            subtitle="Export your ranking results in different formats"
+            title="Ranker Results"
+            subtitle="View, adjust, and export your ranking results"
+            onRankingAdjusted={handleRankingAdjusted}
           />
         )}
       </div>
