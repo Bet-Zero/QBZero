@@ -119,7 +119,7 @@ const RankingsExportModal = ({
   const [currentRanking, setCurrentRanking] = useState(rankings);
   const shareViewRef = useRef(null);
   const exportViewRef = useRef(null);
-  const downloadImageHook = useImageDownload(shareViewRef);
+  const downloadImageHook = useImageDownload(exportViewRef);
   
   // Update current ranking when prop changes
   React.useEffect(() => {
@@ -554,46 +554,131 @@ const RankingsExportModal = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-neutral-900 rounded-xl border border-white/20 w-full max-w-7xl max-h-[90vh] overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-white/10">
-          <div className="flex items-center gap-3">
-            <Download className="text-blue-500" size={24} />
-            <div>
-              <h2 className="text-xl font-bold text-white">{title}</h2>
-              <p className="text-white/60 text-sm">{subtitle}</p>
+    <>
+      {/* Hidden export container - always renders desktop layout for consistent screenshots */}
+      <div className="fixed top-0 left-[-9999px] pointer-events-none">
+        {viewType === 'grid' ? (
+          renderGridLayout(true)
+        ) : (
+          <div
+            ref={exportViewRef}
+            className="bg-neutral-900 p-6 rounded-lg border border-white/10"
+          >
+            <div className="text-center mb-6">
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 bg-clip-text text-transparent mb-2">
+                NFL QB Rankings
+              </h1>
+              <div className="text-sm text-white/60 italic">
+                {new Date().toLocaleDateString(undefined, {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                })}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-4 gap-x-2 gap-y-1">
+              {/* Always render desktop 4-column layout for export */}
+              {createColumns(currentRanking, numCols.md).map((column, colIndex) => (
+                <div key={colIndex} className="flex flex-col gap-1">
+                  {column.map(({ player: columnPlayer, rank }) => {
+                    const headshot = getHeadshotSrc(columnPlayer);
+                    const logoPath = getLogoPath(columnPlayer.team);
+
+                    return (
+                      <div
+                        key={columnPlayer.id || columnPlayer.player_id || columnPlayer.name}
+                        className="bg-white/5 rounded p-2 flex items-center gap-2"
+                      >
+                        <div className="w-8 h-8 flex items-center justify-center bg-white/10 rounded-full font-bold text-white/80">
+                          {rank}
+                        </div>
+                        <img
+                          src={headshot}
+                          alt={columnPlayer.name || columnPlayer.display_name}
+                          className="w-10 h-10 rounded-full object-cover"
+                          loading="eager"
+                          decoding="async"
+                          crossOrigin="anonymous"
+                          onError={(e) => {
+                            e.target.src = '/assets/headshots/default.png';
+                          }}
+                        />
+                        <div className="flex-1 truncate text-sm">
+                          <div className="font-medium text-white truncate">
+                            {columnPlayer.name || columnPlayer.display_name}
+                          </div>
+                          <div className="flex items-center gap-1 text-white/60 text-xs">
+                            {logoPath && (
+                              <div className="w-4 h-4">
+                                <img
+                                  src={logoPath}
+                                  alt={columnPlayer.team}
+                                  className="w-full h-full object-contain"
+                                  loading="eager"
+                                  decoding="async"
+                                  crossOrigin="anonymous"
+                                  onError={(e) => {
+                                    e.target.style.display = 'none';
+                                  }}
+                                />
+                              </div>
+                            )}
+                            <span>{columnPlayer.team?.toUpperCase() || '—'}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-white/10 rounded-lg transition-all"
-          >
-            <X className="text-white/60" size={20} />
-          </button>
-        </div>
-
-        {/* Action Buttons - Only show if not in adjust mode */}
-        {!isAdjustMode && (
-          <div className="p-6 border-b border-white/10">
-            <ActionButtons />
-          </div>
         )}
+      </div>
 
-        {/* Content */}
-        <div className="overflow-y-auto max-h-[calc(90vh-200px)]">
-          {isAdjustMode ? (
-            <AdjustableRankings
-              initialRanking={currentRanking}
-              onSave={handleSaveAdjustments}
-              onCancel={handleCancelAdjustments}
-            />
-          ) : (
-            renderContent()
+      {/* Visible modal */}
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="bg-neutral-900 rounded-xl border border-white/20 w-full max-w-7xl max-h-[90vh] overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center justify-between p-6 border-b border-white/10">
+            <div className="flex items-center gap-3">
+              <Download className="text-blue-500" size={24} />
+              <div>
+                <h2 className="text-xl font-bold text-white">{title}</h2>
+                <p className="text-white/60 text-sm">{subtitle}</p>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-white/10 rounded-lg transition-all"
+            >
+              <X className="text-white/60" size={20} />
+            </button>
+          </div>
+
+          {/* Action Buttons - Only show if not in adjust mode */}
+          {!isAdjustMode && (
+            <div className="p-6 border-b border-white/10">
+              <ActionButtons />
+            </div>
           )}
+
+          {/* Content */}
+          <div className="overflow-y-auto max-h-[calc(90vh-200px)]">
+            {isAdjustMode ? (
+              <AdjustableRankings
+                initialRanking={currentRanking}
+                onSave={handleSaveAdjustments}
+                onCancel={handleCancelAdjustments}
+              />
+            ) : (
+              renderContent()
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 
