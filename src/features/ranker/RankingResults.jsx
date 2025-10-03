@@ -117,7 +117,8 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
   const [isAdjustMode, setIsAdjustMode] = useState(false);
   const [currentRanking, setCurrentRanking] = useState(ranking);
   const gridViewRef = useRef(null); // Ref for the visible grid view
-  const downloadImage = useImageDownload(gridViewRef); // Use grid view ref for downloads
+  const exportViewRef = useRef(null); // Ref for the hidden export view
+  const downloadImage = useImageDownload(exportViewRef); // Use export view ref for downloads
 
   useEffect(() => {
     setIsLocked(false); // Unlock the page by default
@@ -734,50 +735,137 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
   };
 
   return (
-    <div className="mt-6 mx-auto max-w-5xl px-4">
-      {/* Header with title and desktop buttons */}
-      <div className="flex flex-col items-center mb-4 mt-8 sm:mt-12 gap-3 sm:flex-row sm:justify-between sm:gap-4">
-        {/* Desktop buttons - hidden on mobile */}
-        <div className="hidden sm:block">
+    <>
+      {/* Hidden export container - always renders fixed desktop layout for consistent screenshots */}
+      <div className="fixed top-0 left-[-9999px] pointer-events-none">
+        {viewType === 'grid' ? (
+          <div ref={exportViewRef}>
+            {renderExportContent()}
+          </div>
+        ) : (
+          <div
+            ref={exportViewRef}
+            className="bg-neutral-900 p-6 rounded-lg border border-white/10"
+          >
+            <div className="text-center mb-6">
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 bg-clip-text text-transparent mb-2">
+                QB Rankings 2025
+              </h1>
+              <div className="text-sm text-white/60 italic">
+                {new Date().toLocaleDateString(undefined, {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                })}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-4 gap-x-2 gap-y-1">
+              {/* Always render desktop 4-column layout for export */}
+              {createColumns(numCols.md).map((column, colIndex) => (
+                <div key={colIndex} className="flex flex-col gap-1">
+                  {column.map(({ player: p, rank }) => {
+                    const headshot = getHeadshotSrc(p);
+                    const logoPath = getLogoPath(p.team);
+
+                    return (
+                      <div
+                        key={p.id}
+                        className="bg-white/5 rounded p-2 flex items-center gap-2"
+                      >
+                        <div className="w-8 h-8 flex items-center justify-center bg-white/10 rounded-full font-bold text-white/80">
+                          {rank}
+                        </div>
+                        <img
+                          src={headshot}
+                          alt=""
+                          className="w-10 h-10 rounded-full object-cover"
+                          loading="eager"
+                          decoding="async"
+                          crossOrigin="anonymous"
+                          onError={(e) => {
+                            e.target.src = '/assets/headshots/default.png';
+                          }}
+                        />
+                        <div className="flex-1 truncate text-sm">
+                          <div className="font-medium text-white truncate">
+                            {p.display_name || p.name}
+                          </div>
+                          <div className="flex items-center gap-1 text-white/60 text-xs">
+                            {logoPath && (
+                              <div className="w-4 h-4">
+                                <img
+                                  src={logoPath}
+                                  alt={p.team}
+                                  className="w-full h-full object-contain"
+                                  loading="eager"
+                                  decoding="async"
+                                  crossOrigin="anonymous"
+                                  onError={(e) => {
+                                    e.target.style.display = 'none';
+                                  }}
+                                />
+                              </div>
+                            )}
+                            <span>{p.team?.toUpperCase() || '—'}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Visible content */}
+      <div className="mt-6 mx-auto max-w-5xl px-4">
+        {/* Header with title and desktop buttons */}
+        <div className="flex flex-col items-center mb-4 mt-8 sm:mt-12 gap-3 sm:flex-row sm:justify-between sm:gap-4">
+          {/* Desktop buttons - hidden on mobile */}
+          <div className="hidden sm:block">
+            <ActionButtons />
+          </div>
+        </div>
+
+        {/* Visible display content with responsive layout */}
+        {renderContent()}
+
+        {/* Mobile buttons - shown only on mobile, positioned after rankings */}
+        <div className="mt-6 sm:hidden">
           <ActionButtons />
         </div>
-      </div>
 
-      {/* Visible display content with responsive layout */}
-      {renderContent()}
-
-      {/* Mobile buttons - shown only on mobile, positioned after rankings */}
-      <div className="mt-6 sm:hidden">
-        <ActionButtons />
-      </div>
-
-      {/* CSV Export button at bottom */}
-      <div className="flex justify-center mt-6 mb-6">
-        <button
-          onClick={handleExportCSV}
-          className="px-4 py-2 text-sm text-white bg-white/10 rounded hover:bg-white/20 flex items-center transition-colors"
-          title="Export as CSV"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            className="mr-2"
+        {/* CSV Export button at bottom */}
+        <div className="flex justify-center mt-6 mb-6">
+          <button
+            onClick={handleExportCSV}
+            className="px-4 py-2 text-sm text-white bg-white/10 rounded hover:bg-white/20 flex items-center transition-colors"
+            title="Export as CSV"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2z"
-            />
-          </svg>
-          Export to CSV
-        </button>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              className="mr-2"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2z"
+              />
+            </svg>
+            Export to CSV
+          </button>
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 
