@@ -556,7 +556,7 @@ const RankingsExportModal = ({
   return (
     <>
       {/* Hidden export container - always renders desktop layout for consistent screenshots */}
-      <div className="fixed top-0 left-0 pointer-events-none opacity-0 -z-50">
+      <div className="fixed top-0 left-[-9999px] pointer-events-none">
         {viewType === 'grid' ? (
           renderGridLayout(true)
         ) : (
