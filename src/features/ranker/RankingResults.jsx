@@ -186,7 +186,7 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
   };
 
   // Separate export-only content with fixed 6x7 layout to match QB Rankings
-  const renderExportContent = () => {
+  const renderExportContent = (containerRef = null) => {
     const renderPosterHeader = () => {
       const updatedDate = new Date().toLocaleDateString('en-US', {
         year: 'numeric',
@@ -223,7 +223,7 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
 
     return (
       <div className="min-h-screen w-full bg-neutral-950 text-white flex items-center justify-center">
-        <div className="w-[1400px] px-24 pt-20 pb-12 flex flex-col">
+        <div ref={containerRef} className="w-[1400px] px-24 pt-20 pb-12 flex flex-col">
           {/* Header (top-left) */}
           {renderPosterHeader()}
 
@@ -739,13 +739,11 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
       {/* Hidden export container - always renders fixed desktop layout for consistent screenshots */}
       <div className="fixed top-0 left-[-9999px] pointer-events-none">
         {viewType === 'grid' ? (
-          <div ref={exportViewRef}>
-            {renderExportContent()}
-          </div>
+          renderExportContent(exportViewRef)
         ) : (
           <div
             ref={exportViewRef}
-            className="bg-neutral-900 p-6 rounded-lg border border-white/10"
+            className="bg-neutral-900 p-6 rounded-lg border border-white/10 w-[800px]"
           >
             <div className="text-center mb-6">
               <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 bg-clip-text text-transparent mb-2">
