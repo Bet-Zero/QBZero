@@ -186,7 +186,7 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
   };
 
   // Separate export-only content with fixed 6x7 layout to match QB Rankings
-  const renderExportContent = () => {
+  const renderExportContent = (containerRef = null) => {
     const renderPosterHeader = () => {
       const updatedDate = new Date().toLocaleDateString('en-US', {
         year: 'numeric',
@@ -223,7 +223,7 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
 
     return (
       <div className="min-h-screen w-full bg-neutral-950 text-white flex items-center justify-center">
-        <div className="w-[1400px] px-24 pt-20 pb-12 flex flex-col">
+        <div ref={containerRef} className="w-[1400px] px-24 pt-20 pb-12 flex flex-col">
           {/* Header (top-left) */}
           {renderPosterHeader()}
 
@@ -739,9 +739,7 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
       {/* Hidden export container - always renders fixed desktop layout for consistent screenshots */}
       <div className="fixed top-0 left-[-9999px] pointer-events-none">
         {viewType === 'grid' ? (
-          <div ref={exportViewRef}>
-            {renderExportContent()}
-          </div>
+          renderExportContent(exportViewRef)
         ) : (
           <div
             ref={exportViewRef}
