@@ -41,7 +41,7 @@ const GridCard = ({
             className="w-full h-full object-cover transition-transform group-hover:scale-105"
             loading="eager"
             decoding="async"
-            crossOrigin={isExport ? undefined : "anonymous"}
+            crossOrigin="anonymous"
             onError={(e) => {
               e.target.src = '/assets/headshots/default.png';
             }}
@@ -66,7 +66,7 @@ const GridCard = ({
                   className="w-full h-full object-contain"
                   loading="eager"
                   decoding="async"
-                  crossOrigin={isExport ? undefined : "anonymous"}
+                  crossOrigin="anonymous"
                   onError={(e) => {
                     e.target.style.display = 'none';
                   }}
@@ -602,6 +602,7 @@ const RankingsExportModal = ({
                           className="w-10 h-10 rounded-full object-cover"
                           loading="eager"
                           decoding="async"
+                          crossOrigin="anonymous"
                           onError={(e) => {
                             e.target.src = '/assets/headshots/default.png';
                           }}
@@ -619,6 +620,7 @@ const RankingsExportModal = ({
                                   className="w-full h-full object-contain"
                                   loading="eager"
                                   decoding="async"
+                                  crossOrigin="anonymous"
                                   onError={(e) => {
                                     e.target.style.display = 'none';
                                   }}
