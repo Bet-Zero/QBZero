@@ -69,28 +69,39 @@ async function inlineImages(root) {
     })
   );
 
-  // 2) Inline CSS background-image URLs
+  // 2) Inline CSS background-image URLs (preserve gradients & multiple layers)
   const all = Array.from(root.querySelectorAll('*'));
   await Promise.all(
     all.map(async (el) => {
       const cs = getComputedStyle(el);
       const bg = cs.backgroundImage;
       if (!bg || bg === 'none') return;
-      const m = bg.match(/url\(["']?(.*?)["']?\)/);
-      const url = m && m[1];
-      if (!url || url.startsWith('data:')) return;
+
+      // Find every url(...) in the computed background-image, but do NOT touch gradients
+      const matches = [...bg.matchAll(/url\((["']?)(.*?)\1\)/g)];
+      const urls = matches
+        .map((m) => m[2])
+        .filter((u) => u && !u.startsWith('data:'));
+      if (urls.length === 0) return;
 
       const prev = el.style.backgroundImage;
       restorers.push(() => {
         el.style.backgroundImage = prev;
       });
 
-      try {
-        const dataUrl = await urlToDataUrl(url);
-        el.style.backgroundImage = `url("${dataUrl}")`;
-      } catch {
-        // ignore individual failures
+      let newBg = bg;
+      for (const u of urls) {
+        try {
+          const dataUrl = await urlToDataUrl(u);
+          // Replace all occurrences of this exact URL inside the background string
+          const esc = u.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // escape for RegExp
+          newBg = newBg.replace(new RegExp(esc, 'g'), dataUrl);
+        } catch {
+          // if one URL fails to inline, leave that one as-is
+        }
       }
+
+      el.style.backgroundImage = newBg;
     })
   );
 
