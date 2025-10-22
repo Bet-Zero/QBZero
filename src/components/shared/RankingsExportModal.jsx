@@ -559,8 +559,8 @@ const RankingsExportModal = ({
   return (
     <>
       {/* Hidden export container - always renders desktop layout for consistent screenshots */}
-      {/* Using scale(0.001) keeps images loaded on mobile while making element invisible */}
-      <div className="fixed top-0 left-0 pointer-events-none -z-50" style={{ transform: 'scale(0.001)', transformOrigin: 'top left', opacity: 0.01 }}>
+      {/* Position below viewport with minimal opacity so mobile browsers still load images */}
+      <div className="fixed pointer-events-none" style={{ left: '0', top: '100vh', opacity: 0.001, zIndex: -9999 }}>
         {viewType === 'grid' ? (
           renderGridLayout(true)
         ) : (
