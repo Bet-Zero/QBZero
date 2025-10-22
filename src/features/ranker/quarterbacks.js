@@ -20,7 +20,7 @@ export const quarterbacks = [
   { id: 'jaxson-dart', name: 'Jaxson Dart', team: 'NYG' },
   { id: 'jayden-daniels', name: 'Jayden Daniels', team: 'WAS' },
   { id: 'joe-burrow', name: 'Joe Burrow', team: 'CIN' },
-  { id: 'joe-flacco', name: 'Joe Flacco', team: 'CLE' },
+  { id: 'joe-flacco', name: 'Joe Flacco', team: 'CIN' },
   { id: 'jordan-love', name: 'Jordan Love', team: 'GB' },
   { id: 'josh-allen', name: 'Josh Allen', team: 'BUF' },
   { id: 'justin-fields', name: 'Justin Fields', team: 'NYJ' },

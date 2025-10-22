@@ -1,9 +1,12 @@
-// useImageDownload.js — mobile-safe export (inline + mirror-imgs + iOS fallback)
+// useImageDownload.js — minimal: inline <img> + decode + html-to-image
 import { toPng } from 'html-to-image';
 import { antonBase64CSS } from '@/fonts/antonBase64';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+/**
+ * Convert a URL (same-origin OK) to a data URL.
+ */
 async function urlToDataUrl(url) {
   const res = await fetch(url, {
     cache: 'no-store',
@@ -20,6 +23,10 @@ async function urlToDataUrl(url) {
   });
 }
 
+/**
+ * Inline <img> and CSS background images within root into data URLs.
+ * Returns a restore() function to revert DOM after export.
+ */
 async function inlineImages(root) {
   const restorers = [];
 
@@ -38,6 +45,7 @@ async function inlineImages(root) {
         else img.removeAttribute('crossorigin');
       });
 
+      // Disable srcset so Safari doesn't pick a different resource during clone
       if (prevSrcSet) img.removeAttribute('srcset');
 
       const actual = img.currentSrc || img.src;
@@ -48,6 +56,7 @@ async function inlineImages(root) {
         img.setAttribute('crossorigin', 'anonymous');
         img.src = dataUrl;
 
+        // give layout a tick, then ensure pixels are decoded
         await sleep(10);
         if (img.decode) {
           try {
@@ -55,7 +64,7 @@ async function inlineImages(root) {
           } catch {}
         }
       } catch {
-        // leave as-is if inlining fails
+        // If we can't inline, leave original. Same-origin should succeed though.
       }
     })
   );
@@ -79,11 +88,13 @@ async function inlineImages(root) {
       try {
         const dataUrl = await urlToDataUrl(url);
         el.style.backgroundImage = `url("${dataUrl}")`;
-      } catch {}
+      } catch {
+        // ignore individual failures
+      }
     })
   );
 
-  // 3) Remove clip-path/mask on <img> (rare iOS drop); border-radius is fine
+  // 3) Remove clip-path/mask from <img> only (rare iOS drop); border-radius is OK
   const masked = imgs.filter((img) => {
     const s = getComputedStyle(img);
     return s.clipPath !== 'none' || s.maskImage !== 'none';
@@ -91,11 +102,13 @@ async function inlineImages(root) {
   masked.forEach((img) => {
     const prevClip = img.style.clipPath;
     const prevMask = img.style.webkitMaskImage || img.style.maskImage;
+
     restorers.push(() => {
       img.style.clipPath = prevClip;
       img.style.webkitMaskImage = prevMask;
       img.style.maskImage = prevMask;
     });
+
     img.style.clipPath = 'none';
     img.style.webkitMaskImage = 'none';
     img.style.maskImage = 'none';
@@ -104,6 +117,9 @@ async function inlineImages(root) {
   return () => restorers.reverse().forEach((fn) => fn());
 }
 
+/**
+ * Ensure all <img> have fired load/error. (Useful when offscreen.)
+ */
 const waitForImages = async (root) => {
   if (!root) return;
   const images = Array.from(root.querySelectorAll('img'));
@@ -123,69 +139,6 @@ const waitForImages = async (root) => {
   );
 };
 
-// Mirror <img> headshots to parent backgrounds (iOS paints bg reliably)
-// Mirror <img> headshots onto parent as a TOP layer, preserving the logo behind
-function mirrorImgsToBackground(root) {
-  const entries = [];
-  const imgs = Array.from(root.querySelectorAll('img'));
-
-  imgs.forEach((img) => {
-    const parent = img.parentElement;
-    const src = img.currentSrc || img.src;
-    if (!parent || !src) return;
-
-    // Save inline styles we’ll temporarily override
-    const prevInline = {
-      image: parent.style.backgroundImage,
-      size: parent.style.backgroundSize,
-      position: parent.style.backgroundPosition,
-      repeat: parent.style.backgroundRepeat,
-    };
-    const prevVis = img.style.visibility;
-
-    // Read computed logo background (may come from class/tailwind inline style)
-    const cs = getComputedStyle(parent);
-    const existingImage =
-      cs.backgroundImage && cs.backgroundImage !== 'none'
-        ? cs.backgroundImage
-        : null;
-    const existingSize = cs.backgroundSize || 'auto';
-    const existingPos = cs.backgroundPosition || '0% 0%';
-    const existingRepeat = cs.backgroundRepeat || 'repeat';
-
-    // IMPORTANT: headshot FIRST (top layer), logo AFTER (bottom layer)
-    const newImage = existingImage
-      ? `url("${src}"), ${existingImage}`
-      : `url("${src}")`;
-    const newSize = existingImage ? `cover, ${existingSize}` : `cover`;
-    const newPos = existingImage ? `50% 50%, ${existingPos}` : `50% 50%`;
-    const newRepeat = existingImage
-      ? `no-repeat, ${existingRepeat}`
-      : `no-repeat`;
-
-    parent.style.backgroundImage = newImage;
-    parent.style.backgroundSize = newSize;
-    parent.style.backgroundPosition = newPos;
-    parent.style.backgroundRepeat = newRepeat;
-
-    // Hide the <img> just for the snapshot
-    img.style.visibility = 'hidden';
-
-    entries.push({ parent, img, prevInline, prevVis });
-  });
-
-  // restore after snapshot
-  return () => {
-    entries.forEach(({ parent, img, prevInline, prevVis }) => {
-      parent.style.backgroundImage = prevInline.image;
-      parent.style.backgroundSize = prevInline.size;
-      parent.style.backgroundPosition = prevInline.position;
-      parent.style.backgroundRepeat = prevInline.repeat;
-      img.style.visibility = prevVis;
-    });
-  };
-}
-
 const useImageDownload = (ref) => {
   const download = async (filename, options = {}) => {
     if (!ref.current) return;
@@ -193,10 +146,9 @@ const useImageDownload = (ref) => {
     let styleEl = null;
     let restoreStyles = null;
     let restoreImages = null;
-    let restoreMirror = null;
 
     try {
-      // 1) Ensure Anton base64 font is registered + available to clones
+      // 1) Make sure the Anton base64 font is present in the DOM and registered
       const match = antonBase64CSS.match(/base64,([^)]+)\)/);
       if (match) {
         const font = new FontFace(
@@ -214,7 +166,7 @@ const useImageDownload = (ref) => {
         ref.current.prepend(styleEl);
       }
 
-      // 2) Make the export node visible enough for iOS layout
+      // 2) Make the export node visible enough that iOS actually lays it out
       const el = ref.current;
       restoreStyles = {
         opacity: el.style.opacity,
@@ -223,54 +175,25 @@ const useImageDownload = (ref) => {
       };
       el.style.top = '0';
       el.style.opacity = '1';
-      el.style.zIndex = '-1';
+      el.style.zIndex = '-1'; // keep it non-interactive but in flow
 
-      // 3) Wait for images → inline to data URLs
+      // 3) Wait for images, then inline them to data URLs (CRITICAL for iOS)
       await waitForImages(el);
       restoreImages = await inlineImages(el);
 
-      // 4) Mirror imgs to parent backgrounds (rock-solid on iOS)
-      restoreMirror = mirrorImgsToBackground(el);
-
-      // 5) Settle layout
+      // 4) Let layout settle fully
       await new Promise((r) => requestAnimationFrame(r));
       await sleep(120);
 
-      // 6) Snapshot (prefer html2canvas here)
-      let dataUrl;
+      // 5) Snapshot
+      const dataUrl = await toPng(el, {
+        cacheBust: true,
+        skipFonts: true, // we injected font via <style>
+        pixelRatio: options.pixelRatio ?? 2,
+        backgroundColor: options.backgroundColor ?? '#111',
+      });
 
-      try {
-        const html2canvas = (
-          await import('html2canvas/dist/html2canvas.esm.js')
-        ).default;
-        const canvas = await html2canvas(el, {
-          backgroundColor: options.backgroundColor ?? '#111',
-          scale: options.pixelRatio ?? 2,
-          useCORS: true,
-          allowTaint: false,
-          logging: false,
-          imageTimeout: 8000,
-          windowWidth: el.scrollWidth,
-          windowHeight: el.scrollHeight,
-          onclone: (doc) => {
-            doc
-              .querySelectorAll('img[loading]')
-              .forEach((n) => n.removeAttribute('loading'));
-          },
-        });
-        dataUrl = canvas.toDataURL('image/png');
-      } catch (err) {
-        // Fallback to html-to-image if html2canvas trips
-        console.warn('html2canvas failed, trying html-to-image:', err);
-        dataUrl = await toPng(el, {
-          cacheBust: true,
-          skipFonts: true,
-          pixelRatio: options.pixelRatio ?? 2,
-          backgroundColor: options.backgroundColor ?? '#111',
-        });
-      }
-
-      // 7) Download
+      // 6) Download
       const link = document.createElement('a');
       link.download = filename;
       link.href = dataUrl;
@@ -279,7 +202,6 @@ const useImageDownload = (ref) => {
       console.error('Failed to download image', err);
     } finally {
       // Restore DOM
-      if (restoreMirror) restoreMirror();
       if (restoreImages) restoreImages();
       if (restoreStyles && ref.current) {
         ref.current.style.opacity = restoreStyles.opacity;
