@@ -1,3 +1,4 @@
+// useImageDownload.ts — mobile-safe export (inline + mirror-imgs + iOS fallback)
 import { toPng } from 'html-to-image';
 import { antonBase64CSS } from '@/fonts/antonBase64';
 
@@ -5,9 +6,7 @@ type AnyEl = HTMLElement & { src?: string; currentSrc?: string; tagName?: string
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-/**
- * Convert a URL (same-origin OK) to a data URL.
- */
+/** Convert a URL (same-origin OK) to a data URL. */
 async function urlToDataUrl(url: string): Promise<string> {
   const res = await fetch(url, { cache: 'no-store', credentials: 'omit', mode: 'cors' });
   if (!res.ok) throw new Error(`Failed to fetch ${url}: ${res.status}`);
@@ -42,7 +41,7 @@ async function inlineImages(root: HTMLElement): Promise<() => void> {
         else img.removeAttribute('crossorigin');
       });
 
-      // Disable srcset so Safari doesn't pick a different resource during clone
+      // Disable srcset so Safari doesn't swap source at snapshot time
       if (prevSrcSet) img.removeAttribute('srcset');
 
       const actual = (img as any).currentSrc || img.src;
@@ -53,13 +52,13 @@ async function inlineImages(root: HTMLElement): Promise<() => void> {
         img.setAttribute('crossorigin', 'anonymous');
         img.src = dataUrl;
 
-        // give layout a tick, then ensure pixels are decoded
+        // ensure pixels are decoded before snapshot
         await sleep(10);
         if ('decode' in img) {
           try { await (img as any).decode(); } catch {}
         }
       } catch {
-        // If we can't inline, leave original. Same-origin should succeed though.
+        // If inlining fails, leave original (same-origin should succeed).
       }
     })
   );
@@ -76,9 +75,7 @@ async function inlineImages(root: HTMLElement): Promise<() => void> {
       if (!url || url.startsWith('data:')) return;
 
       const prev = el.style.backgroundImage;
-      restorers.push(() => {
-        el.style.backgroundImage = prev;
-      });
+      restorers.push(() => { el.style.backgroundImage = prev; });
 
       try {
         const dataUrl = await urlToDataUrl(url);
@@ -89,7 +86,7 @@ async function inlineImages(root: HTMLElement): Promise<() => void> {
     })
   );
 
-  // 3) Remove clip-path/mask from <img> only (rare iOS drop); border-radius is OK
+  // 3) Remove clip-path/mask from <img> only (rare iOS drop); border-radius is fine
   const masked = imgs.filter((img) => {
     const s = getComputedStyle(img);
     return s.clipPath !== 'none' || s.maskImage !== 'none';
@@ -97,13 +94,11 @@ async function inlineImages(root: HTMLElement): Promise<() => void> {
   masked.forEach((img) => {
     const prevClip = img.style.clipPath;
     const prevMask = (img.style as any).webkitMaskImage || img.style.maskImage;
-
     restorers.push(() => {
       img.style.clipPath = prevClip;
       (img.style as any).webkitMaskImage = prevMask;
       img.style.maskImage = prevMask;
     });
-
     img.style.clipPath = 'none';
     (img.style as any).webkitMaskImage = 'none';
     img.style.maskImage = 'none';
@@ -112,9 +107,7 @@ async function inlineImages(root: HTMLElement): Promise<() => void> {
   return () => restorers.reverse().forEach((fn) => fn());
 }
 
-/**
- * Ensure all <img> have fired load/error. (Useful when offscreen.)
- */
+/** Ensure all <img> have fired load/error. (Useful when offscreen.) */
 const waitForImages = async (root: HTMLElement | null) => {
   if (!root) return;
   const images = Array.from(root.querySelectorAll('img'));
@@ -134,16 +127,65 @@ const waitForImages = async (root: HTMLElement | null) => {
   );
 };
 
+/**
+ * Mirror <img> headshots to parent background-images (iOS paints bg reliably),
+ * hide the <img> during snapshot, then restore. Works cross-platform.
+ */
+function mirrorImgsToBackground(root: HTMLElement): () => void {
+  const entries: Array<{
+    parent: HTMLElement;
+    img: HTMLImageElement;
+    prev: { bg: string; size: string; pos: string };
+    prevVis: string;
+  }> = [];
+
+  const imgs = Array.from(root.querySelectorAll('img')) as HTMLImageElement[];
+  imgs.forEach((img) => {
+    const parent = img.parentElement as HTMLElement | null;
+    const src = (img as any).currentSrc || img.src;
+    if (!parent || !src) return;
+
+    const prev = {
+      bg: parent.style.backgroundImage,
+      size: parent.style.backgroundSize,
+      pos: parent.style.backgroundPosition,
+    };
+    const prevVis = img.style.visibility;
+
+    parent.style.backgroundImage = `url("${src}")`;
+    parent.style.backgroundSize = 'cover';
+    parent.style.backgroundPosition = '50% 50%';
+
+    // Hide the actual <img> so only the background paints
+    img.style.visibility = 'hidden';
+
+    entries.push({ parent, img, prev, prevVis });
+  });
+
+  return () => {
+    entries.forEach(({ parent, img, prev, prevVis }) => {
+      parent.style.backgroundImage = prev.bg;
+      parent.style.backgroundSize = prev.size;
+      parent.style.backgroundPosition = prev.pos;
+      img.style.visibility = prevVis;
+    });
+  };
+}
+
 const useImageDownload = (ref: React.RefObject<HTMLElement>) => {
-  const download = async (filename: string, options: { pixelRatio?: number; backgroundColor?: string } = {}) => {
+  const download = async (
+    filename: string,
+    options: { pixelRatio?: number; backgroundColor?: string } = {}
+  ) => {
     if (!ref.current) return;
 
     let styleEl: HTMLStyleElement | null = null;
     let restoreStyles: null | { opacity: string; zIndex: string; top: string } = null;
     let restoreImages: null | (() => void) = null;
+    let restoreMirror: null | (() => void) = null;
 
     try {
-      // 1) Make sure the Anton base64 font is present in the DOM and registered
+      // 1) Ensure Anton base64 font is registered + available to clones
       const match = antonBase64CSS.match(/base64,([^)]+)\)/);
       if (match) {
         const font = new FontFace(
@@ -161,7 +203,7 @@ const useImageDownload = (ref: React.RefObject<HTMLElement>) => {
         ref.current.prepend(styleEl);
       }
 
-      // 2) Make the export node visible enough that iOS actually lays it out
+      // 2) Make the export node visible enough for iOS layout
       const el = ref.current as HTMLElement;
       restoreStyles = {
         opacity: el.style.opacity,
@@ -170,89 +212,57 @@ const useImageDownload = (ref: React.RefObject<HTMLElement>) => {
       };
       el.style.top = '0';
       el.style.opacity = '1';
-      el.style.zIndex = '-1'; // keep it non-interactive but in flow
+      el.style.zIndex = '-1';
 
-      // 3) Wait for images, then inline them to data URLs (CRITICAL for iOS)
+      // 3) Wait for images → inline to data URLs (stops rasterizer from refetching)
       await waitForImages(el);
       restoreImages = await inlineImages(el);
 
-      // 4) Let layout settle fully
+      // 4) Mirror imgs to parent backgrounds (most reliable render path on iOS)
+      restoreMirror = mirrorImgsToBackground(el);
+
+      // 5) Settle layout
       await new Promise((r) => requestAnimationFrame(r));
       await sleep(120);
 
-      // 5) Snapshot — iOS-safe (replace your toPng block with ALL of this)
+      // 6) Snapshot (prefer html2canvas when imgs are mirrored as backgrounds)
       let dataUrl: string;
 
-      // inline helper to detect iOS (includes iPad “Mac” with touch)
-      const _isIOS = (() => {
+      const isIOS = (() => {
         const ua = navigator.userAgent || '';
         const touchMac = /Macintosh/.test(ua) && (navigator as any).maxTouchPoints > 1;
         return /iP(hone|ad|od)/.test(ua) || touchMac;
       })();
 
-      // TEMP: remove rounded corners on <img> (WebKit can drop rounded <img> in snapshots)
-      const _imgs = Array.from(el.querySelectorAll('img')) as HTMLImageElement[];
-      const _prevRadii = _imgs.map(img => img.style.borderRadius);
-      _imgs.forEach(img => { img.style.borderRadius = '0'; });
-
       try {
-        if (_isIOS) {
-          // iOS path → html2canvas (more reliable for <img>)
-          const html2canvas = (await import('html2canvas')).default;
-          const canvas = await html2canvas(el, {
-            backgroundColor: options.backgroundColor ?? '#111',
-            scale: options.pixelRatio ?? 2,
-            useCORS: true,
-            allowTaint: false,
-            logging: false,
-            imageTimeout: 8000,
-            windowWidth: el.scrollWidth,
-            windowHeight: el.scrollHeight,
-            onclone: (doc) => {
-              // prevent lazy-loading from stalling
-              doc.querySelectorAll('img[loading]').forEach(n => n.removeAttribute('loading'));
-            },
-          });
-          dataUrl = canvas.toDataURL('image/png');
-        } else {
-          // non-iOS → keep html-to-image
-          dataUrl = await toPng(el, {
-            cacheBust: true,
-            skipFonts: true, // font already injected via <style>
-            pixelRatio: options.pixelRatio ?? 2,
-            backgroundColor: options.backgroundColor ?? '#111',
-          });
-        }
+        const html2canvas = (await import('html2canvas')).default;
+        const canvas = await html2canvas(el, {
+          backgroundColor: options.backgroundColor ?? '#111',
+          scale: options.pixelRatio ?? 2,
+          useCORS: true,
+          allowTaint: false,
+          logging: false,
+          imageTimeout: 8000,
+          windowWidth: el.scrollWidth,
+          windowHeight: el.scrollHeight,
+          onclone: (doc) => {
+            // make sure lazy doesn't stall
+            doc.querySelectorAll('img[loading]').forEach((n) => n.removeAttribute('loading'));
+          },
+        });
+        dataUrl = canvas.toDataURL('image/png');
       } catch (err) {
-        console.warn('Primary export failed, trying alternate renderer:', err);
-        // Fallback to the other renderer if the chosen one fails
-        if (_isIOS) {
-          dataUrl = await toPng(el, {
-            cacheBust: true,
-            skipFonts: true,
-            pixelRatio: options.pixelRatio ?? 2,
-            backgroundColor: options.backgroundColor ?? '#111',
-          });
-        } else {
-          const html2canvas = (await import('html2canvas')).default;
-          const canvas = await html2canvas(el, {
-            backgroundColor: options.backgroundColor ?? '#111',
-            scale: options.pixelRatio ?? 2,
-            useCORS: true,
-            allowTaint: false,
-            logging: false,
-            imageTimeout: 8000,
-            windowWidth: el.scrollWidth,
-            windowHeight: el.scrollHeight,
-          });
-          dataUrl = canvas.toDataURL('image/png');
-        }
-      } finally {
-        // restore rounded corners
-        _imgs.forEach((img, i) => { img.style.borderRadius = _prevRadii[i]; });
+        // Fallback to html-to-image if html2canvas trips
+        console.warn('html2canvas failed, trying html-to-image:', err);
+        dataUrl = await toPng(el, {
+          cacheBust: true,
+          skipFonts: true,
+          pixelRatio: options.pixelRatio ?? 2,
+          backgroundColor: options.backgroundColor ?? '#111',
+        });
       }
 
-      // 6) Download
+      // 7) Download
       const link = document.createElement('a');
       link.download = filename;
       link.href = dataUrl;
@@ -261,6 +271,7 @@ const useImageDownload = (ref: React.RefObject<HTMLElement>) => {
       console.error('Failed to download image', err);
     } finally {
       // Restore DOM
+      if (restoreMirror) restoreMirror();
       if (restoreImages) restoreImages();
       if (restoreStyles && ref.current) {
         ref.current.style.opacity = restoreStyles.opacity;
