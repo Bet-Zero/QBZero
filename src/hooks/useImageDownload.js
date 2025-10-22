@@ -124,34 +124,64 @@ const waitForImages = async (root) => {
 };
 
 // Mirror <img> headshots to parent backgrounds (iOS paints bg reliably)
+// Mirror <img> headshots onto parent as an ADDITIONAL background (preserve existing logo bg)
 function mirrorImgsToBackground(root) {
   const entries = [];
   const imgs = Array.from(root.querySelectorAll('img'));
+
   imgs.forEach((img) => {
     const parent = img.parentElement;
     const src = img.currentSrc || img.src;
     if (!parent || !src) return;
 
-    const prev = {
-      bg: parent.style.backgroundImage,
+    // Read the *computed* background so we don't clobber logo styles
+    const cs = getComputedStyle(parent);
+    const prevInline = {
+      image: parent.style.backgroundImage,
       size: parent.style.backgroundSize,
-      pos: parent.style.backgroundPosition,
+      position: parent.style.backgroundPosition,
+      repeat: parent.style.backgroundRepeat,
     };
+
+    // Existing (possibly class-applied) values
+    const existingImage =
+      cs.backgroundImage && cs.backgroundImage !== 'none'
+        ? cs.backgroundImage
+        : null;
+    const existingSize = cs.backgroundSize || 'auto';
+    const existingPos = cs.backgroundPosition || '0% 0%';
+    const existingRepeat = cs.backgroundRepeat || 'repeat';
+
+    // Build layered backgrounds: keep existing logo first, add headshot on top
+    const newImage = existingImage
+      ? `${existingImage}, url("${src}")`
+      : `url("${src}")`;
+    const newSize = existingImage ? `${existingSize}, cover` : `cover`;
+    const newPos = existingImage ? `${existingPos}, 50% 50%` : `50% 50%`;
+    const newRepeat = existingImage
+      ? `${existingRepeat}, no-repeat`
+      : `no-repeat`;
+
+    // Apply layered backgrounds
+    parent.style.backgroundImage = newImage;
+    parent.style.backgroundSize = newSize;
+    parent.style.backgroundPosition = newPos;
+    parent.style.backgroundRepeat = newRepeat;
+
+    // Hide the <img> just for the snapshot (we're painting it as bg)
     const prevVis = img.style.visibility;
-
-    parent.style.backgroundImage = `url("${src}")`;
-    parent.style.backgroundSize = 'cover';
-    parent.style.backgroundPosition = '50% 50%';
-
     img.style.visibility = 'hidden';
-    entries.push({ parent, img, prev, prevVis });
+
+    entries.push({ parent, img, prevInline, prevVis });
   });
 
+  // Restore function
   return () => {
-    entries.forEach(({ parent, img, prev, prevVis }) => {
-      parent.style.backgroundImage = prev.bg;
-      parent.style.backgroundSize = prev.size;
-      parent.style.backgroundPosition = prev.pos;
+    entries.forEach(({ parent, img, prevInline, prevVis }) => {
+      parent.style.backgroundImage = prevInline.image;
+      parent.style.backgroundSize = prevInline.size;
+      parent.style.backgroundPosition = prevInline.position;
+      parent.style.backgroundRepeat = prevInline.repeat;
       img.style.visibility = prevVis;
     });
   };
