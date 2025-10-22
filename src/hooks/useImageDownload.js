@@ -55,17 +55,15 @@ const useImageDownload = (ref) => {
       // Mobile browsers are more aggressive about not loading images in hidden/scaled elements
       const element = ref.current;
       originalStyles = {
-        transform: element.style.transform,
         opacity: element.style.opacity,
         zIndex: element.style.zIndex,
-        pointerEvents: element.style.pointerEvents
+        top: element.style.top
       };
       
-      // Make fully visible temporarily (but keep it non-interactive and below other content)
-      element.style.transform = 'scale(1)';
+      // Bring element into viewport and make visible (but keep it non-interactive and below other content)
+      element.style.top = '0';
       element.style.opacity = '1';
       element.style.zIndex = '-1';
-      element.style.pointerEvents = 'none';
 
       // 3. Ensure all images are fully loaded before rendering
       await waitForImages(ref.current);
@@ -115,10 +113,9 @@ const useImageDownload = (ref) => {
     } finally {
       // Restore original styles
       if (originalStyles && ref.current) {
-        ref.current.style.transform = originalStyles.transform;
         ref.current.style.opacity = originalStyles.opacity;
         ref.current.style.zIndex = originalStyles.zIndex;
-        ref.current.style.pointerEvents = originalStyles.pointerEvents;
+        ref.current.style.top = originalStyles.top;
       }
       if (styleEl) {
         styleEl.remove();
