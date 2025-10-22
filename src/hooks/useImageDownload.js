@@ -124,7 +124,7 @@ const waitForImages = async (root) => {
 };
 
 // Mirror <img> headshots to parent backgrounds (iOS paints bg reliably)
-// Mirror <img> headshots onto parent as an ADDITIONAL background (preserve existing logo bg)
+// Mirror <img> headshots onto parent as a TOP layer, preserving the logo behind
 function mirrorImgsToBackground(root) {
   const entries = [];
   const imgs = Array.from(root.querySelectorAll('img'));
@@ -134,16 +134,17 @@ function mirrorImgsToBackground(root) {
     const src = img.currentSrc || img.src;
     if (!parent || !src) return;
 
-    // Read the *computed* background so we don't clobber logo styles
-    const cs = getComputedStyle(parent);
+    // Save inline styles we’ll temporarily override
     const prevInline = {
       image: parent.style.backgroundImage,
       size: parent.style.backgroundSize,
       position: parent.style.backgroundPosition,
       repeat: parent.style.backgroundRepeat,
     };
+    const prevVis = img.style.visibility;
 
-    // Existing (possibly class-applied) values
+    // Read computed logo background (may come from class/tailwind inline style)
+    const cs = getComputedStyle(parent);
     const existingImage =
       cs.backgroundImage && cs.backgroundImage !== 'none'
         ? cs.backgroundImage
@@ -152,30 +153,28 @@ function mirrorImgsToBackground(root) {
     const existingPos = cs.backgroundPosition || '0% 0%';
     const existingRepeat = cs.backgroundRepeat || 'repeat';
 
-    // Build layered backgrounds: keep existing logo first, add headshot on top
+    // IMPORTANT: headshot FIRST (top layer), logo AFTER (bottom layer)
     const newImage = existingImage
-      ? `${existingImage}, url("${src}")`
+      ? `url("${src}"), ${existingImage}`
       : `url("${src}")`;
-    const newSize = existingImage ? `${existingSize}, cover` : `cover`;
-    const newPos = existingImage ? `${existingPos}, 50% 50%` : `50% 50%`;
+    const newSize = existingImage ? `cover, ${existingSize}` : `cover`;
+    const newPos = existingImage ? `50% 50%, ${existingPos}` : `50% 50%`;
     const newRepeat = existingImage
-      ? `${existingRepeat}, no-repeat`
+      ? `no-repeat, ${existingRepeat}`
       : `no-repeat`;
 
-    // Apply layered backgrounds
     parent.style.backgroundImage = newImage;
     parent.style.backgroundSize = newSize;
     parent.style.backgroundPosition = newPos;
     parent.style.backgroundRepeat = newRepeat;
 
-    // Hide the <img> just for the snapshot (we're painting it as bg)
-    const prevVis = img.style.visibility;
+    // Hide the <img> just for the snapshot
     img.style.visibility = 'hidden';
 
     entries.push({ parent, img, prevInline, prevVis });
   });
 
-  // Restore function
+  // restore after snapshot
   return () => {
     entries.forEach(({ parent, img, prevInline, prevVis }) => {
       parent.style.backgroundImage = prevInline.image;
