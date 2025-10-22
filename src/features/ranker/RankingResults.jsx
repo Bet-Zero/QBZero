@@ -737,7 +737,8 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
   return (
     <>
       {/* Hidden export container - always renders fixed desktop layout for consistent screenshots */}
-      <div className="fixed top-0 left-0 pointer-events-none opacity-0 -z-50">
+      {/* Using scale(0.001) keeps images loaded on mobile while making element invisible */}
+      <div className="fixed top-0 left-0 pointer-events-none -z-50" style={{ transform: 'scale(0.001)', transformOrigin: 'top left', opacity: 0.01 }}>
         {viewType === 'grid' ? (
           <div ref={exportViewRef}>
             {renderExportContent()}
