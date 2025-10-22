@@ -196,13 +196,70 @@ const useImageDownload = (ref) => {
       await new Promise((r) => requestAnimationFrame(r));
       await sleep(120);
 
-      // 5) Snapshot
-      const dataUrl = await toPng(el, {
-        cacheBust: true,
-        skipFonts: true, // we injected font via <style>
-        pixelRatio: options.pixelRatio ?? 2,
-        backgroundColor: options.backgroundColor ?? '#111',
-      });
+      // 5) Snapshot — use html2canvas on iOS, html-to-image elsewhere
+      const isIOS =
+        /iP(hone|ad|od)/.test(navigator.userAgent) ||
+        (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 0);
+
+      let dataUrl;
+
+      try {
+        if (isIOS) {
+          const html2canvas = (
+            await import('html2canvas/dist/html2canvas.esm.js')
+          ).default;
+          const canvas = await html2canvas(el, {
+            backgroundColor: options.backgroundColor ?? '#111',
+            scale: options.pixelRatio ?? 2,
+            useCORS: true,
+            allowTaint: false,
+            logging: false,
+            imageTimeout: 8000,
+            windowWidth: el.scrollWidth,
+            windowHeight: el.scrollHeight,
+            onclone: (doc) => {
+              // make sure lazy-loading doesn't stall
+              doc
+                .querySelectorAll('img[loading]')
+                .forEach((n) => n.removeAttribute('loading'));
+            },
+          });
+          dataUrl = canvas.toDataURL('image/png');
+        } else {
+          dataUrl = await toPng(el, {
+            cacheBust: true,
+            skipFonts: true, // font injected via <style>
+            pixelRatio: options.pixelRatio ?? 2,
+            backgroundColor: options.backgroundColor ?? '#111',
+          });
+        }
+      } catch (err) {
+        // fallback: flip the renderer if the primary fails
+        console.warn(
+          'Primary snapshot failed; trying alternate renderer:',
+          err
+        );
+        try {
+          const html2canvas = (
+            await import('html2canvas/dist/html2canvas.esm.js')
+          ).default;
+          const canvas = await html2canvas(el, {
+            backgroundColor: options.backgroundColor ?? '#111',
+            scale: options.pixelRatio ?? 2,
+            useCORS: true,
+            allowTaint: false,
+            logging: false,
+          });
+          dataUrl = canvas.toDataURL('image/png');
+        } catch {
+          dataUrl = await toPng(el, {
+            cacheBust: true,
+            skipFonts: true,
+            pixelRatio: options.pixelRatio ?? 2,
+            backgroundColor: options.backgroundColor ?? '#111',
+          });
+        }
+      }
 
       // 6) Download
       const link = document.createElement('a');
