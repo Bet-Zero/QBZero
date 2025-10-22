@@ -18,6 +18,7 @@ const GridCard = ({
   showLogoBg,
   showMovement,
   movementData = {},
+  isExport = false,
 }) => {
   const logoPath = getLogoPath(player.team);
   const headshot = getHeadshotSrc(player);
@@ -26,7 +27,7 @@ const GridCard = ({
   const movement = movementData?.[player.id];
 
   return (
-    <div className="inline-block">
+    <div className="inline-block w-full">
       {/* Card */}
       <div className="bg-gradient-to-b from-[#2a2a2a] to-[#1f1f1f] rounded-lg overflow-hidden border border-white/25 transition-all hover:border-white/40 shadow-2xl">
         {/* Headshot Container with overlaid rank */}
@@ -98,6 +99,7 @@ GridCard.propTypes = {
   showLogoBg: PropTypes.bool.isRequired,
   showMovement: PropTypes.bool.isRequired,
   movementData: PropTypes.object,
+  isExport: PropTypes.bool,
 };
 
 const RankingsExportModal = ({
@@ -296,13 +298,13 @@ const RankingsExportModal = ({
     return (
       <div className="mb-6">
         {/* Title line */}
-        <h1 className="text-[56px] md:text-[64px] font-black uppercase tracking-[0.04em] leading-none text-white">
+        <h1 className="text-3xl sm:text-4xl md:text-[56px] lg:text-[64px] font-black uppercase tracking-[0.04em] leading-none text-white">
           NFL QB RANKINGS
         </h1>
         {/* Thin underline under title - shortened and aligned with column 1 */}
         <div className="mt-3 h-[2px] w-[28%] bg-white/20"></div>
         {/* Subline */}
-        <div className="mt-4 text-[16px] md:text-[18px] text-white/70">
+        <div className="mt-4 text-sm sm:text-base md:text-[16px] lg:text-[18px] text-white/70">
           Updated {updatedDate}
         </div>
       </div>
@@ -327,13 +329,13 @@ const RankingsExportModal = ({
       <div className="min-h-screen w-full bg-neutral-950 text-white flex items-center justify-center">
         <div
           ref={containerRef}
-          className="w-[1400px] px-16 pt-20 pb-12 flex flex-col"
+          className={isExport ? "w-[1400px] px-16 pt-20 pb-12 flex flex-col" : "w-full max-w-[1400px] px-4 sm:px-8 md:px-16 pt-8 sm:pt-12 md:pt-20 pb-8 md:pb-12 flex flex-col"}
         >
           {/* Header (top-left) */}
           {renderPosterHeader()}
 
-          {/* Grid with 6 columns x 7 rows - back to clean layout before dividers */}
-          <div className="mt-6 mb-12 grid grid-cols-6 gap-x-4 gap-y-6 justify-items-center">
+          {/* Grid with 6 columns x 7 rows on desktop, responsive on mobile */}
+          <div className={isExport ? "mt-6 mb-12 grid grid-cols-6 gap-x-4 gap-y-6 justify-items-center" : "mt-6 mb-12 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-2 sm:gap-x-3 md:gap-x-4 gap-y-4 sm:gap-y-5 md:gap-y-6 justify-items-center"}>
             {currentRanking.slice(0, 42).map((item, idx) => {
               const player = item.qb || item.player || item;
               return (
@@ -344,6 +346,7 @@ const RankingsExportModal = ({
                   showLogoBg={showLogoBg}
                   showMovement={showMovement}
                   movementData={movementData}
+                  isExport={isExport}
                 />
               );
             })}
@@ -556,7 +559,8 @@ const RankingsExportModal = ({
   return (
     <>
       {/* Hidden export container - always renders desktop layout for consistent screenshots */}
-      <div className="fixed top-0 left-0 pointer-events-none opacity-0 -z-50">
+      {/* Position below viewport with minimal opacity so mobile browsers still load images */}
+      <div className="fixed pointer-events-none" style={{ left: '0', top: '100vh', opacity: 0.001, zIndex: -9999 }}>
         {viewType === 'grid' ? (
           renderGridLayout(true)
         ) : (

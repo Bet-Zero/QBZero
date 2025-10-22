@@ -137,11 +137,8 @@ const waitForImages = async (root: HTMLElement | null) => {
 const useImageDownload = (ref: React.RefObject<HTMLElement>) => {
   const download = async (filename: string, options: { pixelRatio?: number; backgroundColor?: string } = {}) => {
     if (!ref.current) return;
-
-    let styleEl: HTMLStyleElement | null = null;
-    let restoreStyles: null | { opacity: string; zIndex: string; top: string } = null;
-    let restoreImages: null | (() => void) = null;
-
+    let styleEl;
+    let originalStyles = null;
     try {
       // 1) Make sure the Anton base64 font is present in the DOM and registered
       const match = antonBase64CSS.match(/base64,([^)]+)\)/);
@@ -161,34 +158,59 @@ const useImageDownload = (ref: React.RefObject<HTMLElement>) => {
         ref.current.prepend(styleEl);
       }
 
-      // 2) Make the export node visible enough that iOS actually lays it out
-      const el = ref.current as HTMLElement;
-      restoreStyles = {
-        opacity: el.style.opacity,
-        zIndex: el.style.zIndex,
-        top: el.style.top,
+      // 2. Temporarily make the container fully visible for mobile browsers
+      // Mobile browsers are more aggressive about not loading images in hidden/scaled elements
+      const element = ref.current;
+      originalStyles = {
+        opacity: element.style.opacity,
+        zIndex: element.style.zIndex,
+        top: element.style.top
       };
-      el.style.top = '0';
-      el.style.opacity = '1';
-      el.style.zIndex = '-1'; // keep it non-interactive but in flow
+      
+      // Bring element into viewport and make visible (but keep it non-interactive and below other content)
+      element.style.top = '0';
+      element.style.opacity = '1';
+      element.style.zIndex = '-1';
 
-      // 3) Wait for images, then inline them to data URLs (CRITICAL for iOS)
-      await waitForImages(el);
-      restoreImages = await inlineImages(el);
+      // 3. Ensure all images are fully loaded before rendering
+      await waitForImages(ref.current);
 
-      // 4) Let layout settle fully
+      // 4. Wait for layout to settle and images to fully render
       await new Promise((r) => requestAnimationFrame(r));
-      await sleep(120);
+      await new Promise((r) => setTimeout(r, 300)); // Increased delay for mobile
 
-      // 5) Snapshot
-      const dataUrl = await toPng(el, {
+      // 5. Export as PNG using the element directly
+      const dataUrl = await toPng(ref.current, {
         cacheBust: true,
-        skipFonts: true, // we injected font via <style>
-        pixelRatio: options.pixelRatio ?? 2,
-        backgroundColor: options.backgroundColor ?? '#111',
+        // Avoid html-to-image font parsing bugs by skipping font
+        // inlining. Fonts are already loaded via Base64.
+        skipFonts: true,
+        pixelRatio: options.pixelRatio || 2,
+        backgroundColor: options.backgroundColor || '#111',
+        filter: (node) => {
+          // Don't filter out images even if they have failed to load
+          if (node.tagName === 'IMG') {
+            return true;
+          }
+          return true;
+        },
+        // Try to embed external SVGs
+        async beforeDrawImage(node) {
+          if (node.tagName === 'IMG' && node.src.endsWith('.svg')) {
+            try {
+              const response = await fetch(node.src);
+              const svgText = await response.text();
+              const svgDataUrl = `data:image/svg+xml;base64,${btoa(svgText)}`;
+              node.src = svgDataUrl;
+            } catch (err) {
+              console.warn('Failed to embed SVG:', err);
+            }
+          }
+          return node;
+        },
       });
 
-      // 6) Download
+      // 6. Download
       const link = document.createElement('a');
       link.download = filename;
       link.href = dataUrl;
@@ -196,14 +218,15 @@ const useImageDownload = (ref: React.RefObject<HTMLElement>) => {
     } catch (err) {
       console.error('Failed to download image', err);
     } finally {
-      // Restore DOM
-      if (restoreImages) restoreImages();
-      if (restoreStyles && ref.current) {
-        ref.current.style.opacity = restoreStyles.opacity;
-        ref.current.style.zIndex = restoreStyles.zIndex;
-        ref.current.style.top = restoreStyles.top;
+      // Restore original styles
+      if (originalStyles && ref.current) {
+        ref.current.style.opacity = originalStyles.opacity;
+        ref.current.style.zIndex = originalStyles.zIndex;
+        ref.current.style.top = originalStyles.top;
       }
-      if (styleEl) styleEl.remove();
+      if (styleEl) {
+        styleEl.remove();
+      }
     }
   };
 
