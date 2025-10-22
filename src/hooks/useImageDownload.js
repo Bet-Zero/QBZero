@@ -30,6 +30,7 @@ const useImageDownload = (ref) => {
   const download = async (filename, options = {}) => {
     if (!ref.current) return;
     let styleEl;
+    let originalStyles = null;
     try {
       // 1. Ensure the Base64 font is loaded and injected before export
       const match = antonBase64CSS.match(/base64,([^)]+)\)/);
@@ -50,14 +51,30 @@ const useImageDownload = (ref) => {
         ref.current.prepend(styleEl);
       }
 
-      // 2. Ensure all images are fully loaded before rendering
+      // 2. Temporarily make the container fully visible for mobile browsers
+      // Mobile browsers are more aggressive about not loading images in hidden/scaled elements
+      const element = ref.current;
+      originalStyles = {
+        transform: element.style.transform,
+        opacity: element.style.opacity,
+        zIndex: element.style.zIndex,
+        pointerEvents: element.style.pointerEvents
+      };
+      
+      // Make fully visible temporarily (but keep it non-interactive and below other content)
+      element.style.transform = 'scale(1)';
+      element.style.opacity = '1';
+      element.style.zIndex = '-1';
+      element.style.pointerEvents = 'none';
+
+      // 3. Ensure all images are fully loaded before rendering
       await waitForImages(ref.current);
 
-      // 3. Wait a frame so layout has time to settle
+      // 4. Wait for layout to settle and images to fully render
       await new Promise((r) => requestAnimationFrame(r));
-      await new Promise((r) => setTimeout(r, 100));
+      await new Promise((r) => setTimeout(r, 300)); // Increased delay for mobile
 
-      // 4. Export as PNG using the element directly
+      // 5. Export as PNG using the element directly
       const dataUrl = await toPng(ref.current, {
         cacheBust: true,
         // Avoid html-to-image font parsing bugs by skipping font
@@ -88,7 +105,7 @@ const useImageDownload = (ref) => {
         },
       });
 
-      // 5. Download
+      // 6. Download
       const link = document.createElement('a');
       link.download = filename;
       link.href = dataUrl;
@@ -96,6 +113,13 @@ const useImageDownload = (ref) => {
     } catch (err) {
       console.error('Failed to download image', err);
     } finally {
+      // Restore original styles
+      if (originalStyles && ref.current) {
+        ref.current.style.transform = originalStyles.transform;
+        ref.current.style.opacity = originalStyles.opacity;
+        ref.current.style.zIndex = originalStyles.zIndex;
+        ref.current.style.pointerEvents = originalStyles.pointerEvents;
+      }
       if (styleEl) {
         styleEl.remove();
       }
