@@ -180,13 +180,77 @@ const useImageDownload = (ref: React.RefObject<HTMLElement>) => {
       await new Promise((r) => requestAnimationFrame(r));
       await sleep(120);
 
-      // 5) Snapshot
-      const dataUrl = await toPng(el, {
-        cacheBust: true,
-        skipFonts: true, // we injected font via <style>
-        pixelRatio: options.pixelRatio ?? 2,
-        backgroundColor: options.backgroundColor ?? '#111',
-      });
+      // 5) Snapshot — iOS-safe (replace your toPng block with ALL of this)
+      let dataUrl: string;
+
+      // inline helper to detect iOS (includes iPad “Mac” with touch)
+      const _isIOS = (() => {
+        const ua = navigator.userAgent || '';
+        const touchMac = /Macintosh/.test(ua) && (navigator as any).maxTouchPoints > 1;
+        return /iP(hone|ad|od)/.test(ua) || touchMac;
+      })();
+
+      // TEMP: remove rounded corners on <img> (WebKit can drop rounded <img> in snapshots)
+      const _imgs = Array.from(el.querySelectorAll('img')) as HTMLImageElement[];
+      const _prevRadii = _imgs.map(img => img.style.borderRadius);
+      _imgs.forEach(img => { img.style.borderRadius = '0'; });
+
+      try {
+        if (_isIOS) {
+          // iOS path → html2canvas (more reliable for <img>)
+          const html2canvas = (await import('html2canvas')).default;
+          const canvas = await html2canvas(el, {
+            backgroundColor: options.backgroundColor ?? '#111',
+            scale: options.pixelRatio ?? 2,
+            useCORS: true,
+            allowTaint: false,
+            logging: false,
+            imageTimeout: 8000,
+            windowWidth: el.scrollWidth,
+            windowHeight: el.scrollHeight,
+            onclone: (doc) => {
+              // prevent lazy-loading from stalling
+              doc.querySelectorAll('img[loading]').forEach(n => n.removeAttribute('loading'));
+            },
+          });
+          dataUrl = canvas.toDataURL('image/png');
+        } else {
+          // non-iOS → keep html-to-image
+          dataUrl = await toPng(el, {
+            cacheBust: true,
+            skipFonts: true, // font already injected via <style>
+            pixelRatio: options.pixelRatio ?? 2,
+            backgroundColor: options.backgroundColor ?? '#111',
+          });
+        }
+      } catch (err) {
+        console.warn('Primary export failed, trying alternate renderer:', err);
+        // Fallback to the other renderer if the chosen one fails
+        if (_isIOS) {
+          dataUrl = await toPng(el, {
+            cacheBust: true,
+            skipFonts: true,
+            pixelRatio: options.pixelRatio ?? 2,
+            backgroundColor: options.backgroundColor ?? '#111',
+          });
+        } else {
+          const html2canvas = (await import('html2canvas')).default;
+          const canvas = await html2canvas(el, {
+            backgroundColor: options.backgroundColor ?? '#111',
+            scale: options.pixelRatio ?? 2,
+            useCORS: true,
+            allowTaint: false,
+            logging: false,
+            imageTimeout: 8000,
+            windowWidth: el.scrollWidth,
+            windowHeight: el.scrollHeight,
+          });
+          dataUrl = canvas.toDataURL('image/png');
+        }
+      } finally {
+        // restore rounded corners
+        _imgs.forEach((img, i) => { img.style.borderRadius = _prevRadii[i]; });
+      }
 
       // 6) Download
       const link = document.createElement('a');
