@@ -321,12 +321,22 @@ const useImageDownload = (ref) => {
         throw new Error('Failed to generate image data URL');
       }
 
+      // Convert data URL to blob for better browser compatibility with large images
+      const response = await fetch(dataUrl);
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+
       const link = document.createElement('a');
       link.download = filename;
-      link.href = dataUrl;
+      link.href = blobUrl;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      
+      // Clean up blob URL after a delay
+      setTimeout(() => {
+        URL.revokeObjectURL(blobUrl);
+      }, 1000);
       
       // Small delay to ensure download starts
       await sleep(100);
