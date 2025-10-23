@@ -189,7 +189,8 @@ const useImageDownload = (ref) => {
       el.scrollHeight || el.offsetHeight || rect.height || 0
     );
     const pixelRatio =
-      options.pixelRatio || (typeof window !== 'undefined' ? window.devicePixelRatio || 2 : 2);
+      options.pixelRatio ||
+      (typeof window !== 'undefined' ? window.devicePixelRatio || 2 : 2);
     let styleEl = null;
     let restoreDims = null;
     let restoreScrub = null;
@@ -282,12 +283,12 @@ const useImageDownload = (ref) => {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
+
       // Clean up blob URL after a delay
       setTimeout(() => {
         URL.revokeObjectURL(blobUrl);
       }, 1000);
-      
+
       // Small delay to ensure download starts
       await sleep(100);
     } catch (err) {
