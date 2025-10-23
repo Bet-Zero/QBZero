@@ -188,9 +188,11 @@ const useImageDownload = (ref) => {
       options.height || 0,
       el.scrollHeight || el.offsetHeight || rect.height || 0
     );
-    const pixelRatio =
+    const pixelRatio = Math.min(
       options.pixelRatio ||
-      (typeof window !== 'undefined' ? window.devicePixelRatio || 2 : 2);
+        (typeof window !== 'undefined' ? window.devicePixelRatio || 2 : 2),
+      3
+    );
     let styleEl = null;
     let restoreDims = null;
     let restoreScrub = null;
