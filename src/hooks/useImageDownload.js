@@ -1,12 +1,10 @@
-// useImageDownload.js — minimal: inline <img> + decode + html-to-image
+// useImageDownload.js — inline <img> + preserve gradients + overlay-for-iOS + toPng fallback
 import { toPng } from 'html-to-image';
 import { antonBase64CSS } from '@/fonts/antonBase64';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-/**
- * Convert a URL (same-origin OK) to a data URL.
- */
+/** Convert a URL (same-origin OK) to a data URL. */
 async function urlToDataUrl(url) {
   const res = await fetch(url, {
     cache: 'no-store',
@@ -64,7 +62,7 @@ async function inlineImages(root) {
           } catch {}
         }
       } catch {
-        // If we can't inline, leave original. Same-origin should succeed though.
+        // leave as-is if inlining fails
       }
     })
   );
@@ -77,7 +75,7 @@ async function inlineImages(root) {
       const bg = cs.backgroundImage;
       if (!bg || bg === 'none') return;
 
-      // Find every url(...) in the computed background-image, but do NOT touch gradients
+      // Find every url(...) in the computed background-image; don't touch gradients
       const matches = [...bg.matchAll(/url\((["']?)(.*?)\1\)/g)];
       const urls = matches
         .map((m) => m[2])
@@ -97,7 +95,7 @@ async function inlineImages(root) {
           const esc = u.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // escape for RegExp
           newBg = newBg.replace(new RegExp(esc, 'g'), dataUrl);
         } catch {
-          // if one URL fails to inline, leave that one as-is
+          // ignore individual failures
         }
       }
 
@@ -106,7 +104,7 @@ async function inlineImages(root) {
   );
 
   // 3) Remove clip-path/mask from <img> only (rare iOS drop); border-radius is OK
-  const masked = imgs.filter((img) => {
+  const masked = Array.from(root.querySelectorAll('img')).filter((img) => {
     const s = getComputedStyle(img);
     return s.clipPath !== 'none' || s.maskImage !== 'none';
   });
@@ -128,9 +126,7 @@ async function inlineImages(root) {
   return () => restorers.reverse().forEach((fn) => fn());
 }
 
-/**
- * Ensure all <img> have fired load/error. (Useful when offscreen.)
- */
+/** Ensure all <img> have fired load/error. (Useful when offscreen.) */
 const waitForImages = async (root) => {
   if (!root) return;
   const images = Array.from(root.querySelectorAll('img'));
@@ -150,6 +146,53 @@ const waitForImages = async (root) => {
   );
 };
 
+/**
+ * TEMP overlay: for each <img>, add an absolutely positioned div that paints the same bitmap
+ * as a CSS background (which iOS reliably renders via foreignObject). Restores after snapshot.
+ */
+function overlayImgsForSnapshot(root) {
+  const entries = [];
+  const imgs = Array.from(root.querySelectorAll('img'));
+  imgs.forEach((img) => {
+    const parent = img.parentElement;
+    const src = img.currentSrc || img.src; // already inlined to data: by inlineImages()
+    if (!parent || !src) return;
+
+    // parent positioning to host absolute overlay
+    const prevPos = parent.style.position;
+    const needsRelative = getComputedStyle(parent).position === 'static';
+    if (needsRelative) parent.style.position = 'relative';
+
+    const overlay = document.createElement('div');
+    overlay.style.position = 'absolute';
+    overlay.style.inset = '0';
+    overlay.style.backgroundImage = `url("${src}")`;
+    overlay.style.backgroundSize = 'cover';
+    overlay.style.backgroundPosition = '50% 50%';
+    overlay.style.backgroundRepeat = 'no-repeat';
+    overlay.style.pointerEvents = 'none';
+    overlay.style.zIndex = '2';
+
+    const prevVis = img.style.visibility;
+    img.style.visibility = 'hidden'; // keep layout; don't remove
+
+    parent.appendChild(overlay);
+
+    entries.push({ parent, overlay, img, prevVis, prevPos, needsRelative });
+  });
+
+  return () => {
+    entries.forEach(
+      ({ parent, overlay, img, prevVis, prevPos, needsRelative }) => {
+        if (overlay && overlay.parentNode === parent)
+          parent.removeChild(overlay);
+        img.style.visibility = prevVis;
+        if (needsRelative) parent.style.position = prevPos;
+      }
+    );
+  };
+}
+
 const useImageDownload = (ref) => {
   const download = async (filename, options = {}) => {
     if (!ref.current) return;
@@ -157,6 +200,7 @@ const useImageDownload = (ref) => {
     let styleEl = null;
     let restoreStyles = null;
     let restoreImages = null;
+    let restoreOverlays = null;
 
     try {
       // 1) Make sure the Anton base64 font is present in the DOM and registered
@@ -186,19 +230,21 @@ const useImageDownload = (ref) => {
       };
       el.style.top = '0';
       el.style.opacity = '1';
-      el.style.zIndex = '-1'; // keep it non-interactive but in flow
+      el.style.zIndex = '-1'; // keep it non-interactive but laid out
 
       // 3) Wait for images, then inline them to data URLs (CRITICAL for iOS)
       await waitForImages(el);
       restoreImages = await inlineImages(el);
 
-      // 4) Let layout settle fully
+      // 4) Add overlays so iOS paints <img> reliably without touching your logo/gradient bgs
+      restoreOverlays = overlayImgsForSnapshot(el);
+
+      // Let layout settle fully
       await new Promise((r) => requestAnimationFrame(r));
       await sleep(120);
 
-      // 5) Snapshot — prefer html-to-image everywhere; html2canvas only as fallback
+      // 5) Snapshot — prefer html-to-image; html2canvas only as fallback
       let dataUrl;
-
       try {
         dataUrl = await toPng(el, {
           cacheBust: true,
@@ -239,6 +285,7 @@ const useImageDownload = (ref) => {
       console.error('Failed to download image', err);
     } finally {
       // Restore DOM
+      if (restoreOverlays) restoreOverlays();
       if (restoreImages) restoreImages();
       if (restoreStyles && ref.current) {
         ref.current.style.opacity = restoreStyles.opacity;
