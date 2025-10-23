@@ -241,7 +241,10 @@ async function ensureAnton(refEl) {
 
 const useImageDownload = (ref) => {
   const download = async (filename, options = {}) => {
-    if (!ref.current) return;
+    if (!ref.current) {
+      console.error('useImageDownload: ref.current is null');
+      throw new Error('Export container ref is not attached');
+    }
 
     const el = ref.current;
     let styleEl = null;
@@ -314,12 +317,32 @@ const useImageDownload = (ref) => {
         });
       }
 
+      if (!dataUrl) {
+        throw new Error('Failed to generate image data URL');
+      }
+
+      // Convert data URL to blob for better browser compatibility with large images
+      const response = await fetch(dataUrl);
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+
       const link = document.createElement('a');
       link.download = filename;
-      link.href = dataUrl;
+      link.href = blobUrl;
+      document.body.appendChild(link);
       link.click();
+      document.body.removeChild(link);
+      
+      // Clean up blob URL after a delay
+      setTimeout(() => {
+        URL.revokeObjectURL(blobUrl);
+      }, 1000);
+      
+      // Small delay to ensure download starts
+      await sleep(100);
     } catch (err) {
       console.error('Download failed', err);
+      throw err;
     } finally {
       if (restoreScrub) restoreScrub();
       if (restoreInline) restoreInline();
