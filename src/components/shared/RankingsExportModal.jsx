@@ -119,6 +119,7 @@ const RankingsExportModal = ({
   const [isDownloading, setIsDownloading] = useState(false);
   const [isAdjustMode, setIsAdjustMode] = useState(false);
   const [currentRanking, setCurrentRanking] = useState(rankings);
+  const [isExportReady, setIsExportReady] = useState(false);
   const shareViewRef = useRef(null);
   const exportViewRef = useRef(null);
   const downloadImageHook = useImageDownload(exportViewRef);
@@ -127,6 +128,19 @@ const RankingsExportModal = ({
   React.useEffect(() => {
     setCurrentRanking(rankings);
   }, [rankings]);
+
+  // Ensure export container is ready before allowing download
+  React.useEffect(() => {
+    // Small delay to ensure the hidden container has rendered
+    const timer = setTimeout(() => {
+      if (exportViewRef.current) {
+        setIsExportReady(true);
+      } else {
+        console.warn('Export container not ready after timeout');
+      }
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [viewType]);
 
   const handleAdjustRankings = () => {
     setIsAdjustMode(true);
@@ -256,13 +270,13 @@ const RankingsExportModal = ({
       </button>
       <button
         onClick={handleDownloadImage}
-        disabled={isDownloading}
+        disabled={isDownloading || !isExportReady}
         className="px-3 py-2 text-sm text-white bg-white/10 rounded hover:bg-white/20 flex items-center transition-colors disabled:opacity-50"
-        title="Download Image"
+        title={!isExportReady ? 'Export container loading...' : 'Download Image'}
       >
         <Download size={16} className="mr-1" />
         <span className="hidden sm:inline">
-          {isDownloading ? 'Downloading...' : 'Download'}
+          {isDownloading ? 'Downloading...' : !isExportReady ? 'Loading...' : 'Download'}
         </span>
       </button>
       <button
@@ -569,9 +583,9 @@ const RankingsExportModal = ({
   return (
     <>
       {/* Hidden export container - always renders desktop layout for consistent screenshots */}
-      {/* Positioned absolutely off-screen left but with proper dimensions */}
+      {/* Positioned fixed off-screen left but with proper dimensions to ensure rendering */}
       <div 
-        className="absolute pointer-events-none"
+        className="fixed pointer-events-none"
         style={{ 
           left: '-10000px',
           top: '0',
