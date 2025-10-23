@@ -241,7 +241,10 @@ async function ensureAnton(refEl) {
 
 const useImageDownload = (ref) => {
   const download = async (filename, options = {}) => {
-    if (!ref.current) return;
+    if (!ref.current) {
+      console.error('useImageDownload: ref.current is null');
+      throw new Error('Export container ref is not attached');
+    }
 
     const el = ref.current;
     let styleEl = null;
@@ -314,12 +317,22 @@ const useImageDownload = (ref) => {
         });
       }
 
+      if (!dataUrl) {
+        throw new Error('Failed to generate image data URL');
+      }
+
       const link = document.createElement('a');
       link.download = filename;
       link.href = dataUrl;
+      document.body.appendChild(link);
       link.click();
+      document.body.removeChild(link);
+      
+      // Small delay to ensure download starts
+      await sleep(100);
     } catch (err) {
       console.error('Download failed', err);
+      throw err;
     } finally {
       if (restoreScrub) restoreScrub();
       if (restoreInline) restoreInline();

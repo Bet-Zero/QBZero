@@ -155,6 +155,12 @@ const RankingsExportModal = ({
   };
 
   const handleDownloadImage = async () => {
+    if (!exportViewRef.current) {
+      console.error('Export container ref is not attached');
+      alert('Failed to download: Export container not ready. Please try again.');
+      return;
+    }
+
     setIsDownloading(true);
     const date = new Date()
       .toLocaleDateString('en-US', {
@@ -167,6 +173,10 @@ const RankingsExportModal = ({
     try {
       // Use the hook-based download function
       await downloadImageHook(`${rankingName || 'qb-rankings'}-${date}.png`);
+      console.log('Download completed successfully');
+    } catch (error) {
+      console.error('Download failed with error:', error);
+      alert(`Failed to download image: ${error.message || 'Unknown error'}`);
     } finally {
       setIsDownloading(false);
     }
@@ -559,8 +569,18 @@ const RankingsExportModal = ({
   return (
     <>
       {/* Hidden export container - always renders desktop layout for consistent screenshots */}
-      {/* Position below viewport with minimal opacity so mobile browsers still load images */}
-      <div className="fixed pointer-events-none" style={{ left: '0', top: '100vh', opacity: 0.001, zIndex: -9999 }}>
+      {/* Positioned absolutely off-screen left but with proper dimensions */}
+      <div 
+        className="absolute pointer-events-none"
+        style={{ 
+          left: '-10000px',
+          top: '0',
+          width: 'auto',
+          height: 'auto',
+          overflow: 'visible',
+          zIndex: -9999
+        }}
+      >
         {viewType === 'grid' ? (
           renderGridLayout(true)
         ) : (
