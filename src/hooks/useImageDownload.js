@@ -1,137 +1,43 @@
-// useImageDownload.js — inline <img>, preserve gradients, async overlay for iOS, toPng→html2canvas fallback
+// useImageDownload.js — reliable mobile export (iOS-safe): blob/objectURL inlining + style scrub + iOS html2canvas path
 import { toPng } from 'html-to-image';
 import { antonBase64CSS } from '@/fonts/antonBase64';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-/** Convert a URL (same-origin OK) to a data URL. */
-async function urlToDataUrl(url) {
+/** Tiny iOS detector (we route to html2canvas there) */
+const isIOS = (() => {
+  if (typeof navigator === 'undefined') return false;
+  return (
+    /iP(hone|ad|od)/i.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+  );
+})();
+
+/** Fetch → Blob */
+async function fetchBlob(url) {
   const res = await fetch(url, {
     cache: 'no-store',
     credentials: 'omit',
     mode: 'cors',
   });
-  if (!res.ok) throw new Error(`Failed to fetch ${url}: ${res.status}`);
-  const blob = await res.blob();
-  return new Promise((resolve, reject) => {
-    const fr = new FileReader();
-    fr.onload = () => resolve(fr.result);
-    fr.onerror = reject;
-    fr.readAsDataURL(blob);
+  if (!res.ok) throw new Error(`Failed ${url}: ${res.status}`);
+  return await res.blob();
+}
+
+/** Force all <img> to be eager + sync for Safari */
+function forceEagerImages(root) {
+  root.querySelectorAll('img').forEach((img) => {
+    img.setAttribute('loading', 'eager');
+    img.setAttribute('decoding', 'sync');
   });
 }
 
-/**
- * Inline <img> and CSS background images within root into data URLs.
- * Returns a restore() function to revert DOM after export.
- */
-async function inlineImages(root) {
-  const restorers = [];
-
-  // 1) Inline <img> nodes
-  const imgs = Array.from(root.querySelectorAll('img'));
-  await Promise.all(
-    imgs.map(async (img) => {
-      const prevSrc = img.getAttribute('src');
-      const prevSrcSet = img.getAttribute('srcset');
-      const prevCross = img.getAttribute('crossorigin');
-
-      restorers.push(() => {
-        if (prevSrc !== null) img.setAttribute('src', prevSrc);
-        if (prevSrcSet !== null) img.setAttribute('srcset', prevSrcSet);
-        if (prevCross !== null) img.setAttribute('crossorigin', prevCross);
-        else img.removeAttribute('crossorigin');
-      });
-
-      // Disable srcset so Safari doesn’t swap at clone time
-      if (prevSrcSet) img.removeAttribute('srcset');
-
-      const actual = img.currentSrc || img.src;
-      if (!actual) return;
-
-      try {
-        const dataUrl = await urlToDataUrl(actual);
-        img.setAttribute('crossorigin', 'anonymous');
-        img.src = dataUrl;
-
-        // ensure pixels are decoded
-        await sleep(10);
-        if (img.decode) {
-          try {
-            await img.decode();
-          } catch {}
-        }
-      } catch {
-        // leave original if inlining fails
-      }
-    })
-  );
-
-  // 2) Inline CSS background-image URLs (preserve gradients & multiple layers)
-  const all = Array.from(root.querySelectorAll('*'));
-  await Promise.all(
-    all.map(async (el) => {
-      const cs = getComputedStyle(el);
-      const bg = cs.backgroundImage;
-      if (!bg || bg === 'none') return;
-
-      // Find every url(...) in the computed background-image; don’t touch gradients
-      const matches = [...bg.matchAll(/url\((["']?)(.*?)\1\)/g)];
-      const urls = matches
-        .map((m) => m[2])
-        .filter((u) => u && !u.startsWith('data:'));
-      if (urls.length === 0) return;
-
-      const prev = el.style.backgroundImage;
-      restorers.push(() => {
-        el.style.backgroundImage = prev;
-      });
-
-      let newBg = bg;
-      for (const u of urls) {
-        try {
-          const dataUrl = await urlToDataUrl(u);
-          const esc = u.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-          newBg = newBg.replace(new RegExp(esc, 'g'), dataUrl);
-        } catch {
-          // ignore individual failures
-        }
-      }
-
-      el.style.backgroundImage = newBg;
-    })
-  );
-
-  // 3) Remove clip-path/mask from <img> only (rare iOS drop)
-  const masked = Array.from(root.querySelectorAll('img')).filter((img) => {
-    const s = getComputedStyle(img);
-    return s.clipPath !== 'none' || s.maskImage !== 'none';
-  });
-  masked.forEach((img) => {
-    const prevClip = img.style.clipPath;
-    const prevMask = img.style.webkitMaskImage || img.style.maskImage;
-
-    restorers.push(() => {
-      img.style.clipPath = prevClip;
-      img.style.webkitMaskImage = prevMask;
-      img.style.maskImage = prevMask;
-    });
-
-    img.style.clipPath = 'none';
-    img.style.webkitMaskImage = 'none';
-    img.style.maskImage = 'none';
-  });
-
-  return () => restorers.reverse().forEach((fn) => fn());
-}
-
-/** Ensure all <img> have fired load/error. (Useful when offscreen.) */
-const waitForImages = async (root) => {
-  if (!root) return;
+/** Wait until all <img> are loaded (or errored) */
+async function waitForImages(root) {
   const images = Array.from(root.querySelectorAll('img'));
   await Promise.all(
     images.map((img) => {
-      if (img.complete && img.naturalWidth !== 0) return Promise.resolve();
+      if (img.complete && img.naturalWidth !== 0) return;
       return new Promise((resolve) => {
         const done = () => {
           img.removeEventListener('load', done);
@@ -143,67 +49,160 @@ const waitForImages = async (root) => {
       });
     })
   );
-};
+}
 
 /**
- * ASYNC overlay: guarantee a data: URL per image (inline on-demand) and paint it as an
- * absolutely-positioned background overlay on top of the parent during the snapshot.
- * Restores after capture.
+ * Inline every <img> and every CSS background-image `url(...)` as Blob -> objectURL.
+ * We prefer object URLs over data: URLs (iOS is significantly more stable with them).
+ * Returns a restore() that revokes objectURLs and original attrs.
  */
-async function overlayImgsForSnapshot(root) {
-  const entries = [];
-  const imgs = Array.from(root.querySelectorAll('img'));
+async function inlineAsObjectURLs(root) {
+  const revokeQueue = [];
+  const restorers = [];
 
+  // <img> tags
+  const imgs = Array.from(root.querySelectorAll('img'));
   await Promise.all(
     imgs.map(async (img) => {
-      const parent = img.parentElement;
-      let src = img.currentSrc || img.src;
-      if (!parent || !src) return;
+      const prev = {
+        src: img.getAttribute('src'),
+        srcset: img.getAttribute('srcset'),
+        cross: img.getAttribute('crossorigin'),
+      };
+      restorers.push(() => {
+        if (prev.src !== null) img.setAttribute('src', prev.src);
+        if (prev.srcset !== null) img.setAttribute('srcset', prev.srcset);
+        if (prev.cross !== null) img.setAttribute('crossorigin', prev.cross);
+        else img.removeAttribute('crossorigin');
+      });
 
-      // Ensure we have a data URL even if earlier inlining missed this one
-      if (!src.startsWith('data:')) {
+      if (prev.srcset) img.removeAttribute('srcset'); // stop Safari from swapping
+      const actual = img.currentSrc || img.src;
+      if (!actual) return;
+
+      try {
+        const blob = await fetchBlob(actual);
+        const url = URL.createObjectURL(blob);
+        revokeQueue.push(url);
+        img.setAttribute('crossorigin', 'anonymous');
+        img.src = url;
+        if (img.decode) {
+          try {
+            await img.decode();
+          } catch {}
+        } else {
+          await sleep(16);
+        }
+      } catch {
+        // keep original on failure
+      }
+    })
+  );
+
+  // CSS backgrounds
+  const nodes = Array.from(root.querySelectorAll('*'));
+  await Promise.all(
+    nodes.map(async (el) => {
+      const cs = getComputedStyle(el);
+      const bg = cs.backgroundImage;
+      if (!bg || bg === 'none') return;
+
+      const matches = [...bg.matchAll(/url\((["']?)(.*?)\1\)/g)];
+      const urls = matches
+        .map((m) => m[2])
+        .filter((u) => u && !u.startsWith('data:') && !u.startsWith('blob:'));
+      if (urls.length === 0) return;
+
+      const prevBg = el.style.backgroundImage;
+      restorers.push(() => {
+        el.style.backgroundImage = prevBg;
+      });
+
+      let newBg = bg;
+      for (const u of urls) {
         try {
-          src = await urlToDataUrl(src);
+          const blob = await fetchBlob(u);
+          const url = URL.createObjectURL(blob);
+          revokeQueue.push(url);
+          const esc = u.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          newBg = newBg.replace(new RegExp(esc, 'g'), url);
         } catch {
-          // If we still can’t fetch, skip overlay for this image
-          return;
+          // ignore this layer
         }
       }
-
-      // parent positioning to host absolute overlay
-      const prevPos = parent.style.position;
-      const needsRelative = getComputedStyle(parent).position === 'static';
-      if (needsRelative) parent.style.position = 'relative';
-
-      const overlay = document.createElement('div');
-      overlay.style.position = 'absolute';
-      overlay.style.inset = '0';
-      overlay.style.backgroundImage = `url("${src}")`;
-      overlay.style.backgroundSize = 'cover';
-      overlay.style.backgroundPosition = '50% 50%';
-      overlay.style.backgroundRepeat = 'no-repeat';
-      overlay.style.pointerEvents = 'none';
-      overlay.style.zIndex = '2';
-
-      const prevVis = img.style.visibility;
-      img.style.visibility = 'hidden'; // keep layout flow
-
-      parent.appendChild(overlay);
-
-      entries.push({ parent, overlay, img, prevVis, prevPos, needsRelative });
+      el.style.backgroundImage = newBg;
     })
   );
 
   return () => {
-    entries.forEach(
-      ({ parent, overlay, img, prevVis, prevPos, needsRelative }) => {
-        if (overlay && overlay.parentNode === parent)
-          parent.removeChild(overlay);
-        img.style.visibility = prevVis;
-        if (needsRelative) parent.style.position = prevPos;
-      }
-    );
+    restorers.reverse().forEach((fn) => fn());
+    revokeQueue.forEach((u) => URL.revokeObjectURL(u));
   };
+}
+
+/**
+ * Scrub paint-breaking styles during capture (Safari/html2canvas/html-to-image can drop layers).
+ * We remove: transform, filter, backdrop-filter, mix-blend-mode, clip-path, mask-image.
+ * Returns a restore() to put everything back.
+ */
+function scrubProblemStyles(root) {
+  const entries = [];
+  const props = [
+    'transform',
+    'filter',
+    'backdropFilter',
+    'mixBlendMode',
+    'webkitBackdropFilter',
+    'clipPath',
+    'webkitMaskImage',
+    'maskImage',
+  ];
+
+  root.querySelectorAll('*').forEach((el) => {
+    const record = { el, prev: {} };
+    let touched = false;
+    props.forEach((p) => {
+      const cssProp = p.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase());
+      const cur = (el.style && el.style[p]) || '';
+      // Only scrub if the computed style is actually set (prevents unnecessary writes)
+      const computed = getComputedStyle(el);
+      const val = computed[cssProp] || computed[p];
+      if (val && val !== 'none' && val !== 'normal') {
+        record.prev[p] = el.style[p];
+        el.style[p] = p.includes('mix') ? 'normal' : 'none';
+        touched = true;
+      }
+    });
+    if (touched) entries.push(record);
+  });
+
+  return () => {
+    entries.forEach(({ el, prev }) => {
+      Object.keys(prev).forEach((p) => {
+        el.style[p] = prev[p];
+      });
+    });
+  };
+}
+
+/** Register the inlined Anton font in a way both libs will use */
+async function ensureAnton(refEl) {
+  const match = antonBase64CSS.match(/base64,([^)]+)\)/);
+  if (!match) return null;
+  const font = new FontFace(
+    'AntonBase64',
+    `url(data:font/woff2;base64,${match[1]}) format('woff2')`,
+    { weight: '400', style: 'normal' }
+  );
+  await font.load();
+  document.fonts.add(font);
+  await document.fonts.load('1em AntonBase64');
+  await document.fonts.ready;
+
+  const styleEl = document.createElement('style');
+  styleEl.textContent = antonBase64CSS;
+  refEl.prepend(styleEl);
+  return styleEl;
 }
 
 const useImageDownload = (ref) => {
@@ -211,61 +210,43 @@ const useImageDownload = (ref) => {
     if (!ref.current) return;
 
     let styleEl = null;
-    let restoreStyles = null;
-    let restoreImages = null;
-    let restoreOverlays = null;
+    let restoreInline = null;
+    let restoreScrub = null;
 
+    // temp visibility adjustment (keep on screen-ish for Safari layout)
+    const el = ref.current;
+    const keep = {
+      opacity: el.style.opacity,
+      zIndex: el.style.zIndex,
+      top: el.style.top,
+      position: el.style.position,
+    };
     try {
-      // 1) Ensure the Anton base64 font is present and registered
-      const match = antonBase64CSS.match(/base64,([^)]+)\)/);
-      if (match) {
-        const font = new FontFace(
-          'AntonBase64',
-          `url(data:font/woff2;base64,${match[1]}) format('woff2')`,
-          { weight: '400', style: 'normal' }
-        );
-        await font.load();
-        document.fonts.add(font);
-        await document.fonts.load('1em AntonBase64');
-        await document.fonts.ready;
+      styleEl = await ensureAnton(el);
 
-        styleEl = document.createElement('style');
-        styleEl.textContent = antonBase64CSS;
-        ref.current.prepend(styleEl);
-      }
-
-      // 2) Make the export node visible enough for iOS layout
-      const el = ref.current;
-      restoreStyles = {
-        opacity: el.style.opacity,
-        zIndex: el.style.zIndex,
-        top: el.style.top,
-      };
+      // Make element paintable without hiding it from layout
+      el.style.position = el.style.position || 'relative';
       el.style.top = '0';
       el.style.opacity = '1';
       el.style.zIndex = '-1';
 
-      // 3) Wait → inline images/backgrounds (preserves gradients) → settle
+      // 1) Force eager loads, then wait once
+      forceEagerImages(el);
       await waitForImages(el);
-      restoreImages = await inlineImages(el);
+
+      // 2) Inline everything as Blob/objectURL (more reliable on iOS than data:)
+      restoreInline = await inlineAsObjectURLs(el);
+
+      // 3) Scrub transforms/filters/etc that cause Safari to drop layers
+      restoreScrub = scrubProblemStyles(el);
+
       await new Promise((r) => requestAnimationFrame(r));
+      await sleep(60);
 
-      // 4) Build async overlays so every <img> paints via CSS background (guaranteed data:)
-      restoreOverlays = await overlayImgsForSnapshot(el);
-
-      await sleep(120);
-
-      // 5) Snapshot — prefer html-to-image; html2canvas only if it throws
+      // 4) Snapshot
       let dataUrl;
-      try {
-        dataUrl = await toPng(el, {
-          cacheBust: true,
-          skipFonts: true, // we injected font via <style>
-          pixelRatio: options.pixelRatio ?? 2,
-          backgroundColor: options.backgroundColor ?? '#111',
-        });
-      } catch (err) {
-        console.warn('toPng failed; falling back to html2canvas:', err);
+      if (isIOS) {
+        // Prefer html2canvas on iOS — avoids foreignObject pitfalls
         const html2canvas = (
           await import('html2canvas/dist/html2canvas.esm.js')
         ).default;
@@ -282,27 +263,39 @@ const useImageDownload = (ref) => {
             doc
               .querySelectorAll('img[loading]')
               .forEach((n) => n.removeAttribute('loading'));
+            doc
+              .querySelectorAll('img[decoding]')
+              .forEach((n) => n.removeAttribute('decoding'));
           },
         });
         dataUrl = canvas.toDataURL('image/png');
+      } else {
+        // Desktop: html-to-image is fine & sharper
+        dataUrl = await toPng(el, {
+          cacheBust: true,
+          skipFonts: true,
+          pixelRatio: options.pixelRatio ?? 2,
+          backgroundColor: options.backgroundColor ?? '#111',
+        });
       }
 
-      // 6) Download
+      // 5) Download
       const link = document.createElement('a');
       link.download = filename;
       link.href = dataUrl;
       link.click();
     } catch (err) {
-      console.error('Failed to download image', err);
+      console.error('Download failed', err);
     } finally {
-      if (restoreOverlays) restoreOverlays();
-      if (restoreImages) restoreImages();
-      if (restoreStyles && ref.current) {
-        ref.current.style.opacity = restoreStyles.opacity;
-        ref.current.style.zIndex = restoreStyles.zIndex;
-        ref.current.style.top = restoreStyles.top;
-      }
+      if (restoreScrub) restoreScrub();
+      if (restoreInline) restoreInline();
       if (styleEl) styleEl.remove();
+
+      // restore visibility
+      el.style.opacity = keep.opacity;
+      el.style.zIndex = keep.zIndex;
+      el.style.top = keep.top;
+      el.style.position = keep.position;
     }
   };
 
