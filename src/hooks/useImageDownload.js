@@ -253,7 +253,6 @@ const useImageDownload = (ref) => {
       opacity: el.style.opacity,
       zIndex: el.style.zIndex,
       top: el.style.top,
-      left: el.style.left,
       position: el.style.position,
     };
 
@@ -263,7 +262,6 @@ const useImageDownload = (ref) => {
       // make paintable but off-stack
       el.style.position = el.style.position || 'relative';
       el.style.top = '0';
-      el.style.left = '0';
       el.style.opacity = '1';
       el.style.zIndex = '-1';
 
@@ -331,7 +329,6 @@ const useImageDownload = (ref) => {
       el.style.opacity = keep.opacity;
       el.style.zIndex = keep.zIndex;
       el.style.top = keep.top;
-      el.style.left = keep.left;
       el.style.position = keep.position;
     }
   };

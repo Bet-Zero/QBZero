@@ -119,9 +119,8 @@ const RankingsExportModal = ({
   const [isDownloading, setIsDownloading] = useState(false);
   const [isAdjustMode, setIsAdjustMode] = useState(false);
   const [currentRanking, setCurrentRanking] = useState(rankings);
-  const shareViewRef = useRef(null);
-  const exportViewRef = useRef(null);
-  const downloadImageHook = useImageDownload(exportViewRef);
+  const contentWrapperRef = useRef(null);
+  const downloadImageHook = useImageDownload(contentWrapperRef);
   
   // Update current ranking when prop changes
   React.useEffect(() => {
@@ -322,20 +321,15 @@ const RankingsExportModal = ({
     );
   };
 
-  const renderGridLayout = (isExport = false) => {
-    const containerRef = isExport ? exportViewRef : shareViewRef;
-
+  const renderGridLayout = () => {
     return (
       <div className="min-h-screen w-full bg-neutral-950 text-white flex items-center justify-center">
-        <div
-          ref={containerRef}
-          className={isExport ? "w-[1400px] px-16 pt-20 pb-12 flex flex-col" : "w-full max-w-[1400px] px-4 sm:px-8 md:px-16 pt-8 sm:pt-12 md:pt-20 pb-8 md:pb-12 flex flex-col"}
-        >
+        <div className="w-full max-w-[1400px] px-4 sm:px-8 md:px-16 pt-8 sm:pt-12 md:pt-20 pb-8 md:pb-12 flex flex-col">
           {/* Header (top-left) */}
           {renderPosterHeader()}
 
           {/* Grid with 6 columns x 7 rows on desktop, responsive on mobile */}
-          <div className={isExport ? "mt-6 mb-12 grid grid-cols-6 gap-x-4 gap-y-6 justify-items-center" : "mt-6 mb-12 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-2 sm:gap-x-3 md:gap-x-4 gap-y-4 sm:gap-y-5 md:gap-y-6 justify-items-center"}>
+          <div className="mt-6 mb-12 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-2 sm:gap-x-3 md:gap-x-4 gap-y-4 sm:gap-y-5 md:gap-y-6 justify-items-center">
             {currentRanking.slice(0, 42).map((item, idx) => {
               const player = item.qb || item.player || item;
               return (
@@ -346,7 +340,6 @@ const RankingsExportModal = ({
                   showLogoBg={showLogoBg}
                   showMovement={showMovement}
                   movementData={movementData}
-                  isExport={isExport}
                 />
               );
             })}
@@ -361,15 +354,12 @@ const RankingsExportModal = ({
 
   const renderContent = () => {
     if (viewType === 'grid') {
-      return renderGridLayout(false);
+      return renderGridLayout();
     }
 
     // List view
     return (
-      <div
-        ref={shareViewRef}
-        className="bg-neutral-900 p-6 rounded-lg border border-white/10"
-      >
+      <div className="bg-neutral-900 p-6 rounded-lg border border-white/10">
         <div className="text-center mb-6">
           <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 bg-clip-text text-transparent mb-2">
             NFL QB Rankings
@@ -557,119 +547,35 @@ const RankingsExportModal = ({
   };
 
   return (
-    <>
-      {/* Hidden export container - positioned off-screen but still rendered */}
-      <div className="fixed pointer-events-none" style={{ left: '-9999px', top: '0', opacity: 0.01, zIndex: -9999 }}>
-        {viewType === 'grid' ? (
-          renderGridLayout(true)
-        ) : (
-          <div
-            ref={exportViewRef}
-            className="bg-neutral-900 p-6 rounded-lg border border-white/10"
-            style={{ width: '1000px' }}
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-neutral-900 rounded-xl border border-white/20 w-full max-w-7xl max-h-[90vh] overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-white/10">
+          <div className="flex items-center gap-3">
+            <Download className="text-blue-500" size={24} />
+            <div>
+              <h2 className="text-xl font-bold text-white">{title}</h2>
+              <p className="text-white/60 text-sm">{subtitle}</p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-white/10 rounded-lg transition-all"
           >
-            <div className="text-center mb-6">
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 bg-clip-text text-transparent mb-2">
-                NFL QB Rankings
-              </h1>
-              <div className="text-sm text-white/60 italic">
-                {new Date().toLocaleDateString(undefined, {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                })}
-              </div>
-            </div>
+            <X className="text-white/60" size={20} />
+          </button>
+        </div>
 
-            <div className="grid grid-cols-4 gap-x-2 gap-y-1">
-              {/* Always render desktop 4-column layout for export */}
-              {createColumns(currentRanking, numCols.md).map((column, colIndex) => (
-                <div key={colIndex} className="flex flex-col gap-1">
-                  {column.map(({ player: columnPlayer, rank }) => {
-                    const headshot = getHeadshotSrc(columnPlayer);
-                    const logoPath = getLogoPath(columnPlayer.team);
-
-                    return (
-                      <div
-                        key={columnPlayer.id || columnPlayer.player_id || columnPlayer.name}
-                        className="bg-white/5 rounded p-2 flex items-center gap-2"
-                      >
-                        <div className="w-8 h-8 flex items-center justify-center bg-white/10 rounded-full font-bold text-white/80">
-                          {rank}
-                        </div>
-                        <img
-                          src={headshot}
-                          alt={columnPlayer.name || columnPlayer.display_name}
-                          className="w-10 h-10 rounded-full object-cover"
-                          loading="eager"
-                          decoding="async"
-                          crossOrigin="anonymous"
-                          onError={(e) => {
-                            e.target.src = '/assets/headshots/default.png';
-                          }}
-                        />
-                        <div className="flex-1 truncate text-sm">
-                          <div className="font-medium text-white truncate">
-                            {columnPlayer.name || columnPlayer.display_name}
-                          </div>
-                          <div className="flex items-center gap-1 text-white/60 text-xs">
-                            {logoPath && (
-                              <div className="w-4 h-4">
-                                <img
-                                  src={logoPath}
-                                  alt={columnPlayer.team}
-                                  className="w-full h-full object-contain"
-                                  loading="eager"
-                                  decoding="async"
-                                  crossOrigin="anonymous"
-                                  onError={(e) => {
-                                    e.target.style.display = 'none';
-                                  }}
-                                />
-                              </div>
-                            )}
-                            <span>{columnPlayer.team?.toUpperCase() || '—'}</span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ))}
-            </div>
+        {/* Action Buttons - Only show if not in adjust mode */}
+        {!isAdjustMode && (
+          <div className="p-6 border-b border-white/10">
+            <ActionButtons />
           </div>
         )}
-      </div>
 
-      {/* Visible modal */}
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div className="bg-neutral-900 rounded-xl border border-white/20 w-full max-w-7xl max-h-[90vh] overflow-hidden">
-          {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-white/10">
-            <div className="flex items-center gap-3">
-              <Download className="text-blue-500" size={24} />
-              <div>
-                <h2 className="text-xl font-bold text-white">{title}</h2>
-                <p className="text-white/60 text-sm">{subtitle}</p>
-              </div>
-            </div>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-white/10 rounded-lg transition-all"
-            >
-              <X className="text-white/60" size={20} />
-            </button>
-          </div>
-
-          {/* Action Buttons - Only show if not in adjust mode */}
-          {!isAdjustMode && (
-            <div className="p-6 border-b border-white/10">
-              <ActionButtons />
-            </div>
-          )}
-
-          {/* Content */}
-          <div className="overflow-y-auto max-h-[calc(90vh-200px)]">
+        {/* Content */}
+        <div className="overflow-y-auto max-h-[calc(90vh-200px)]">
+          <div ref={contentWrapperRef}>
             {isAdjustMode ? (
               <AdjustableRankings
                 initialRanking={currentRanking}
@@ -682,7 +588,7 @@ const RankingsExportModal = ({
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 
