@@ -1,10 +1,9 @@
-// useImageDownload.js — reliable mobile export (iOS-safe): blob/objectURL inlining + style scrub + iOS html2canvas path
+// useImageDownload.js — iOS-safe export, no warping (dimension-lock + safe scrub + blob/objectURL inlining)
 import { toPng } from 'html-to-image';
 import { antonBase64CSS } from '@/fonts/antonBase64';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-/** Tiny iOS detector (we route to html2canvas there) */
 const isIOS = (() => {
   if (typeof navigator === 'undefined') return false;
   return (
@@ -13,7 +12,7 @@ const isIOS = (() => {
   );
 })();
 
-/** Fetch → Blob */
+/* ---------- fetch helpers ---------- */
 async function fetchBlob(url) {
   const res = await fetch(url, {
     cache: 'no-store',
@@ -24,7 +23,7 @@ async function fetchBlob(url) {
   return await res.blob();
 }
 
-/** Force all <img> to be eager + sync for Safari */
+/* ---------- image load control ---------- */
 function forceEagerImages(root) {
   root.querySelectorAll('img').forEach((img) => {
     img.setAttribute('loading', 'eager');
@@ -32,7 +31,6 @@ function forceEagerImages(root) {
   });
 }
 
-/** Wait until all <img> are loaded (or errored) */
 async function waitForImages(root) {
   const images = Array.from(root.querySelectorAll('img'));
   await Promise.all(
@@ -51,11 +49,51 @@ async function waitForImages(root) {
   );
 }
 
-/**
- * Inline every <img> and every CSS background-image `url(...)` as Blob -> objectURL.
- * We prefer object URLs over data: URLs (iOS is significantly more stable with them).
- * Returns a restore() that revokes objectURLs and original attrs.
- */
+/* ---------- dimension locking (prevents stretch/warp) ---------- */
+function lockDimensions(root) {
+  const entries = [];
+  const all = root.querySelectorAll('*');
+
+  all.forEach((el) => {
+    const cs = getComputedStyle(el);
+
+    // only lock real boxes
+    const w = el.offsetWidth;
+    const h = el.offsetHeight;
+    if (!w || !h) return;
+
+    const record = { el, width: el.style.width, height: el.style.height };
+    el.style.width = `${w}px`;
+    el.style.height = `${h}px`;
+    entries.push(record);
+
+    // for <img>, also pin object-fit/position via wrapper style so html2canvas matches
+    if (el.tagName === 'IMG') {
+      entries.push(
+        { el, prop: 'objectFit', prev: el.style.objectFit },
+        { el, prop: 'objectPosition', prev: el.style.objectPosition },
+        { el, prop: 'maxWidth', prev: el.style.maxWidth },
+        { el, prop: 'maxHeight', prev: el.style.maxHeight }
+      );
+      el.style.objectFit = cs.objectFit || 'cover';
+      el.style.objectPosition = cs.objectPosition || '50% 50%';
+      el.style.maxWidth = `${w}px`;
+      el.style.maxHeight = `${h}px`;
+    }
+  });
+
+  return () => {
+    entries.forEach((r) => {
+      if ('prop' in r) r.el.style[r.prop] = r.prev;
+      else {
+        r.el.style.width = r.width;
+        r.el.style.height = r.height;
+      }
+    });
+  };
+}
+
+/* ---------- inline every image/background as blob:objectURL ---------- */
 async function inlineAsObjectURLs(root) {
   const revokeQueue = [];
   const restorers = [];
@@ -76,7 +114,7 @@ async function inlineAsObjectURLs(root) {
         else img.removeAttribute('crossorigin');
       });
 
-      if (prev.srcset) img.removeAttribute('srcset'); // stop Safari from swapping
+      if (prev.srcset) img.removeAttribute('srcset'); // stop Safari swaps
       const actual = img.currentSrc || img.src;
       if (!actual) return;
 
@@ -86,6 +124,7 @@ async function inlineAsObjectURLs(root) {
         revokeQueue.push(url);
         img.setAttribute('crossorigin', 'anonymous');
         img.src = url;
+
         if (img.decode) {
           try {
             await img.decode();
@@ -94,7 +133,7 @@ async function inlineAsObjectURLs(root) {
           await sleep(16);
         }
       } catch {
-        // keep original on failure
+        /* keep original */
       }
     })
   );
@@ -127,7 +166,7 @@ async function inlineAsObjectURLs(root) {
           const esc = u.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
           newBg = newBg.replace(new RegExp(esc, 'g'), url);
         } catch {
-          // ignore this layer
+          /* ignore this layer */
         }
       }
       el.style.backgroundImage = newBg;
@@ -140,40 +179,35 @@ async function inlineAsObjectURLs(root) {
   };
 }
 
-/**
- * Scrub paint-breaking styles during capture (Safari/html2canvas/html-to-image can drop layers).
- * We remove: transform, filter, backdrop-filter, mix-blend-mode, clip-path, mask-image.
- * Returns a restore() to put everything back.
- */
-function scrubProblemStyles(root) {
+/* ---------- SAFE scrub (no transform!) ---------- */
+function scrubPaintBreakers(root) {
   const entries = [];
   const props = [
-    'transform',
     'filter',
     'backdropFilter',
-    'mixBlendMode',
     'webkitBackdropFilter',
+    'mixBlendMode',
     'clipPath',
     'webkitMaskImage',
     'maskImage',
   ];
 
   root.querySelectorAll('*').forEach((el) => {
-    const record = { el, prev: {} };
+    const rec = { el, prev: {} };
     let touched = false;
+    const cs = getComputedStyle(el);
+
     props.forEach((p) => {
       const cssProp = p.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase());
-      const cur = (el.style && el.style[p]) || '';
-      // Only scrub if the computed style is actually set (prevents unnecessary writes)
-      const computed = getComputedStyle(el);
-      const val = computed[cssProp] || computed[p];
+      const val = cs[p] || cs[cssProp];
       if (val && val !== 'none' && val !== 'normal') {
-        record.prev[p] = el.style[p];
+        rec.prev[p] = el.style[p];
         el.style[p] = p.includes('mix') ? 'normal' : 'none';
         touched = true;
       }
     });
-    if (touched) entries.push(record);
+
+    if (touched) entries.push(rec);
   });
 
   return () => {
@@ -185,7 +219,7 @@ function scrubProblemStyles(root) {
   };
 }
 
-/** Register the inlined Anton font in a way both libs will use */
+/* ---------- Anton font ---------- */
 async function ensureAnton(refEl) {
   const match = antonBase64CSS.match(/base64,([^)]+)\)/);
   if (!match) return null;
@@ -209,44 +243,45 @@ const useImageDownload = (ref) => {
   const download = async (filename, options = {}) => {
     if (!ref.current) return;
 
+    const el = ref.current;
     let styleEl = null;
+    let restoreDims = null;
     let restoreInline = null;
     let restoreScrub = null;
 
-    // temp visibility adjustment (keep on screen-ish for Safari layout)
-    const el = ref.current;
     const keep = {
       opacity: el.style.opacity,
       zIndex: el.style.zIndex,
       top: el.style.top,
       position: el.style.position,
     };
+
     try {
       styleEl = await ensureAnton(el);
 
-      // Make element paintable without hiding it from layout
+      // make paintable but off-stack
       el.style.position = el.style.position || 'relative';
       el.style.top = '0';
       el.style.opacity = '1';
       el.style.zIndex = '-1';
 
-      // 1) Force eager loads, then wait once
       forceEagerImages(el);
       await waitForImages(el);
 
-      // 2) Inline everything as Blob/objectURL (more reliable on iOS than data:)
+      // freeze sizes so swapping sources can't stretch anything
+      restoreDims = lockDimensions(el);
+
+      // inline to blob/objectURL for iOS reliability
       restoreInline = await inlineAsObjectURLs(el);
 
-      // 3) Scrub transforms/filters/etc that cause Safari to drop layers
-      restoreScrub = scrubProblemStyles(el);
+      // remove only known paint-breakers
+      restoreScrub = scrubPaintBreakers(el);
 
       await new Promise((r) => requestAnimationFrame(r));
-      await sleep(60);
+      await sleep(50);
 
-      // 4) Snapshot
       let dataUrl;
       if (isIOS) {
-        // Prefer html2canvas on iOS — avoids foreignObject pitfalls
         const html2canvas = (
           await import('html2canvas/dist/html2canvas.esm.js')
         ).default;
@@ -260,6 +295,7 @@ const useImageDownload = (ref) => {
           windowWidth: el.scrollWidth,
           windowHeight: el.scrollHeight,
           onclone: (doc) => {
+            // ensure no lazy settings in clone
             doc
               .querySelectorAll('img[loading]')
               .forEach((n) => n.removeAttribute('loading'));
@@ -270,7 +306,6 @@ const useImageDownload = (ref) => {
         });
         dataUrl = canvas.toDataURL('image/png');
       } else {
-        // Desktop: html-to-image is fine & sharper
         dataUrl = await toPng(el, {
           cacheBust: true,
           skipFonts: true,
@@ -279,7 +314,6 @@ const useImageDownload = (ref) => {
         });
       }
 
-      // 5) Download
       const link = document.createElement('a');
       link.download = filename;
       link.href = dataUrl;
@@ -289,9 +323,9 @@ const useImageDownload = (ref) => {
     } finally {
       if (restoreScrub) restoreScrub();
       if (restoreInline) restoreInline();
+      if (restoreDims) restoreDims();
       if (styleEl) styleEl.remove();
 
-      // restore visibility
       el.style.opacity = keep.opacity;
       el.style.zIndex = keep.zIndex;
       el.style.top = keep.top;
