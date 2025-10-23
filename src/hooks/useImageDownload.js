@@ -1,5 +1,5 @@
 // useImageDownload.js — iOS-safe export, no warping (dimension-lock + safe scrub + blob/objectURL inlining)
-import { toPng } from 'html-to-image';
+import { toCanvas } from 'html-to-image';
 import { antonBase64CSS } from '@/fonts/antonBase64';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -93,92 +93,6 @@ function lockDimensions(root) {
   };
 }
 
-/* ---------- inline every image/background as blob:objectURL ---------- */
-async function inlineAsObjectURLs(root) {
-  const revokeQueue = [];
-  const restorers = [];
-
-  // <img> tags
-  const imgs = Array.from(root.querySelectorAll('img'));
-  await Promise.all(
-    imgs.map(async (img) => {
-      const prev = {
-        src: img.getAttribute('src'),
-        srcset: img.getAttribute('srcset'),
-        cross: img.getAttribute('crossorigin'),
-      };
-      restorers.push(() => {
-        if (prev.src !== null) img.setAttribute('src', prev.src);
-        if (prev.srcset !== null) img.setAttribute('srcset', prev.srcset);
-        if (prev.cross !== null) img.setAttribute('crossorigin', prev.cross);
-        else img.removeAttribute('crossorigin');
-      });
-
-      if (prev.srcset) img.removeAttribute('srcset'); // stop Safari swaps
-      const actual = img.currentSrc || img.src;
-      if (!actual) return;
-
-      try {
-        const blob = await fetchBlob(actual);
-        const url = URL.createObjectURL(blob);
-        revokeQueue.push(url);
-        img.setAttribute('crossorigin', 'anonymous');
-        img.src = url;
-
-        if (img.decode) {
-          try {
-            await img.decode();
-          } catch {}
-        } else {
-          await sleep(16);
-        }
-      } catch {
-        /* keep original */
-      }
-    })
-  );
-
-  // CSS backgrounds
-  const nodes = Array.from(root.querySelectorAll('*'));
-  await Promise.all(
-    nodes.map(async (el) => {
-      const cs = getComputedStyle(el);
-      const bg = cs.backgroundImage;
-      if (!bg || bg === 'none') return;
-
-      const matches = [...bg.matchAll(/url\((["']?)(.*?)\1\)/g)];
-      const urls = matches
-        .map((m) => m[2])
-        .filter((u) => u && !u.startsWith('data:') && !u.startsWith('blob:'));
-      if (urls.length === 0) return;
-
-      const prevBg = el.style.backgroundImage;
-      restorers.push(() => {
-        el.style.backgroundImage = prevBg;
-      });
-
-      let newBg = bg;
-      for (const u of urls) {
-        try {
-          const blob = await fetchBlob(u);
-          const url = URL.createObjectURL(blob);
-          revokeQueue.push(url);
-          const esc = u.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-          newBg = newBg.replace(new RegExp(esc, 'g'), url);
-        } catch {
-          /* ignore this layer */
-        }
-      }
-      el.style.backgroundImage = newBg;
-    })
-  );
-
-  return () => {
-    restorers.reverse().forEach((fn) => fn());
-    revokeQueue.forEach((u) => URL.revokeObjectURL(u));
-  };
-}
-
 /* ---------- SAFE scrub (no transform!) ---------- */
 function scrubPaintBreakers(root) {
   const entries = [];
@@ -239,6 +153,24 @@ async function ensureAnton(refEl) {
   return styleEl;
 }
 
+const canvasToBlob = async (canvas) => {
+  if (!canvas) throw new Error('Canvas element is required');
+
+  if (canvas.toBlob) {
+    const blob = await new Promise((resolve, reject) => {
+      canvas.toBlob((result) => {
+        if (result) resolve(result);
+        else reject(new Error('Canvas toBlob returned null'));
+      }, 'image/png');
+    });
+    return blob;
+  }
+
+  const dataUrl = canvas.toDataURL('image/png');
+  const response = await fetch(dataUrl);
+  return await response.blob();
+};
+
 const useImageDownload = (ref) => {
   const download = async (filename, options = {}) => {
     if (!ref.current) {
@@ -247,9 +179,19 @@ const useImageDownload = (ref) => {
     }
 
     const el = ref.current;
+    const rect = el.getBoundingClientRect();
+    const width = Math.max(
+      options.width || 0,
+      el.scrollWidth || el.offsetWidth || rect.width || 0
+    );
+    const height = Math.max(
+      options.height || 0,
+      el.scrollHeight || el.offsetHeight || rect.height || 0
+    );
+    const pixelRatio =
+      options.pixelRatio || (typeof window !== 'undefined' ? window.devicePixelRatio || 2 : 2);
     let styleEl = null;
     let restoreDims = null;
-    let restoreInline = null;
     let restoreScrub = null;
 
     const keep = {
@@ -257,16 +199,17 @@ const useImageDownload = (ref) => {
       zIndex: el.style.zIndex,
       top: el.style.top,
       position: el.style.position,
+      left: el.style.left,
+      pointerEvents: el.style.pointerEvents,
     };
 
     try {
       styleEl = await ensureAnton(el);
 
-      // make paintable but off-stack
-      el.style.position = el.style.position || 'relative';
-      el.style.top = '0';
+      // Don't move the element - keep it in place to avoid security issues
       el.style.opacity = '1';
-      el.style.zIndex = '-1';
+      el.style.pointerEvents = 'none';
+      el.style.zIndex = '9999';
 
       forceEagerImages(el);
       await waitForImages(el);
@@ -274,29 +217,34 @@ const useImageDownload = (ref) => {
       // freeze sizes so swapping sources can't stretch anything
       restoreDims = lockDimensions(el);
 
-      // inline to blob/objectURL for iOS reliability
-      restoreInline = await inlineAsObjectURLs(el);
+      // Skip the problematic blob URL conversion that causes security errors
 
       // remove only known paint-breakers
       restoreScrub = scrubPaintBreakers(el);
 
       await new Promise((r) => requestAnimationFrame(r));
-      await sleep(50);
+      await sleep(100);
 
-      let dataUrl;
+      let blob;
       if (isIOS) {
         const html2canvas = (
           await import('html2canvas/dist/html2canvas.esm.js')
         ).default;
         const canvas = await html2canvas(el, {
           backgroundColor: options.backgroundColor ?? '#111',
-          scale: options.pixelRatio ?? 2,
+          scale: pixelRatio,
           useCORS: true,
-          allowTaint: false,
+          allowTaint: true, // Allow tainted canvas to handle CORS issues
           logging: false,
-          imageTimeout: 8000,
-          windowWidth: el.scrollWidth,
-          windowHeight: el.scrollHeight,
+          imageTimeout: 15000,
+          width: width || undefined,
+          height: height || undefined,
+          windowWidth: width || undefined,
+          windowHeight: height || undefined,
+          x: 0,
+          y: 0,
+          scrollX: 0,
+          scrollY: 0,
           onclone: (doc) => {
             // ensure no lazy settings in clone
             doc
@@ -307,23 +255,25 @@ const useImageDownload = (ref) => {
               .forEach((n) => n.removeAttribute('decoding'));
           },
         });
-        dataUrl = canvas.toDataURL('image/png');
+        blob = await canvasToBlob(canvas);
       } else {
-        dataUrl = await toPng(el, {
+        const canvas = await toCanvas(el, {
           cacheBust: true,
           skipFonts: true,
-          pixelRatio: options.pixelRatio ?? 2,
+          pixelRatio,
           backgroundColor: options.backgroundColor ?? '#111',
+          width: width || undefined,
+          height: height || undefined,
+          canvasWidth: width || undefined,
+          canvasHeight: height || undefined,
         });
+        blob = await canvasToBlob(canvas);
       }
 
-      if (!dataUrl) {
-        throw new Error('Failed to generate image data URL');
+      if (!blob) {
+        throw new Error('Failed to generate image blob');
       }
 
-      // Convert data URL to blob for better browser compatibility with large images
-      const response = await fetch(dataUrl);
-      const blob = await response.blob();
       const blobUrl = URL.createObjectURL(blob);
 
       const link = document.createElement('a');
@@ -345,7 +295,6 @@ const useImageDownload = (ref) => {
       throw err;
     } finally {
       if (restoreScrub) restoreScrub();
-      if (restoreInline) restoreInline();
       if (restoreDims) restoreDims();
       if (styleEl) styleEl.remove();
 
@@ -353,6 +302,9 @@ const useImageDownload = (ref) => {
       el.style.zIndex = keep.zIndex;
       el.style.top = keep.top;
       el.style.position = keep.position;
+      el.style.left = keep.left;
+      if (keep.pointerEvents) el.style.pointerEvents = keep.pointerEvents;
+      else el.style.removeProperty('pointer-events');
     }
   };
 
