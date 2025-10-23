@@ -558,15 +558,15 @@ const RankingsExportModal = ({
 
   return (
     <>
-      {/* Hidden export container - always renders desktop layout for consistent screenshots */}
-      {/* Position below viewport with minimal opacity so mobile browsers still load images */}
-      <div className="fixed pointer-events-none" style={{ left: '0', top: '100vh', opacity: 0.001, zIndex: -9999 }}>
+      {/* Hidden export container - positioned off-screen but still rendered */}
+      <div className="fixed pointer-events-none" style={{ left: '-9999px', top: '0', opacity: 0.01, zIndex: -9999 }}>
         {viewType === 'grid' ? (
           renderGridLayout(true)
         ) : (
           <div
             ref={exportViewRef}
             className="bg-neutral-900 p-6 rounded-lg border border-white/10"
+            style={{ width: '1000px' }}
           >
             <div className="text-center mb-6">
               <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 bg-clip-text text-transparent mb-2">
