@@ -305,14 +305,50 @@ const useImageDownload = (ref) => {
         if (img.complete && img.naturalWidth > 0) {
           try {
             const originalSrc = img.src;
+            const originalCrossOrigin = img.crossOrigin;
+
+            // If converting fails due to CORS, we'll catch it and skip
             const canvas = document.createElement('canvas');
             canvas.width = img.naturalWidth;
             canvas.height = img.naturalHeight;
             const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0);
-            const dataUrl = canvas.toDataURL('image/png');
-            img.src = dataUrl;
-            imageRestores.push({ img, originalSrc });
+
+            try {
+              ctx.drawImage(img, 0, 0);
+              const dataUrl = canvas.toDataURL('image/png');
+              img.src = dataUrl;
+              imageRestores.push({ img, originalSrc, originalCrossOrigin });
+            } catch (drawError) {
+              // Image is tainted, try reloading with crossOrigin
+              console.log('Image tainted, reloading with CORS:', originalSrc);
+
+              // Store original and set crossOrigin
+              img.crossOrigin = 'anonymous';
+
+              // Reload the image
+              await new Promise((resolve) => {
+                const tempSrc = img.src;
+                img.src = '';
+                img.onload = resolve;
+                img.onerror = resolve;
+                // Add cache buster to force reload
+                img.src = originalSrc.includes('?')
+                  ? `${originalSrc}&_t=${Date.now()}`
+                  : `${originalSrc}?_t=${Date.now()}`;
+              });
+
+              // Try again after reload
+              if (img.complete && img.naturalWidth > 0) {
+                const canvas2 = document.createElement('canvas');
+                canvas2.width = img.naturalWidth;
+                canvas2.height = img.naturalHeight;
+                const ctx2 = canvas2.getContext('2d');
+                ctx2.drawImage(img, 0, 0);
+                const dataUrl = canvas2.toDataURL('image/png');
+                img.src = dataUrl;
+                imageRestores.push({ img, originalSrc, originalCrossOrigin });
+              }
+            }
           } catch (e) {
             console.warn('Could not convert image to data URL:', e);
           }
