@@ -277,6 +277,7 @@ const useImageDownload = (ref) => {
 
     const keep = {
       opacity: el.style.opacity,
+      visibility: el.style.visibility,
       zIndex: el.style.zIndex,
       top: el.style.top,
       position: el.style.position,
@@ -287,8 +288,9 @@ const useImageDownload = (ref) => {
     try {
       styleEl = await ensureAnton(el);
 
-      // Don't move the element - keep it in place to avoid security issues
+      // Make element visible for canvas rendering (critical for proper capture)
       el.style.opacity = '1';
+      el.style.visibility = 'visible';
       el.style.pointerEvents = 'none';
       el.style.zIndex = '9999';
 
@@ -453,6 +455,7 @@ const useImageDownload = (ref) => {
       if (styleEl) styleEl.remove();
 
       el.style.opacity = keep.opacity;
+      el.style.visibility = keep.visibility;
       el.style.zIndex = keep.zIndex;
       el.style.top = keep.top;
       el.style.position = keep.position;

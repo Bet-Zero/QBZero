@@ -602,15 +602,17 @@ const RankingsExportModal = ({
   return (
     <>
       {/* Hidden export container - always renders desktop layout for consistent screenshots */}
-      {/* Positioned fixed off-screen left but with proper dimensions to ensure rendering */}
+      {/* Use opacity and visibility instead of off-screen positioning to ensure proper canvas rendering */}
       <div 
         className="fixed pointer-events-none"
         style={{ 
-          left: '-10000px',
+          left: '0',
           top: '0',
           width: 'auto',
           height: 'auto',
           overflow: 'visible',
+          opacity: '0',
+          visibility: 'hidden',
           zIndex: -9999
         }}
       >
