@@ -211,7 +211,7 @@ const canvasToBlob = async (canvas) => {
   try {
     console.log('Using toDataURL method for blob conversion');
     const dataUrl = canvas.toDataURL('image/png', 1.0);
-    
+
     if (!dataUrl || dataUrl === 'data:,') {
       throw new Error('Canvas toDataURL returned empty data');
     }
@@ -226,18 +226,21 @@ const canvasToBlob = async (canvas) => {
     const binaryString = atob(base64Data);
     const len = binaryString.length;
     const bytes = new Uint8Array(len);
-    
+
     for (let i = 0; i < len; i++) {
       bytes[i] = binaryString.charCodeAt(i);
     }
 
     const blob = new Blob([bytes], { type: 'image/png' });
-    
+
     if (!blob || blob.size === 0) {
       throw new Error('Converted blob is empty');
     }
 
-    console.log('Successfully created blob using toDataURL method, size:', blob.size);
+    console.log(
+      'Successfully created blob using toDataURL method, size:',
+      blob.size
+    );
     return blob;
   } catch (error) {
     console.error('Fallback toDataURL method also failed:', error);
@@ -304,7 +307,7 @@ const useImageDownload = (ref) => {
 
       let blob;
       let canvas;
-      
+
       if (isIOS) {
         const html2canvas = (
           await import('html2canvas/dist/html2canvas.esm.js')
@@ -355,7 +358,7 @@ const useImageDownload = (ref) => {
       console.log('Canvas created successfully:', {
         width: canvas.width,
         height: canvas.height,
-        isIOS
+        isIOS,
       });
 
       blob = await canvasToBlob(canvas);
