@@ -18,7 +18,6 @@ const GridCard = ({
   showLogoBg,
   showMovement,
   movementData = {},
-  isExport = false,
 }) => {
   const logoPath = getLogoPath(player.team);
   const headshot = getHeadshotSrc(player);
@@ -99,7 +98,6 @@ GridCard.propTypes = {
   showLogoBg: PropTypes.bool.isRequired,
   showMovement: PropTypes.bool.isRequired,
   movementData: PropTypes.object,
-  isExport: PropTypes.bool,
 };
 
 const RankingsExportModal = ({
@@ -175,6 +173,16 @@ const RankingsExportModal = ({
       return;
     }
 
+    // Extra validation for mobile devices
+    const rect = exportViewRef.current.getBoundingClientRect();
+    console.log('Export container dimensions:', {
+      width: exportViewRef.current.offsetWidth,
+      height: exportViewRef.current.offsetHeight,
+      scrollWidth: exportViewRef.current.scrollWidth,
+      scrollHeight: exportViewRef.current.scrollHeight,
+      boundingRect: rect
+    });
+
     setIsDownloading(true);
     const date = new Date()
       .toLocaleDateString('en-US', {
@@ -190,7 +198,19 @@ const RankingsExportModal = ({
       console.log('Download completed successfully');
     } catch (error) {
       console.error('Download failed with error:', error);
-      alert(`Failed to download image: ${error.message || 'Unknown error'}`);
+      
+      // Provide more helpful error messages
+      let errorMessage = error.message || 'Unknown error';
+      
+      if (errorMessage.includes('toBlob')) {
+        errorMessage = 'Failed to generate image. Please try again or use a different browser.';
+      } else if (errorMessage.includes('timeout')) {
+        errorMessage = 'Download timed out. Please try again with a stable connection.';
+      } else if (errorMessage.includes('dimensions')) {
+        errorMessage = 'Invalid image dimensions. Please refresh the page and try again.';
+      }
+      
+      alert(`Failed to download image: ${errorMessage}`);
     } finally {
       setIsDownloading(false);
     }
@@ -370,7 +390,6 @@ const RankingsExportModal = ({
                   showLogoBg={showLogoBg}
                   showMovement={showMovement}
                   movementData={movementData}
-                  isExport={isExport}
                 />
               );
             })}
