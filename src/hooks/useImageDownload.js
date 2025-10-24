@@ -273,6 +273,7 @@ const useImageDownload = (ref) => {
     let styleEl = null;
     let restoreDims = null;
     let restoreScrub = null;
+    let imageRestores = [];
 
     const keep = {
       opacity: el.style.opacity,
@@ -297,7 +298,26 @@ const useImageDownload = (ref) => {
       // freeze sizes so swapping sources can't stretch anything
       restoreDims = lockDimensions(el);
 
-      // Skip the problematic blob URL conversion that causes security errors
+      // Convert images to data URLs to avoid CORS issues
+      const images = Array.from(el.querySelectorAll('img'));
+
+      for (const img of images) {
+        if (img.complete && img.naturalWidth > 0) {
+          try {
+            const originalSrc = img.src;
+            const canvas = document.createElement('canvas');
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            const dataUrl = canvas.toDataURL('image/png');
+            img.src = dataUrl;
+            imageRestores.push({ img, originalSrc });
+          } catch (e) {
+            console.warn('Could not convert image to data URL:', e);
+          }
+        }
+      }
 
       // remove only known paint-breakers
       restoreScrub = scrubPaintBreakers(el);
@@ -387,6 +407,11 @@ const useImageDownload = (ref) => {
       console.error('Download failed', err);
       throw err;
     } finally {
+      // Restore original image sources
+      imageRestores.forEach(({ img, originalSrc }) => {
+        img.src = originalSrc;
+      });
+
       if (restoreScrub) restoreScrub();
       if (restoreDims) restoreDims();
       if (styleEl) styleEl.remove();
