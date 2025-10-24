@@ -158,7 +158,9 @@ const canvasToBlob = async (canvas) => {
 
   // Check if canvas has valid dimensions
   if (canvas.width === 0 || canvas.height === 0) {
-    throw new Error(`Invalid canvas dimensions: ${canvas.width}x${canvas.height}`);
+    throw new Error(
+      `Invalid canvas dimensions: ${canvas.width}x${canvas.height}`
+    );
   }
 
   // Check if canvas is tainted (which can cause toBlob to fail)
@@ -177,16 +179,20 @@ const canvasToBlob = async (canvas) => {
           reject(new Error('Canvas toBlob timeout'));
         }, 10000); // 10 second timeout
 
-        canvas.toBlob((result) => {
-          clearTimeout(timeout);
-          if (result && result.size > 0) {
-            resolve(result);
-          } else {
-            reject(new Error('Canvas toBlob returned null or empty blob'));
-          }
-        }, 'image/png', 0.95); // Slightly lower quality for better compatibility
+        canvas.toBlob(
+          (result) => {
+            clearTimeout(timeout);
+            if (result && result.size > 0) {
+              resolve(result);
+            } else {
+              reject(new Error('Canvas toBlob returned null or empty blob'));
+            }
+          },
+          'image/png',
+          0.95
+        ); // Slightly lower quality for better compatibility
       });
-      
+
       if (blob && blob.size > 0) {
         return blob;
       }
@@ -201,18 +207,18 @@ const canvasToBlob = async (canvas) => {
     if (!dataUrl || dataUrl === 'data:,') {
       throw new Error('Canvas toDataURL returned empty data');
     }
-    
+
     // Convert data URL to blob
     const response = await fetch(dataUrl);
     if (!response.ok) {
       throw new Error(`Failed to convert dataURL to blob: ${response.status}`);
     }
-    
+
     const blob = await response.blob();
     if (!blob || blob.size === 0) {
       throw new Error('Converted blob is empty');
     }
-    
+
     return blob;
   } catch (error) {
     console.error('Fallback toDataURL method also failed:', error);
