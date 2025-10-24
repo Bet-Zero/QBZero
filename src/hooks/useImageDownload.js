@@ -12,17 +12,6 @@ const isIOS = (() => {
   );
 })();
 
-/* ---------- fetch helpers ---------- */
-async function fetchBlob(url) {
-  const res = await fetch(url, {
-    cache: 'no-store',
-    credentials: 'omit',
-    mode: 'cors',
-  });
-  if (!res.ok) throw new Error(`Failed ${url}: ${res.status}`);
-  return await res.blob();
-}
-
 /* ---------- image load control ---------- */
 function forceEagerImages(root) {
   root.querySelectorAll('img').forEach((img) => {
@@ -163,37 +152,54 @@ const canvasToBlob = async (canvas) => {
     );
   }
 
+  // Small delay to ensure canvas is fully rendered (critical for mobile)
+  await sleep(150);
+
   // Check if canvas is tainted (which can cause toBlob to fail)
+  let isTainted = false;
   try {
     // This will throw if canvas is tainted
-    canvas.getContext('2d').getImageData(0, 0, 1, 1);
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.getImageData(0, 0, 1, 1);
+    }
   } catch (e) {
-    console.warn('Canvas may be tainted, trying fallback method');
+    console.warn('Canvas may be tainted, will use fallback method');
+    isTainted = true;
   }
 
-  // Try the native toBlob method first
-  if (canvas.toBlob) {
+  // On mobile or if tainted, prefer toDataURL method which is more reliable
+  const preferDataURL = isIOS || isTainted;
+
+  if (!preferDataURL && canvas.toBlob) {
+    // Try the native toBlob method first (for desktop)
     try {
       const blob = await new Promise((resolve, reject) => {
         const timeout = setTimeout(() => {
           reject(new Error('Canvas toBlob timeout'));
-        }, 10000); // 10 second timeout
+        }, 15000); // 15 second timeout for slower devices
 
-        canvas.toBlob(
-          (result) => {
-            clearTimeout(timeout);
-            if (result && result.size > 0) {
-              resolve(result);
-            } else {
-              reject(new Error('Canvas toBlob returned null or empty blob'));
-            }
-          },
-          'image/png',
-          0.95
-        ); // Slightly lower quality for better compatibility
+        try {
+          canvas.toBlob(
+            (result) => {
+              clearTimeout(timeout);
+              if (result && result.size > 0) {
+                resolve(result);
+              } else {
+                reject(new Error('Canvas toBlob returned null or empty blob'));
+              }
+            },
+            'image/png',
+            1.0 // Use full quality
+          );
+        } catch (err) {
+          clearTimeout(timeout);
+          reject(err);
+        }
       });
 
       if (blob && blob.size > 0) {
+        console.log('Successfully created blob using toBlob method');
         return blob;
       }
     } catch (error) {
@@ -201,24 +207,37 @@ const canvasToBlob = async (canvas) => {
     }
   }
 
-  // Fallback method using toDataURL
+  // Fallback method using toDataURL (preferred for mobile/iOS)
   try {
-    const dataUrl = canvas.toDataURL('image/png', 0.95);
+    console.log('Using toDataURL method for blob conversion');
+    const dataUrl = canvas.toDataURL('image/png', 1.0);
+    
     if (!dataUrl || dataUrl === 'data:,') {
       throw new Error('Canvas toDataURL returned empty data');
     }
 
-    // Convert data URL to blob
-    const response = await fetch(dataUrl);
-    if (!response.ok) {
-      throw new Error(`Failed to convert dataURL to blob: ${response.status}`);
+    // Convert data URL to blob manually (more reliable than fetch on mobile)
+    const base64Data = dataUrl.split(',')[1];
+    if (!base64Data) {
+      throw new Error('Failed to extract base64 data from dataURL');
     }
 
-    const blob = await response.blob();
+    // Decode base64 to binary
+    const binaryString = atob(base64Data);
+    const len = binaryString.length;
+    const bytes = new Uint8Array(len);
+    
+    for (let i = 0; i < len; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+
+    const blob = new Blob([bytes], { type: 'image/png' });
+    
     if (!blob || blob.size === 0) {
       throw new Error('Converted blob is empty');
     }
 
+    console.log('Successfully created blob using toDataURL method, size:', blob.size);
     return blob;
   } catch (error) {
     console.error('Fallback toDataURL method also failed:', error);
@@ -281,14 +300,16 @@ const useImageDownload = (ref) => {
       restoreScrub = scrubPaintBreakers(el);
 
       await new Promise((r) => requestAnimationFrame(r));
-      await sleep(100);
+      await sleep(200); // Increased wait time for mobile devices
 
       let blob;
+      let canvas;
+      
       if (isIOS) {
         const html2canvas = (
           await import('html2canvas/dist/html2canvas.esm.js')
         ).default;
-        const canvas = await html2canvas(el, {
+        canvas = await html2canvas(el, {
           backgroundColor: options.backgroundColor ?? '#111',
           scale: pixelRatio,
           useCORS: true,
@@ -313,9 +334,8 @@ const useImageDownload = (ref) => {
               .forEach((n) => n.removeAttribute('decoding'));
           },
         });
-        blob = await canvasToBlob(canvas);
       } else {
-        const canvas = await toCanvas(el, {
+        canvas = await toCanvas(el, {
           cacheBust: true,
           skipFonts: true,
           pixelRatio,
@@ -325,8 +345,20 @@ const useImageDownload = (ref) => {
           canvasWidth: width || undefined,
           canvasHeight: height || undefined,
         });
-        blob = await canvasToBlob(canvas);
       }
+
+      // Verify canvas was created successfully
+      if (!canvas) {
+        throw new Error('Failed to create canvas from element');
+      }
+
+      console.log('Canvas created successfully:', {
+        width: canvas.width,
+        height: canvas.height,
+        isIOS
+      });
+
+      blob = await canvasToBlob(canvas);
 
       if (!blob) {
         throw new Error('Failed to generate image blob');
