@@ -566,7 +566,7 @@ const RankingsExportModal = ({
         ) : (
           <div
             ref={exportViewRef}
-            className="bg-neutral-900 p-6 rounded-lg border border-white/10"
+            className="bg-neutral-900 p-6 rounded-lg border border-white/10 w-[800px]"
           >
             <div className="text-center mb-6">
               <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 bg-clip-text text-transparent mb-2">
