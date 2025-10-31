@@ -18,7 +18,6 @@ const GridCard = ({
   showLogoBg,
   showMovement,
   movementData = {},
-  isExport = false,
 }) => {
   const logoPath = getLogoPath(player.team);
   const headshot = getHeadshotSrc(player);
@@ -99,7 +98,6 @@ GridCard.propTypes = {
   showLogoBg: PropTypes.bool.isRequired,
   showMovement: PropTypes.bool.isRequired,
   movementData: PropTypes.object,
-  isExport: PropTypes.bool,
 };
 
 const RankingsExportModal = ({
@@ -119,6 +117,7 @@ const RankingsExportModal = ({
   const [isDownloading, setIsDownloading] = useState(false);
   const [isAdjustMode, setIsAdjustMode] = useState(false);
   const [currentRanking, setCurrentRanking] = useState(rankings);
+  const [isExportReady, setIsExportReady] = useState(false);
   const shareViewRef = useRef(null);
   const exportViewRef = useRef(null);
   const downloadImageHook = useImageDownload(exportViewRef);
@@ -127,6 +126,19 @@ const RankingsExportModal = ({
   React.useEffect(() => {
     setCurrentRanking(rankings);
   }, [rankings]);
+
+  // Ensure export container is ready before allowing download
+  React.useEffect(() => {
+    // Small delay to ensure the hidden container has rendered
+    const timer = setTimeout(() => {
+      if (exportViewRef.current) {
+        setIsExportReady(true);
+      } else {
+        console.warn('Export container not ready after timeout');
+      }
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [viewType]);
 
   const handleAdjustRankings = () => {
     setIsAdjustMode(true);
@@ -155,6 +167,22 @@ const RankingsExportModal = ({
   };
 
   const handleDownloadImage = async () => {
+    if (!exportViewRef.current) {
+      console.error('Export container ref is not attached');
+      alert('Failed to download: Export container not ready. Please try again.');
+      return;
+    }
+
+    // Extra validation for mobile devices
+    const rect = exportViewRef.current.getBoundingClientRect();
+    console.log('Export container dimensions:', {
+      width: exportViewRef.current.offsetWidth,
+      height: exportViewRef.current.offsetHeight,
+      scrollWidth: exportViewRef.current.scrollWidth,
+      scrollHeight: exportViewRef.current.scrollHeight,
+      boundingRect: rect
+    });
+
     setIsDownloading(true);
     const date = new Date()
       .toLocaleDateString('en-US', {
@@ -167,6 +195,22 @@ const RankingsExportModal = ({
     try {
       // Use the hook-based download function
       await downloadImageHook(`${rankingName || 'qb-rankings'}-${date}.png`);
+      console.log('Download completed successfully');
+    } catch (error) {
+      console.error('Download failed with error:', error);
+      
+      // Provide more helpful error messages
+      let errorMessage = error.message || 'Unknown error';
+      
+      if (errorMessage.includes('toBlob')) {
+        errorMessage = 'Failed to generate image. Please try again or use a different browser.';
+      } else if (errorMessage.includes('timeout')) {
+        errorMessage = 'Download timed out. Please try again with a stable connection.';
+      } else if (errorMessage.includes('dimensions')) {
+        errorMessage = 'Invalid image dimensions. Please refresh the page and try again.';
+      }
+      
+      alert(`Failed to download image: ${errorMessage}`);
     } finally {
       setIsDownloading(false);
     }
@@ -246,13 +290,13 @@ const RankingsExportModal = ({
       </button>
       <button
         onClick={handleDownloadImage}
-        disabled={isDownloading}
+        disabled={isDownloading || !isExportReady}
         className="px-3 py-2 text-sm text-white bg-white/10 rounded hover:bg-white/20 flex items-center transition-colors disabled:opacity-50"
-        title="Download Image"
+        title={!isExportReady ? 'Export container loading...' : 'Download Image'}
       >
         <Download size={16} className="mr-1" />
         <span className="hidden sm:inline">
-          {isDownloading ? 'Downloading...' : 'Download'}
+          {isDownloading ? 'Downloading...' : !isExportReady ? 'Loading...' : 'Download'}
         </span>
       </button>
       <button
@@ -346,7 +390,6 @@ const RankingsExportModal = ({
                   showLogoBg={showLogoBg}
                   showMovement={showMovement}
                   movementData={movementData}
-                  isExport={isExport}
                 />
               );
             })}
@@ -559,8 +602,20 @@ const RankingsExportModal = ({
   return (
     <>
       {/* Hidden export container - always renders desktop layout for consistent screenshots */}
-      {/* Using scale(0.001) keeps images loaded on mobile while making element invisible */}
-      <div className="fixed top-0 left-0 pointer-events-none -z-50" style={{ transform: 'scale(0.001)', transformOrigin: 'top left', opacity: 0.01 }}>
+      {/* Use opacity and visibility instead of off-screen positioning to ensure proper canvas rendering */}
+      <div 
+        className="fixed pointer-events-none"
+        style={{ 
+          left: '0',
+          top: '0',
+          width: 'auto',
+          height: 'auto',
+          overflow: 'visible',
+          opacity: '0',
+          visibility: 'hidden',
+          zIndex: -9999
+        }}
+      >
         {viewType === 'grid' ? (
           renderGridLayout(true)
         ) : (

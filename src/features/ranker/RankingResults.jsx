@@ -737,8 +737,8 @@ const RankingResults = ({ ranking = [], onRankingAdjusted }) => {
   return (
     <>
       {/* Hidden export container - always renders fixed desktop layout for consistent screenshots */}
-      {/* Using scale(0.001) keeps images loaded on mobile while making element invisible */}
-      <div className="fixed top-0 left-0 pointer-events-none -z-50" style={{ transform: 'scale(0.001)', transformOrigin: 'top left', opacity: 0.01 }}>
+      {/* Use opacity and visibility instead of off-screen positioning to ensure proper canvas rendering */}
+      <div className="fixed pointer-events-none" style={{ left: '0', top: '0', opacity: 0, visibility: 'hidden', zIndex: -9999 }}>
         {viewType === 'grid' ? (
           <div ref={exportViewRef}>
             {renderExportContent()}

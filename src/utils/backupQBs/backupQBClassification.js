@@ -99,7 +99,7 @@ export const BACKUP_QB_HALL_OF_FAME = [
   {
     id: 'joe-flacco',
     name: 'Joe Flacco',
-    team: 'CLE',
+    team: 'CIN',
     accomplishments: [
       'Super Bowl XLVII Champion & MVP',
       'Master of the backup QB role',
