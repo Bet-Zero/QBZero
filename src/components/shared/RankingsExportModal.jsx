@@ -1,5 +1,12 @@
 import React, { useState, useRef } from 'react';
-import { LayoutGrid, ListOrdered, Download, X, TrendingUp, Edit3 } from 'lucide-react';
+import {
+  LayoutGrid,
+  ListOrdered,
+  Download,
+  X,
+  TrendingUp,
+  Edit3,
+} from 'lucide-react';
 import useImageDownload from '@/hooks/useImageDownload';
 import RankingMovementIndicator from '@/components/shared/RankingMovementIndicator';
 import AdjustableRankings from '@/features/ranker/AdjustableRankings';
@@ -122,7 +129,7 @@ const RankingsExportModal = ({
   const shareViewRef = useRef(null);
   const exportViewRef = useRef(null);
   const downloadImageHook = useImageDownload(exportViewRef);
-  
+
   // Update current ranking when prop changes
   React.useEffect(() => {
     setCurrentRanking(rankings);
@@ -329,13 +336,23 @@ const RankingsExportModal = ({
       <div className="min-h-screen w-full bg-neutral-950 text-white flex items-center justify-center">
         <div
           ref={containerRef}
-          className={isExport ? "w-[1400px] px-16 pt-20 pb-12 flex flex-col" : "w-full max-w-[1400px] px-4 sm:px-8 md:px-16 pt-8 sm:pt-12 md:pt-20 pb-8 md:pb-12 flex flex-col"}
+          className={
+            isExport
+              ? 'w-[1400px] px-16 pt-20 pb-12 flex flex-col'
+              : 'w-full max-w-[1400px] px-4 sm:px-8 md:px-16 pt-8 sm:pt-12 md:pt-20 pb-8 md:pb-12 flex flex-col'
+          }
         >
           {/* Header (top-left) */}
           {renderPosterHeader()}
 
           {/* Grid with 6 columns x 7 rows on desktop, responsive on mobile */}
-          <div className={isExport ? "mt-6 mb-12 grid grid-cols-6 gap-x-4 gap-y-6 justify-items-center" : "mt-6 mb-12 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-2 sm:gap-x-3 md:gap-x-4 gap-y-4 sm:gap-y-5 md:gap-y-6 justify-items-center"}>
+          <div
+            className={
+              isExport
+                ? 'mt-6 mb-12 grid grid-cols-6 gap-x-4 gap-y-6 justify-items-center'
+                : 'mt-6 mb-12 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-2 sm:gap-x-3 md:gap-x-4 gap-y-4 sm:gap-y-5 md:gap-y-6 justify-items-center'
+            }
+          >
             {currentRanking.slice(0, 42).map((item, idx) => {
               const player = item.qb || item.player || item;
               return (
@@ -385,59 +402,65 @@ const RankingsExportModal = ({
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-2 gap-y-1">
           {/* Mobile columns (2) */}
-          {createColumns(currentRanking, numCols.base).map((column, colIndex) => (
-            <div key={colIndex} className="flex flex-col gap-1 sm:hidden">
-              {column.map(({ player: columnPlayer, rank }) => {
-                const headshot = getHeadshotSrc(columnPlayer);
-                const logoPath = getLogoPath(columnPlayer.team);
+          {createColumns(currentRanking, numCols.base).map(
+            (column, colIndex) => (
+              <div key={colIndex} className="flex flex-col gap-1 sm:hidden">
+                {column.map(({ player: columnPlayer, rank }) => {
+                  const headshot = getHeadshotSrc(columnPlayer);
+                  const logoPath = getLogoPath(columnPlayer.team);
 
-                return (
-                  <div
-                    key={columnPlayer.id || columnPlayer.player_id || columnPlayer.name}
-                    className="bg-white/5 rounded p-2 flex items-center gap-2"
-                  >
-                    <div className="w-8 h-8 flex items-center justify-center bg-white/10 rounded-full font-bold text-white/80">
-                      {rank}
-                    </div>
-                    <img
-                      src={headshot}
-                      alt={columnPlayer.name || columnPlayer.display_name}
-                      className="w-10 h-10 rounded-full object-cover"
-                      loading="eager"
-                      decoding="async"
-                      crossOrigin="anonymous"
-                      onError={(e) => {
-                        e.target.src = '/assets/headshots/default.png';
-                      }}
-                    />
-                    <div className="flex-1 truncate text-sm">
-                      <div className="font-medium text-white truncate">
-                        {columnPlayer.name || columnPlayer.display_name}
+                  return (
+                    <div
+                      key={
+                        columnPlayer.id ||
+                        columnPlayer.player_id ||
+                        columnPlayer.name
+                      }
+                      className="bg-white/5 rounded p-2 flex items-center gap-2"
+                    >
+                      <div className="w-8 h-8 flex items-center justify-center bg-white/10 rounded-full font-bold text-white/80">
+                        {rank}
                       </div>
-                      <div className="flex items-center gap-1 text-white/60 text-xs">
-                        {logoPath && (
-                          <div className="w-4 h-4">
-                            <img
-                              src={logoPath}
-                              alt={columnPlayer.team}
-                              className="w-full h-full object-contain"
-                              loading="eager"
-                              decoding="async"
-                              crossOrigin="anonymous"
-                              onError={(e) => {
-                                e.target.style.display = 'none';
-                              }}
-                            />
-                          </div>
-                        )}
-                        <span>{columnPlayer.team?.toUpperCase() || '—'}</span>
+                      <img
+                        src={headshot}
+                        alt={columnPlayer.name || columnPlayer.display_name}
+                        className="w-10 h-10 rounded-full object-cover"
+                        loading="eager"
+                        decoding="async"
+                        crossOrigin="anonymous"
+                        onError={(e) => {
+                          e.target.src = '/assets/headshots/default.png';
+                        }}
+                      />
+                      <div className="flex-1 truncate text-sm">
+                        <div className="font-medium text-white truncate">
+                          {columnPlayer.name || columnPlayer.display_name}
+                        </div>
+                        <div className="flex items-center gap-1 text-white/60 text-xs">
+                          {logoPath && (
+                            <div className="w-4 h-4">
+                              <img
+                                src={logoPath}
+                                alt={columnPlayer.team}
+                                className="w-full h-full object-contain"
+                                loading="eager"
+                                decoding="async"
+                                crossOrigin="anonymous"
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                }}
+                              />
+                            </div>
+                          )}
+                          <span>{columnPlayer.team?.toUpperCase() || '—'}</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          ))}
+                  );
+                })}
+              </div>
+            )
+          )}
 
           {/* Tablet columns (3) */}
           {createColumns(currentRanking, numCols.sm).map((column, colIndex) => (
@@ -451,7 +474,11 @@ const RankingsExportModal = ({
 
                 return (
                   <div
-                    key={columnPlayer.id || columnPlayer.player_id || columnPlayer.name}
+                    key={
+                      columnPlayer.id ||
+                      columnPlayer.player_id ||
+                      columnPlayer.name
+                    }
                     className="bg-white/5 rounded p-2 flex items-center gap-2"
                   >
                     <div className="w-8 h-8 flex items-center justify-center bg-white/10 rounded-full font-bold text-white/80">
@@ -506,7 +533,11 @@ const RankingsExportModal = ({
 
                 return (
                   <div
-                    key={columnPlayer.id || columnPlayer.player_id || columnPlayer.name}
+                    key={
+                      columnPlayer.id ||
+                      columnPlayer.player_id ||
+                      columnPlayer.name
+                    }
                     className="bg-white/5 rounded p-2 flex items-center gap-2"
                   >
                     <div className="w-8 h-8 flex items-center justify-center bg-white/10 rounded-full font-bold text-white/80">
@@ -559,8 +590,17 @@ const RankingsExportModal = ({
   return (
     <>
       {/* Hidden export container - always renders desktop layout for consistent screenshots */}
-      {/* Using scale(0.001) keeps images loaded on mobile while making element invisible */}
-      <div className="fixed top-0 left-0 pointer-events-none -z-50" style={{ transform: 'scale(0.001)', transformOrigin: 'top left', opacity: 0.01 }}>
+      {/* Position off-screen but keep fully rendered for proper image export */}
+      <div
+        className="fixed pointer-events-none"
+        style={{
+          top: '-9999px',
+          left: '0',
+          width: '1400px',
+          height: 'auto',
+          visibility: 'hidden',
+        }}
+      >
         {viewType === 'grid' ? (
           renderGridLayout(true)
         ) : (
@@ -583,59 +623,67 @@ const RankingsExportModal = ({
 
             <div className="grid grid-cols-4 gap-x-2 gap-y-1">
               {/* Always render desktop 4-column layout for export */}
-              {createColumns(currentRanking, numCols.md).map((column, colIndex) => (
-                <div key={colIndex} className="flex flex-col gap-1">
-                  {column.map(({ player: columnPlayer, rank }) => {
-                    const headshot = getHeadshotSrc(columnPlayer);
-                    const logoPath = getLogoPath(columnPlayer.team);
+              {createColumns(currentRanking, numCols.md).map(
+                (column, colIndex) => (
+                  <div key={colIndex} className="flex flex-col gap-1">
+                    {column.map(({ player: columnPlayer, rank }) => {
+                      const headshot = getHeadshotSrc(columnPlayer);
+                      const logoPath = getLogoPath(columnPlayer.team);
 
-                    return (
-                      <div
-                        key={columnPlayer.id || columnPlayer.player_id || columnPlayer.name}
-                        className="bg-white/5 rounded p-2 flex items-center gap-2"
-                      >
-                        <div className="w-8 h-8 flex items-center justify-center bg-white/10 rounded-full font-bold text-white/80">
-                          {rank}
-                        </div>
-                        <img
-                          src={headshot}
-                          alt={columnPlayer.name || columnPlayer.display_name}
-                          className="w-10 h-10 rounded-full object-cover"
-                          loading="eager"
-                          decoding="async"
-                          crossOrigin="anonymous"
-                          onError={(e) => {
-                            e.target.src = '/assets/headshots/default.png';
-                          }}
-                        />
-                        <div className="flex-1 truncate text-sm">
-                          <div className="font-medium text-white truncate">
-                            {columnPlayer.name || columnPlayer.display_name}
+                      return (
+                        <div
+                          key={
+                            columnPlayer.id ||
+                            columnPlayer.player_id ||
+                            columnPlayer.name
+                          }
+                          className="bg-white/5 rounded p-2 flex items-center gap-2"
+                        >
+                          <div className="w-8 h-8 flex items-center justify-center bg-white/10 rounded-full font-bold text-white/80">
+                            {rank}
                           </div>
-                          <div className="flex items-center gap-1 text-white/60 text-xs">
-                            {logoPath && (
-                              <div className="w-4 h-4">
-                                <img
-                                  src={logoPath}
-                                  alt={columnPlayer.team}
-                                  className="w-full h-full object-contain"
-                                  loading="eager"
-                                  decoding="async"
-                                  crossOrigin="anonymous"
-                                  onError={(e) => {
-                                    e.target.style.display = 'none';
-                                  }}
-                                />
-                              </div>
-                            )}
-                            <span>{columnPlayer.team?.toUpperCase() || '—'}</span>
+                          <img
+                            src={headshot}
+                            alt={columnPlayer.name || columnPlayer.display_name}
+                            className="w-10 h-10 rounded-full object-cover"
+                            loading="eager"
+                            decoding="async"
+                            crossOrigin="anonymous"
+                            onError={(e) => {
+                              e.target.src = '/assets/headshots/default.png';
+                            }}
+                          />
+                          <div className="flex-1 truncate text-sm">
+                            <div className="font-medium text-white truncate">
+                              {columnPlayer.name || columnPlayer.display_name}
+                            </div>
+                            <div className="flex items-center gap-1 text-white/60 text-xs">
+                              {logoPath && (
+                                <div className="w-4 h-4">
+                                  <img
+                                    src={logoPath}
+                                    alt={columnPlayer.team}
+                                    className="w-full h-full object-contain"
+                                    loading="eager"
+                                    decoding="async"
+                                    crossOrigin="anonymous"
+                                    onError={(e) => {
+                                      e.target.style.display = 'none';
+                                    }}
+                                  />
+                                </div>
+                              )}
+                              <span>
+                                {columnPlayer.team?.toUpperCase() || '—'}
+                              </span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ))}
+                      );
+                    })}
+                  </div>
+                )
+              )}
             </div>
           </div>
         )}

@@ -55,15 +55,15 @@ const useImageDownload = (ref) => {
       // Mobile browsers are more aggressive about not loading images in hidden/scaled elements
       const element = ref.current;
       originalStyles = {
-        transform: element.style.transform,
-        opacity: element.style.opacity,
+        top: element.style.top,
+        visibility: element.style.visibility,
         zIndex: element.style.zIndex,
         pointerEvents: element.style.pointerEvents
       };
-      
+
       // Make fully visible temporarily (but keep it non-interactive and below other content)
-      element.style.transform = 'scale(1)';
-      element.style.opacity = '1';
+      element.style.top = '0';
+      element.style.visibility = 'visible';
       element.style.zIndex = '-1';
       element.style.pointerEvents = 'none';
 
@@ -115,8 +115,8 @@ const useImageDownload = (ref) => {
     } finally {
       // Restore original styles
       if (originalStyles && ref.current) {
-        ref.current.style.transform = originalStyles.transform;
-        ref.current.style.opacity = originalStyles.opacity;
+        ref.current.style.top = originalStyles.top;
+        ref.current.style.visibility = originalStyles.visibility;
         ref.current.style.zIndex = originalStyles.zIndex;
         ref.current.style.pointerEvents = originalStyles.pointerEvents;
       }
