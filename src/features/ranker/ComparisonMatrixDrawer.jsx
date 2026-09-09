@@ -52,11 +52,15 @@ const ComparisonMatrixDrawer = ({ players, comparisons }) => {
               <line x1="6" y1="6" x2="18" y2="18" />
             </svg>
           </button>
-          <ComparisonMatrix
-            players={players}
-            comparisons={comparisons}
-            className="mt-0"
-          />
+          {/* Mounted only while open: at 42 players this table is ~1,800
+              cells that would otherwise re-render on every comparison. */}
+          {open && (
+            <ComparisonMatrix
+              players={players}
+              comparisons={comparisons}
+              className="mt-0"
+            />
+          )}
         </div>
       </div>
     </>

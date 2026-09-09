@@ -9,8 +9,10 @@ const alreadyCompared = (a, b, comparisons) =>
       (c.winner === a && c.loser === b) || (c.winner === b && c.loser === a)
   );
 
-// Canonical, order-independent key for a pair of player ids
-export const pairKey = (a, b) => [a, b].sort().join('|');
+// Canonical, order-independent key for a pair of player ids.
+// Ordered with a comparison rather than [a, b].sort() so it allocates nothing:
+// this is called for every candidate pair inside the estimator's inner loop.
+export const pairKey = (a, b) => (a < b ? `${a}|${b}` : `${b}|${a}`);
 
 // Build graph of wins/losses
 const buildGraph = (comparisons) => {
@@ -104,84 +106,101 @@ export function suggestNextPair(rawComparisons, players, skippedPairs) {
       (c) => idSet.has(c.winner) && idSet.has(c.loser)
     );
 
-    const seen = new Set();
+    // Players are addressed by index into bitsets rather than by id into Sets
+    // and string keys. This function runs once per simulated comparison inside
+    // estimateRemainingComparisons, so rebuilding Sets and `a->b` strings here
+    // dominated the cost of the whole session (see the comment on that
+    // function). Behaviour is unchanged; only the representation differs.
+    const n = groupPlayers.length;
+    const indexOf = new Map(groupPlayers.map((p, i) => [p.id, i]));
+    const words = Math.ceil(n / 32) || 1;
+
+    const bitSet = (bits, row, col) => {
+      bits[row * words + (col >>> 5)] |= 1 << (col & 31);
+    };
+    const bitGet = (bits, row, col) =>
+      (bits[row * words + (col >>> 5)] & (1 << (col & 31))) !== 0;
+
+    // `beats[i]` starts as i's direct wins and is closed transitively below.
+    const beats = new Uint32Array(n * words);
+    // `compared[i]` records a recorded comparison in either direction.
+    const compared = new Uint32Array(n * words);
+    const usage = new Int32Array(n);
+
     groupComps.forEach(({ winner, loser }) => {
-      seen.add(`${winner}->${loser}`);
-      seen.add(`${loser}->${winner}`);
-    });
-    groupPlayers.forEach((a) => {
-      groupPlayers.forEach((b) => {
-        if (a.id !== b.id && isSkipped(a.id, b.id)) {
-          seen.add(`${a.id}->${b.id}`);
-          seen.add(`${b.id}->${a.id}`);
-        }
-      });
+      const w = indexOf.get(winner);
+      const l = indexOf.get(loser);
+      bitSet(beats, w, l);
+      bitSet(compared, w, l);
+      bitSet(compared, l, w);
+      usage[w] += 1;
+      usage[l] += 1;
     });
 
-    const usageCount = {};
-    groupPlayers.forEach((p) => (usageCount[p.id] = 0));
-    groupComps.forEach(({ winner, loser }) => {
-      usageCount[winner]++;
-      usageCount[loser]++;
-    });
-
-    const graph = {};
-    groupPlayers.forEach((p) => (graph[p.id] = new Set()));
-    groupComps.forEach(({ winner, loser }) => {
-      graph[winner].add(loser);
-    });
-
-    const closure = {};
-    for (const a in graph) {
-      closure[a] = new Set();
-      const stack = [...graph[a]];
-      while (stack.length > 0) {
-        const next = stack.pop();
-        if (!closure[a].has(next)) {
-          closure[a].add(next);
-          graph[next]?.forEach((n) => stack.push(n));
-        }
+    // Transitive closure over the win graph. The k/i loop order is the standard
+    // reachability form and stays correct when the comparisons contain a cycle.
+    for (let k = 0; k < n; k++) {
+      const kOff = k * words;
+      for (let i = 0; i < n; i++) {
+        if (!bitGet(beats, i, k)) continue;
+        const iOff = i * words;
+        for (let w = 0; w < words; w++) beats[iOff + w] |= beats[kOff + w];
       }
     }
 
+    // A skipped pair is off the table but, unlike a comparison, tells us
+    // nothing about ordering. Resolving the skip set to bits once per group is
+    // O(number of skips); testing each candidate pair against the set directly
+    // meant building a key string for every pair on every call.
+    const skippedBits = new Uint32Array(n * words);
+    if (skippedPairs?.size) {
+      skippedPairs.forEach((key) => {
+        // Keys come from pairKey, which joins two ids with '|'.
+        const sep = key.indexOf('|');
+        if (sep < 0) return;
+        const i = indexOf.get(key.slice(0, sep));
+        const j = indexOf.get(key.slice(sep + 1));
+        if (i === undefined || j === undefined) return;
+        bitSet(skippedBits, i, j);
+        bitSet(skippedBits, j, i);
+      });
+    }
+
+    const offTheTable = (i, j) =>
+      bitGet(compared, i, j) || bitGet(skippedBits, i, j);
+
     // Phase 1: New vs New inside the group
-    const unused = groupPlayers.filter((p) => usageCount[p.id] === 0);
+    const unused = [];
+    for (let i = 0; i < n; i++) if (usage[i] === 0) unused.push(i);
     if (unused.length >= 2) {
       for (let i = 0; i < unused.length; i++) {
         for (let j = i + 1; j < unused.length; j++) {
-          const key = `${unused[i].id}->${unused[j].id}`;
-          if (!seen.has(key)) return [unused[i], unused[j]];
+          if (!offTheTable(unused[i], unused[j])) {
+            return [groupPlayers[unused[i]], groupPlayers[unused[j]]];
+          }
         }
       }
     }
 
-    // Phase 2: Usage-balanced unresolved matchups
-    const unresolved = [];
-    for (let i = 0; i < groupPlayers.length; i++) {
-      for (let j = i + 1; j < groupPlayers.length; j++) {
-        const a = groupPlayers[i];
-        const b = groupPlayers[j];
-        const key = `${a.id}->${b.id}`;
-        const aBeatsB = closure[a.id]?.has(b.id);
-        const bBeatsA = closure[b.id]?.has(a.id);
+    // Phase 2: Usage-balanced unresolved matchups. The lowest score wins, with
+    // the earliest pair in i/j order breaking ties - matching the stable sort
+    // this replaced.
+    let bestScore = Infinity;
+    let bestPair = null;
+    for (let i = 0; i < n; i++) {
+      for (let j = i + 1; j < n; j++) {
+        if (offTheTable(i, j)) continue;
+        if (bitGet(beats, i, j) || bitGet(beats, j, i)) continue;
 
-        if (!seen.has(key) && !aBeatsB && !bBeatsA) {
-          const usageGap = Math.abs(usageCount[a.id] - usageCount[b.id]);
-          const totalUsage = usageCount[a.id] + usageCount[b.id];
-          unresolved.push({
-            pair: [a, b],
-            score: totalUsage + usageGap * 2,
-          });
+        const score = usage[i] + usage[j] + Math.abs(usage[i] - usage[j]) * 2;
+        if (score < bestScore) {
+          bestScore = score;
+          bestPair = [groupPlayers[i], groupPlayers[j]];
         }
       }
     }
 
-    if (unresolved.length > 0) {
-      unresolved.sort((a, b) => a.score - b.score);
-      return unresolved[0].pair;
-    }
-
-    return [];
+    return bestPair || [];
   };
 
   // Group players by tag (default group if undefined)
