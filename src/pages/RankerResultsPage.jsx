@@ -36,13 +36,20 @@ const RankerResultsPage = () => {
     setFinalRanking(adjustedRanking);
   };
 
-  const handleShareResults = () => {
-    const shareUrl = generateShareableURL('/ranker/results');
-    navigator.clipboard.writeText(shareUrl).then(() => {
+  const handleShareResults = async () => {
+    const { url, error } = generateShareableURL('/ranker/results');
+    if (error) {
+      alert(error);
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(url);
       alert(
         'Results URL copied to clipboard! Anyone can view your results with this link.'
       );
-    });
+    } catch {
+      alert(`Could not copy automatically. Here is the link:\n\n${url}`);
+    }
   };
 
   // Recovery UI when no results are available
@@ -57,8 +64,8 @@ const RankerResultsPage = () => {
                 No Results Available
               </h1>
               <p className="text-white/60 text-lg mb-8">
-                It looks like you haven&apos;t completed a ranking session yet, or
-                your results were cleared.
+                It looks like you haven&apos;t completed a ranking session yet,
+                or your results were cleared.
               </p>
             </div>
 
@@ -137,32 +144,35 @@ const RankerResultsPage = () => {
                 🎉 Ranking Complete!
               </h2>
               <p className="text-white/60 mb-6">
-                Your rankings have been successfully created. Choose what you'd like to do next:
+                Your rankings have been successfully created. Choose what you'd
+                like to do next:
               </p>
-              
+
               <div className="grid gap-4 max-w-md mx-auto">
                 <button
                   onClick={() => setShowExportModal(true)}
                   className="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-semibold transition-colors flex items-center justify-center gap-2"
                 >
                   📊 View & Manage Rankings
-                  <span className="text-xs bg-blue-800 px-2 py-1 rounded">Recommended</span>
+                  <span className="text-xs bg-blue-800 px-2 py-1 rounded">
+                    Recommended
+                  </span>
                 </button>
-                
+
                 <button
                   onClick={handleStartNew}
                   className="px-6 py-3 bg-green-600 hover:bg-green-700 rounded-lg text-white font-semibold transition-colors"
                 >
                   🚀 Start New Ranking
                 </button>
-                
+
                 <button
                   onClick={handleShareResults}
                   className="px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg text-white font-semibold transition-colors"
                 >
                   🔗 Share Results
                 </button>
-                
+
                 <Link
                   to="/ranker"
                   className="px-6 py-3 bg-white/10 hover:bg-white/20 rounded-lg text-white font-semibold transition-colors block text-center"
@@ -170,9 +180,10 @@ const RankerResultsPage = () => {
                   ← Back to Ranker Home
                 </Link>
               </div>
-              
+
               <div className="text-sm text-white/40 mt-6">
-                All ranking management features are available in the "View & Manage Rankings" modal
+                All ranking management features are available in the "View &
+                Manage Rankings" modal
               </div>
             </div>
           </div>
@@ -186,7 +197,8 @@ const RankerResultsPage = () => {
                 Your Rankings Are Ready!
               </h2>
               <p className="text-white/60 mb-6">
-                View your ranking results in the modal above. You can adjust rankings, change the view, and export your results.
+                View your ranking results in the modal above. You can adjust
+                rankings, change the view, and export your results.
               </p>
               <div className="text-sm text-white/40">
                 Close the modal to see navigation options.

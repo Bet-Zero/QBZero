@@ -1,15 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { InformationCircleIcon } from '@heroicons/react/20/solid';
 
-const PlayerButton = ({ player, selected, onClick }) => (
+const PlayerButton = ({ player, selected, disabled = false, onClick }) => (
   <button
     type="button"
     onClick={onClick}
+    disabled={disabled}
+    aria-pressed={selected}
     className={`px-2 sm:px-3 py-1 sm:py-2 rounded border text-xs sm:text-sm text-white transition-colors ${
       selected
         ? 'bg-blue-600 border-blue-400'
         : 'bg-white/10 border-white/20 hover:bg-white/20'
-    }`}
+    } ${disabled ? 'opacity-30 cursor-not-allowed hover:bg-white/10' : ''}`}
   >
     {player.display_name || player.name}
   </button>
@@ -61,34 +63,100 @@ const HelperIcon = ({ text }) => {
   );
 };
 
+/**
+ * Strip contradictions that a restored session could still be carrying: a
+ * player tagged into both tiers, an anchor that is also a tier member or a
+ * lock-in, or the same player locked into both first and last place. The UI
+ * below prevents these, but previously-saved setup data may predate that.
+ */
+export const normalizeSetup = ({
+  topTier = [],
+  bottomTier = [],
+  anchor = null,
+  firstPlace = null,
+  lastPlace = null,
+}) => {
+  const cleanLast = lastPlace === firstPlace ? null : lastPlace;
+
+  // A tier tag loses to an explicit lock-in for the same player.
+  let top = topTier.filter((id) => id !== cleanLast);
+  let bottom = bottomTier.filter((id) => id !== firstPlace);
+
+  // Top tier wins a tie, matching the grouping order in RankingSession.
+  bottom = bottom.filter((id) => !top.includes(id));
+
+  const cleanAnchor =
+    anchor &&
+    !top.includes(anchor) &&
+    !bottom.includes(anchor) &&
+    anchor !== firstPlace &&
+    anchor !== cleanLast
+      ? anchor
+      : null;
+
+  return {
+    topTier: top,
+    bottomTier: bottom,
+    anchor: cleanAnchor,
+    firstPlace: firstPlace || null,
+    lastPlace: cleanLast || null,
+  };
+};
+
 export const RankingSetup = ({
   playerPool = [],
   onComplete,
   existingSetupData = null,
 }) => {
-  const [topTier, setTopTier] = useState(existingSetupData?.topTier || []);
-  const [bottomTier, setBottomTier] = useState(
-    existingSetupData?.bottomTier || []
-  );
-  const [anchor, setAnchor] = useState(existingSetupData?.anchor || null);
-  const [firstPlace, setFirstPlace] = useState(
-    existingSetupData?.firstPlace || null
-  );
-  const [lastPlace, setLastPlace] = useState(
-    existingSetupData?.lastPlace || null
-  );
+  const restored = normalizeSetup(existingSetupData || {});
+  const [topTier, setTopTier] = useState(restored.topTier);
+  const [bottomTier, setBottomTier] = useState(restored.bottomTier);
+  const [anchor, setAnchor] = useState(restored.anchor);
+  const [firstPlace, setFirstPlace] = useState(restored.firstPlace);
+  const [lastPlace, setLastPlace] = useState(restored.lastPlace);
   const tierCountEstimate = Math.max(1, Math.round(playerPool.length * 0.25));
 
-  const toggleMulti = (id, list, setter) => {
-    setter((prev) =>
-      prev.includes(id)
-        ? prev.filter((p) => p !== id)
-        : [...prev, id].slice(0, tierCountEstimate)
-    );
+  const topFull = topTier.length >= tierCountEstimate;
+  const bottomFull = bottomTier.length >= tierCountEstimate;
+
+  // Selecting a player into one tier removes them from the other, so the two
+  // tiers can never disagree about the same player.
+  const toggleTier = (id, list, setList, otherList, setOtherList) => {
+    if (list.includes(id)) {
+      setList(list.filter((p) => p !== id));
+      return;
+    }
+    if (list.length >= tierCountEstimate) return;
+    if (otherList.includes(id)) setOtherList(otherList.filter((p) => p !== id));
+    setList([...list, id]);
   };
 
+  // Keep the currently selected option available even if it would otherwise be
+  // filtered out, so a restored value never renders as a blank select.
+  const optionsFor = (current, isAllowed) =>
+    playerPool.filter((p) => p.id === current || isAllowed(p.id));
+
+  const anchorOptions = optionsFor(
+    anchor,
+    (id) =>
+      !topTier.includes(id) &&
+      !bottomTier.includes(id) &&
+      id !== firstPlace &&
+      id !== lastPlace
+  );
+  const firstPlaceOptions = optionsFor(
+    firstPlace,
+    (id) => !bottomTier.includes(id) && id !== anchor && id !== lastPlace
+  );
+  const lastPlaceOptions = optionsFor(
+    lastPlace,
+    (id) => !topTier.includes(id) && id !== anchor && id !== firstPlace
+  );
+
   const handleReady = () => {
-    onComplete({ topTier, bottomTier, anchor, firstPlace, lastPlace });
+    onComplete(
+      normalizeSetup({ topTier, bottomTier, anchor, firstPlace, lastPlace })
+    );
   };
 
   return (
@@ -113,20 +181,40 @@ export const RankingSetup = ({
       >
         <h3 className="font-semibold mb-3 flex items-center text-sm sm:text-base text-green-300">
           <span className="mr-2">🏆</span>
-          Top Tier Selector (~{tierCountEstimate} players)
+          Top Tier Selector ({topTier.length} / {tierCountEstimate} selected)
           <HelperIcon
             text={`Select players you know will finish in the top 25% (~${tierCountEstimate} players)`}
           />
         </h3>
+        {topFull && (
+          <p className="text-green-200/70 text-xs mb-3" role="status">
+            Top tier is full. Deselect a player to choose a different one.
+          </p>
+        )}
         <div className="flex flex-wrap gap-2">
-          {playerPool.map((p) => (
-            <PlayerButton
-              key={`top-${p.id}`}
-              player={p}
-              selected={topTier.includes(p.id)}
-              onClick={() => toggleMulti(p.id, topTier, setTopTier)}
-            />
-          ))}
+          {playerPool.map((p) => {
+            const selected = topTier.includes(p.id);
+            return (
+              <PlayerButton
+                key={`top-${p.id}`}
+                player={p}
+                selected={selected}
+                disabled={
+                  !selected &&
+                  (topFull || p.id === anchor || p.id === lastPlace)
+                }
+                onClick={() =>
+                  toggleTier(
+                    p.id,
+                    topTier,
+                    setTopTier,
+                    bottomTier,
+                    setBottomTier
+                  )
+                }
+              />
+            );
+          })}
         </div>
       </div>
 
@@ -144,20 +232,41 @@ export const RankingSetup = ({
       >
         <h3 className="font-semibold mb-3 flex items-center text-sm sm:text-base text-red-300">
           <span className="mr-2">📉</span>
-          Bottom Tier Selector (~{tierCountEstimate} players)
+          Bottom Tier Selector ({bottomTier.length} / {tierCountEstimate}{' '}
+          selected)
           <HelperIcon
             text={`Select players you know will finish in the bottom 25% (~${tierCountEstimate} players)`}
           />
         </h3>
+        {bottomFull && (
+          <p className="text-red-200/70 text-xs mb-3" role="status">
+            Bottom tier is full. Deselect a player to choose a different one.
+          </p>
+        )}
         <div className="flex flex-wrap gap-2">
-          {playerPool.map((p) => (
-            <PlayerButton
-              key={`bottom-${p.id}`}
-              player={p}
-              selected={bottomTier.includes(p.id)}
-              onClick={() => toggleMulti(p.id, bottomTier, setBottomTier)}
-            />
-          ))}
+          {playerPool.map((p) => {
+            const selected = bottomTier.includes(p.id);
+            return (
+              <PlayerButton
+                key={`bottom-${p.id}`}
+                player={p}
+                selected={selected}
+                disabled={
+                  !selected &&
+                  (bottomFull || p.id === anchor || p.id === firstPlace)
+                }
+                onClick={() =>
+                  toggleTier(
+                    p.id,
+                    bottomTier,
+                    setBottomTier,
+                    topTier,
+                    setTopTier
+                  )
+                }
+              />
+            );
+          })}
         </div>
       </div>
 
@@ -168,16 +277,17 @@ export const RankingSetup = ({
       >
         <h3 className="font-semibold mb-3 flex items-center text-sm sm:text-base text-blue-300">
           <span className="mr-2">⚓</span>
-          Anchor Selector
+          <label htmlFor="ranker-anchor">Anchor Selector</label>
           <HelperIcon text="Select a player you believe will finish around the middle 50% (~20th best QB)" />
         </h3>
         <select
+          id="ranker-anchor"
           value={anchor || ''}
           onChange={(e) => setAnchor(e.target.value || null)}
           className="w-full bg-[#1a1a1a] text-white text-sm px-3 py-2 rounded border border-white/10"
         >
           <option value="">No anchor player selected</option>
-          {playerPool.map((p) => (
+          {anchorOptions.map((p) => (
             <option key={`anchor-${p.id}`} value={p.id}>
               {p.display_name || p.name}
             </option>
@@ -196,16 +306,20 @@ export const RankingSetup = ({
           data-testid="locks"
         >
           <div className="flex-1">
-            <label className="block font-medium mb-2 text-sm text-white/80">
+            <label
+              htmlFor="ranker-first-place"
+              className="block font-medium mb-2 text-sm text-white/80"
+            >
               1st Place Lock-In
             </label>
             <select
+              id="ranker-first-place"
               value={firstPlace || ''}
               onChange={(e) => setFirstPlace(e.target.value || null)}
               className="w-full bg-[#1a1a1a] text-white text-sm px-3 py-2 rounded border border-white/10"
             >
               <option value="">None</option>
-              {playerPool.map((p) => (
+              {firstPlaceOptions.map((p) => (
                 <option key={`first-${p.id}`} value={p.id}>
                   {p.display_name || p.name}
                 </option>
@@ -213,16 +327,20 @@ export const RankingSetup = ({
             </select>
           </div>
           <div className="flex-1">
-            <label className="block font-medium mb-2 text-sm text-white/80">
+            <label
+              htmlFor="ranker-last-place"
+              className="block font-medium mb-2 text-sm text-white/80"
+            >
               Last Place Lock-In
             </label>
             <select
+              id="ranker-last-place"
               value={lastPlace || ''}
               onChange={(e) => setLastPlace(e.target.value || null)}
               className="w-full bg-[#1a1a1a] text-white text-sm px-3 py-2 rounded border border-white/10"
             >
               <option value="">None</option>
-              {playerPool.map((p) => (
+              {lastPlaceOptions.map((p) => (
                 <option key={`last-${p.id}`} value={p.id}>
                   {p.display_name || p.name}
                 </option>

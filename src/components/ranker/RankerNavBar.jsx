@@ -44,13 +44,22 @@ const RankerNavBar = () => {
     },
   ];
 
-  const handleShare = () => {
-    const shareUrl = generateShareableURL(currentPath);
-    navigator.clipboard.writeText(shareUrl).then(() => {
-      const stepName =
-        steps.find((s) => s.path === currentPath)?.name || 'current step';
+  const handleShare = async () => {
+    const { url, error } = generateShareableURL(currentPath);
+    if (error) {
+      alert(error);
+      return;
+    }
+    const stepName =
+      steps.find((s) => s.path === currentPath)?.name || 'current step';
+    try {
+      await navigator.clipboard.writeText(url);
       alert(`${stepName} URL copied to clipboard!`);
-    });
+    } catch {
+      // Clipboard access is denied outside secure contexts and on some mobile
+      // browsers; reporting success there would be a lie.
+      alert(`Could not copy automatically. Here is the link:\n\n${url}`);
+    }
   };
 
   return (
@@ -101,6 +110,7 @@ const RankerNavBar = () => {
               onClick={handleShare}
               className="px-3 py-1.5 bg-purple-600/80 hover:bg-purple-700 rounded text-white text-sm font-medium transition-colors"
               title="Share current step"
+              aria-label="Share current step"
             >
               🔗
             </button>

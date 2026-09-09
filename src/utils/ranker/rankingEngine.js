@@ -9,6 +9,9 @@ const alreadyCompared = (a, b, comparisons) =>
       (c.winner === a && c.loser === b) || (c.winner === b && c.loser === a)
   );
 
+// Canonical, order-independent key for a pair of player ids
+export const pairKey = (a, b) => [a, b].sort().join('|');
+
 // Build graph of wins/losses
 const buildGraph = (comparisons) => {
   const graph = {};
@@ -21,8 +24,10 @@ const buildGraph = (comparisons) => {
 
 // Suggest next strategic pair while respecting group isolation
 // ✅ SMART MATCHUP GENERATOR
-export function suggestNextPair(comparisons, players) {
+export function suggestNextPair(comparisons, players, skippedPairs) {
   if (players.length < 2) return [];
+
+  const isSkipped = (a, b) => !!skippedPairs?.has(pairKey(a, b));
 
   // Helper to suggest a pair within a single group
   const suggestInGroup = (groupPlayers) => {
@@ -36,6 +41,14 @@ export function suggestNextPair(comparisons, players) {
     groupComps.forEach(({ winner, loser }) => {
       seen.add(`${winner}->${loser}`);
       seen.add(`${loser}->${winner}`);
+    });
+    groupPlayers.forEach((a) => {
+      groupPlayers.forEach((b) => {
+        if (a.id !== b.id && isSkipped(a.id, b.id)) {
+          seen.add(`${a.id}->${b.id}`);
+          seen.add(`${b.id}->${a.id}`);
+        }
+      });
     });
 
     const usageCount = {};
@@ -145,7 +158,10 @@ export function suggestNextPair(comparisons, players) {
   if (topRanked.length && upperRanked.length) {
     const worstTop = topRanked[topRanked.length - 1];
     const bestUpper = upperRanked[0];
-    if (!alreadyCompared(worstTop.id, bestUpper.id, comparisons)) {
+    if (
+      !alreadyCompared(worstTop.id, bestUpper.id, comparisons) &&
+      !isSkipped(worstTop.id, bestUpper.id)
+    ) {
       return [worstTop, bestUpper];
     }
   }
@@ -155,7 +171,10 @@ export function suggestNextPair(comparisons, players) {
   if (lowerRanked.length && bottomRanked.length) {
     const worstLower = lowerRanked[lowerRanked.length - 1];
     const bestBottom = bottomRanked[0];
-    if (!alreadyCompared(worstLower.id, bestBottom.id, comparisons)) {
+    if (
+      !alreadyCompared(worstLower.id, bestBottom.id, comparisons) &&
+      !isSkipped(worstLower.id, bestBottom.id)
+    ) {
       return [worstLower, bestBottom];
     }
   }
@@ -165,16 +184,20 @@ export function suggestNextPair(comparisons, players) {
 }
 
 // Estimate how many additional comparisons remain
-export function estimateRemainingComparisons(comparisons, players) {
+export function estimateRemainingComparisons(
+  comparisons,
+  players,
+  skippedPairs
+) {
   const simulated = comparisons.map((c) => ({ ...c }));
   let count = 0;
-  let next = suggestNextPair(simulated, players);
+  let next = suggestNextPair(simulated, players, skippedPairs);
 
   while (next.length > 0) {
     // arbitrarily assume the first player wins to progress the simulation
     simulated.push({ winner: next[0].id, loser: next[1].id });
     count++;
-    next = suggestNextPair(simulated, players);
+    next = suggestNextPair(simulated, players, skippedPairs);
   }
 
   return count;

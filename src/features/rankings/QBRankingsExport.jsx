@@ -7,6 +7,7 @@ const QBRankingsExport = ({
   rankingName,
   onClose,
   movementData = {},
+  onRankingAdjusted,
 }) => {
   return (
     <RankingsExportModal
@@ -16,6 +17,7 @@ const QBRankingsExport = ({
       movementData={movementData}
       title="Export Rankings"
       subtitle="Choose your export format and download your rankings"
+      onRankingAdjusted={onRankingAdjusted}
     />
   );
 };
@@ -25,6 +27,7 @@ QBRankingsExport.propTypes = {
   rankingName: PropTypes.string,
   onClose: PropTypes.func.isRequired,
   movementData: PropTypes.object,
+  onRankingAdjusted: PropTypes.func,
 };
 
 export default QBRankingsExport;

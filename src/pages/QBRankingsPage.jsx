@@ -180,6 +180,13 @@ const QBRankingsPage = () => {
     }
   };
 
+  // Reordering inside the export modal previously updated only that modal's
+  // local state and was discarded on close.
+  const handleRankingAdjusted = (adjustedRanking) => {
+    setRankings(adjustedRanking.map((qb, idx) => ({ ...qb, rank: idx + 1 })));
+    setHasChanges(true);
+  };
+
   const handleAddQB = (qbData) => {
     const newQB = {
       ...qbData,
@@ -395,6 +402,7 @@ const QBRankingsPage = () => {
           rankingName={rankingName}
           movementData={movementData}
           onClose={() => setShowExportModal(false)}
+          onRankingAdjusted={handleRankingAdjusted}
         />
       )}
     </div>

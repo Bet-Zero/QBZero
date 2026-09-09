@@ -14,14 +14,18 @@ const RankerSetupPage = () => {
     setupData: existingSetupData,
   } = useRankerContext();
 
-  const handleComplete = async (data) => {
-    // Set all state before navigation
+  // Whatever pool the user configured against is the pool they get. This used
+  // to render an existing pool but then commit the hardcoded list regardless,
+  // silently discarding any custom selection.
+  const pool =
+    existingPlayerPool.length > 0 ? existingPlayerPool : quarterbacks;
+
+  const handleComplete = (data) => {
     setSetupData(data);
-    setPlayerPool(quarterbacks);
-    // Use setTimeout to ensure state updates are processed
-    setTimeout(() => {
-      navigate('/ranker/comparisons');
-    }, 0);
+    setPlayerPool(pool);
+    // React batches these with the navigation, so the comparisons route renders
+    // with the committed state. (The previous setTimeout was not needed.)
+    navigate('/ranker/comparisons');
   };
 
   return (
@@ -30,9 +34,7 @@ const RankerSetupPage = () => {
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Setup component */}
         <RankingSetup
-          playerPool={
-            existingPlayerPool.length > 0 ? existingPlayerPool : quarterbacks
-          }
+          playerPool={pool}
           onComplete={handleComplete}
           existingSetupData={existingSetupData}
         />
