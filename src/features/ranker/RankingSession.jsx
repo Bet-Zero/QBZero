@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import PlayerCompareCard from './PlayerCompareCard';
-import RankingResults from './RankingResults';
 import ComparisonMatrixDrawer from './ComparisonMatrixDrawer';
 import { AnchorComparison } from './AnchorComparison';
 import {
@@ -128,31 +127,6 @@ const RankingSession = ({ playerPool = [], setupData, onComplete }) => {
     setResults(newResults);
     setIsFinished(false);
   };
-
-  if (isFinished) {
-    const ranking = generateRankingFromComparisons(
-      results,
-      groupedPlayers,
-      setupData
-    );
-    return (
-      <>
-        <RankingResults ranking={ranking} />
-        <div className="text-white/30 mt-8 text-center text-sm italic px-4">
-          Ranking created on{' '}
-          {new Date().toLocaleDateString(undefined, {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-          })}
-        </div>
-        <ComparisonMatrixDrawer
-          players={groupedPlayers}
-          comparisons={results}
-        />
-      </>
-    );
-  }
 
   if (setupData?.anchor && !anchorDone) {
     const anchorPlayer = players.find((p) => p.id === setupData.anchor);

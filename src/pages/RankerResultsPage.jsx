@@ -11,7 +11,6 @@ const RankerResultsPage = () => {
     finalRanking,
     comparisonResults,
     playerPool,
-    setCurrentPhase,
     resetRanker,
     setFinalRanking,
     generateShareableURL,
@@ -22,13 +21,11 @@ const RankerResultsPage = () => {
   const [showExportModal, setShowExportModal] = useState(true); // Open modal by default
 
   useEffect(() => {
-    setCurrentPhase('results');
-
     // Show recovery options if no results, but don't auto-redirect
     if (!finalRanking || finalRanking.length === 0) {
       setShowRecoveryOptions(true);
     }
-  }, [setCurrentPhase, finalRanking]);
+  }, [finalRanking]);
 
   const handleStartNew = () => {
     resetRanker();

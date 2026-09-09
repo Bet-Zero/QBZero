@@ -65,9 +65,6 @@ export const RankerProvider = () => {
   // Final ranking
   const [finalRanking, setFinalRankingState] = useState([]);
 
-  // Progress tracking
-  const [currentPhase, setCurrentPhase] = useState('landing');
-
   // Load state from localStorage on mount
   useEffect(() => {
     const loadStoredState = () => {
@@ -185,25 +182,6 @@ export const RankerProvider = () => {
     [playerPool, setupData, comparisonResults, finalRanking]
   );
 
-  // Function to navigate to a step with current state
-  const navigateToStep = useCallback(
-    (step, preserveState = true) => {
-      if (preserveState) {
-        const state = {
-          playerPool,
-          setupData,
-          comparisonResults,
-          finalRanking,
-        };
-        const encodedState = encodeStateToURL(state);
-        navigate(`/ranker/${step}?state=${encodedState}`);
-      } else {
-        navigate(`/ranker/${step}`);
-      }
-    },
-    [navigate, playerPool, setupData, comparisonResults, finalRanking]
-  );
-
   // Reset all state for new ranking session
   const resetRanker = useCallback(() => {
     // Clear localStorage for current session
@@ -221,7 +199,6 @@ export const RankerProvider = () => {
     setSetupDataState(null);
     setComparisonResultsState([]);
     setFinalRankingState([]);
-    setCurrentPhase('landing');
   }, [sessionId]);
 
   // Check if we can navigate to a specific step
@@ -247,7 +224,6 @@ export const RankerProvider = () => {
     setupData,
     comparisonResults,
     finalRanking,
-    currentPhase,
     sessionId,
 
     // Setters
@@ -255,12 +231,10 @@ export const RankerProvider = () => {
     setSetupData,
     setComparisonResults,
     setFinalRanking,
-    setCurrentPhase,
 
     // Actions
     resetRanker,
     generateShareableURL,
-    navigateToStep,
     canNavigateToStep,
   };
 

@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useRankerContext } from '@/context/RankerContext';
 import { RankingSetup } from '@/features/ranker/RankingSetup';
 import { quarterbacks } from '@/features/ranker/quarterbacks';
@@ -9,17 +9,10 @@ const RankerSetupPage = () => {
   const navigate = useNavigate();
   const {
     setSetupData,
-    setCurrentPhase,
     setPlayerPool,
-    canNavigateToStep,
-    generateShareableURL,
     playerPool: existingPlayerPool,
     setupData: existingSetupData,
   } = useRankerContext();
-
-  useEffect(() => {
-    setCurrentPhase('setup');
-  }, [setCurrentPhase]);
 
   const handleComplete = async (data) => {
     // Set all state before navigation

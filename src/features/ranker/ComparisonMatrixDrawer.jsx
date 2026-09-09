@@ -1,31 +1,13 @@
 import React, { useState } from 'react';
 import ComparisonMatrix from './ComparisonMatrix';
 
-const ComparisonMatrixDrawer = ({ players, comparisons, onExport }) => {
+const ComparisonMatrixDrawer = ({ players, comparisons }) => {
   const [open, setOpen] = useState(false);
 
   return (
     <>
       {!open && (
-        <div className="fixed bottom-2 right-2 z-30 flex gap-2">
-          <button
-            onClick={onExport}
-            className="p-2 rounded-full bg-black/30 hover:bg-black/50 text-white"
-            title="Export CSV"
-          >
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M12 16v-8" />
-              <path d="M8 12l4 4 4-4" />
-              <rect x="4" y="4" width="16" height="16" rx="2" />
-            </svg>
-          </button>
+        <div className="fixed bottom-2 right-2 z-30">
           <button
             onClick={() => setOpen(true)}
             className="p-1.5 rounded-full bg-black/30 hover:bg-black/50 text-white"

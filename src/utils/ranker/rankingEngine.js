@@ -2,9 +2,6 @@
 
 // ========== 🧠 UTILITY FUNCTIONS ==========
 
-// Get list of unique player IDs
-const getPlayerIds = (players) => players.map((p) => p.id);
-
 // Determine if a direct comparison already exists
 const alreadyCompared = (a, b, comparisons) =>
   comparisons.some(
@@ -20,63 +17,6 @@ const buildGraph = (comparisons) => {
     graph[winner].add(loser);
   });
   return graph;
-};
-
-// Check if A > B can be inferred from graph
-const canInfer = (a, b, graph, visited = new Set()) => {
-  if (!graph[a]) return false;
-  if (graph[a].has(b)) return true;
-  for (const next of graph[a]) {
-    if (!visited.has(next)) {
-      visited.add(next);
-      if (canInfer(next, b, graph, visited)) return true;
-    }
-  }
-  return false;
-};
-
-// ========== 🧱 PHASED COMPARISON SYSTEM ==========
-
-// Track internal pairing state
-const getNextPhasePair = (players, comparisons) => {
-  const ids = getPlayerIds(players);
-  const graph = buildGraph(comparisons);
-  const usedInComparison = new Set();
-
-  comparisons.forEach(({ winner, loser }) => {
-    usedInComparison.add(winner);
-    usedInComparison.add(loser);
-  });
-
-  // 🟦 PHASE 1: "New vs New" (maximize anchors)
-  const unused = ids.filter((id) => !usedInComparison.has(id));
-  if (unused.length >= 2) {
-    for (let i = 0; i < unused.length; i++) {
-      for (let j = i + 1; j < unused.length; j++) {
-        const a = unused[i];
-        const b = unused[j];
-        if (!alreadyCompared(a, b, comparisons)) {
-          return [a, b];
-        }
-      }
-    }
-  }
-
-  // 🟧 PHASE 2: "Cross-Match Anchors"
-  for (let i = 0; i < ids.length; i++) {
-    for (let j = i + 1; j < ids.length; j++) {
-      const a = ids[i];
-      const b = ids[j];
-      if (a !== b && !alreadyCompared(a, b, comparisons)) {
-        // Avoid if already inferable
-        if (canInfer(a, b, graph) || canInfer(b, a, graph)) continue;
-        return [a, b];
-      }
-    }
-  }
-
-  // 🟥 PHASE 3: No more meaningful comparisons
-  return [];
 };
 
 // Suggest next strategic pair while respecting group isolation
