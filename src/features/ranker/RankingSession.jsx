@@ -71,8 +71,18 @@ const RankingSession = ({ playerPool = [], setupData, onComplete }) => {
     [initialResults, anchorResults, userResults]
   );
 
+  // A stale or shared setup can name an anchor that is not in the current pool.
+  // Resolving it here means the anchor pass is skipped rather than rendering
+  // AnchorComparison with an undefined anchor, which threw on `anchor.name`.
+  const anchorPlayer = useMemo(() => {
+    if (!setupData?.anchor) return null;
+    return players.find((p) => p.id === setupData.anchor) || null;
+  }, [players, setupData]);
+
+  const anchorPending = Boolean(anchorPlayer) && !anchorDone;
+
   const groupedPlayers = useMemo(() => {
-    if (!setupData || (setupData.anchor && !anchorDone)) return players;
+    if (!setupData || anchorPending) return players;
     const { topTier = [], bottomTier = [], anchor } = setupData;
     const better = new Set();
     if (anchor) {
@@ -89,7 +99,7 @@ const RankingSession = ({ playerPool = [], setupData, onComplete }) => {
       else group = 'upper';
       return { ...p, group };
     });
-  }, [players, setupData, results, anchorDone]);
+  }, [players, setupData, results, anchorPending]);
 
   const remaining = useMemo(
     () => estimateRemainingComparisons(results, groupedPlayers, skippedPairs),
@@ -116,7 +126,7 @@ const RankingSession = ({ playerPool = [], setupData, onComplete }) => {
   // Handle next pair and completion
   useEffect(() => {
     if (!setupData) return;
-    if (setupData.anchor && !anchorDone) return;
+    if (anchorPending) return;
     if (groupedPlayers.length < 2) return;
 
     const next = suggestNextPair(results, groupedPlayers, skippedPairs);
@@ -140,7 +150,7 @@ const RankingSession = ({ playerPool = [], setupData, onComplete }) => {
     groupedPlayers,
     skippedPairs,
     setupData,
-    anchorDone,
+    anchorPending,
     onComplete,
     isFinished,
   ]);
@@ -171,12 +181,13 @@ const RankingSession = ({ playerPool = [], setupData, onComplete }) => {
     setIsFinished(false);
   };
 
-  if (setupData?.anchor && !anchorDone) {
-    const anchorPlayer = players.find((p) => p.id === setupData.anchor);
+  if (anchorPending) {
+    // Defaults guard against setup data saved before a field existed; spreading
+    // an undefined tier here used to throw.
     const tagged = new Set(
       [
-        ...setupData.topTier,
-        ...setupData.bottomTier,
+        ...(setupData.topTier || []),
+        ...(setupData.bottomTier || []),
         setupData.firstPlace,
         setupData.lastPlace,
       ].filter(Boolean)

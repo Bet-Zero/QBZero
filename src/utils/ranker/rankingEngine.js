@@ -22,11 +22,78 @@ const buildGraph = (comparisons) => {
   return graph;
 };
 
+// Restrict comparisons to players actually in the pool. Stale localStorage, a
+// shared link, or an edited pool can all carry ids that no longer exist; left
+// in, they pull phantom nodes into the topological sort and silently reorder
+// (or add undefined entries to) the result.
+const scopeToPool = (comparisons, idSet) =>
+  comparisons.filter((c) => idSet.has(c.winner) && idSet.has(c.loser));
+
+/**
+ * Find contradictions in the recorded comparisons - sets of players where the
+ * "beats" relation loops back on itself (a > b > c > a). A cycle makes any
+ * ordering of those players arbitrary, so callers should surface it rather than
+ * present the result as a considered ranking.
+ *
+ * Returns an array of cycles, each an array of player ids. Comparisons
+ * involving players outside the pool are ignored.
+ */
+export const detectComparisonCycles = (comparisons, players) => {
+  const idSet = new Set(players.map((p) => p.id));
+  const graph = buildGraph(scopeToPool(comparisons, idSet));
+
+  const WHITE = 0;
+  const GRAY = 1;
+  const BLACK = 2;
+  const color = {};
+  idSet.forEach((id) => {
+    color[id] = WHITE;
+  });
+
+  const cycles = [];
+  const seen = new Set();
+  const path = [];
+
+  const visit = (node) => {
+    color[node] = GRAY;
+    path.push(node);
+
+    (graph[node] || new Set()).forEach((next) => {
+      if (!idSet.has(next)) return;
+      if (color[next] === GRAY) {
+        // Back edge: everything from `next` onwards on the current path forms
+        // a cycle.
+        const cycle = path.slice(path.indexOf(next));
+        const key = [...cycle].sort().join('|');
+        if (!seen.has(key)) {
+          seen.add(key);
+          cycles.push(cycle);
+        }
+      } else if (color[next] === WHITE) {
+        visit(next);
+      }
+    });
+
+    path.pop();
+    color[node] = BLACK;
+  };
+
+  idSet.forEach((id) => {
+    if (color[id] === WHITE) visit(id);
+  });
+
+  return cycles;
+};
+
 // Suggest next strategic pair while respecting group isolation
 // ✅ SMART MATCHUP GENERATOR
-export function suggestNextPair(comparisons, players, skippedPairs) {
+export function suggestNextPair(rawComparisons, players, skippedPairs) {
   if (players.length < 2) return [];
 
+  const comparisons = scopeToPool(
+    rawComparisons,
+    new Set(players.map((p) => p.id))
+  );
   const isSkipped = (a, b) => !!skippedPairs?.has(pairKey(a, b));
 
   // Helper to suggest a pair within a single group
@@ -236,19 +303,51 @@ const topologicalSort = (comparisons, players) => {
   });
 
   const idToPlayer = Object.fromEntries(players.map((p) => [p.id, p]));
-  return stack.reverse().map((id) => idToPlayer[id]);
+  return stack
+    .reverse()
+    .map((id) => idToPlayer[id])
+    .filter(Boolean);
 };
 
 export const generateRankingFromComparisons = (
-  comparisons,
+  rawComparisons,
   players,
   options = {}
 ) => {
-  const { topTier = [], bottomTier = [], anchor } = options;
+  const {
+    topTier = [],
+    bottomTier = [],
+    anchor,
+    firstPlace = null,
+    lastPlace = null,
+  } = options;
+
+  const comparisons = scopeToPool(
+    rawComparisons,
+    new Set(players.map((p) => p.id))
+  );
+
+  // Position lock-ins are a direct instruction from the user, so they are
+  // applied to the finished order rather than left to emerge from the
+  // comparison graph. Previously a first-place lock-in only landed at rank 1
+  // as a side effect of the boundary re-sort, and not at all when the player
+  // was outside the top tier.
+  const applyLockIns = (ranked) => {
+    if (!firstPlace && !lastPlace) return ranked;
+
+    const first = ranked.find((p) => p.id === firstPlace) || null;
+    const last =
+      lastPlace && lastPlace !== firstPlace
+        ? ranked.find((p) => p.id === lastPlace) || null
+        : null;
+
+    const middle = ranked.filter((p) => p !== first && p !== last);
+    return [...(first ? [first] : []), ...middle, ...(last ? [last] : [])];
+  };
 
   // Fallback to simple topological sort if no grouping info provided
   if (!anchor && topTier.length === 0 && bottomTier.length === 0) {
-    return topologicalSort(comparisons, players);
+    return applyLockIns(topologicalSort(comparisons, players));
   }
 
   const idMap = Object.fromEntries(players.map((p) => [p.id, p]));
@@ -313,5 +412,5 @@ export const generateRankingFromComparisons = (
     ...rankedBottom,
   ];
 
-  return final;
+  return applyLockIns(final);
 };

@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useRankerContext } from '@/context/RankerContext';
 import ComparisonMatrixDrawer from '@/features/ranker/ComparisonMatrixDrawer';
 import RankerNavBar from '@/components/ranker/RankerNavBar';
 import RankingsExportModal from '@/components/shared/RankingsExportModal';
+import { detectComparisonCycles } from '@/utils/ranker/rankingEngine';
 
 const RankerResultsPage = () => {
   const navigate = useNavigate();
@@ -19,6 +20,19 @@ const RankerResultsPage = () => {
 
   const [showRecoveryOptions, setShowRecoveryOptions] = useState(false);
   const [showExportModal, setShowExportModal] = useState(true); // Open modal by default
+
+  // Contradictory comparisons (a > b > c > a) make the order of the players
+  // involved arbitrary. The ranking is still shown, but saying so is more
+  // honest than presenting a coin flip as a considered result.
+  const conflicts = useMemo(() => {
+    if (!comparisonResults?.length || !playerPool?.length) return [];
+    const nameById = new Map(
+      playerPool.map((p) => [p.id, p.display_name || p.name || p.id])
+    );
+    return detectComparisonCycles(comparisonResults, playerPool).map((cycle) =>
+      cycle.map((id) => nameById.get(id) || id)
+    );
+  }, [comparisonResults, playerPool]);
 
   useEffect(() => {
     // Show recovery options if no results, but don't auto-redirect
@@ -109,6 +123,28 @@ const RankerResultsPage = () => {
     <div className="bg-neutral-900 min-h-screen">
       <RankerNavBar />
       <div className="max-w-5xl mx-auto px-4 py-8">
+        {conflicts.length > 0 && (
+          <div
+            className="mb-6 p-4 bg-amber-500/10 border border-amber-400/40 rounded-lg"
+            role="status"
+          >
+            <h2 className="text-amber-200 font-semibold mb-1 text-sm">
+              ⚠️ Some of your picks contradict each other
+            </h2>
+            <p className="text-amber-100/70 text-sm mb-2">
+              These players beat each other in a loop, so their order here is
+              arbitrary. Adjust them by hand if the result looks wrong.
+            </p>
+            <ul className="text-amber-100/80 text-sm list-disc list-inside">
+              {conflicts.map((cycle) => (
+                <li key={cycle.join('|')}>
+                  {cycle.join(' → ')} → {cycle[0]}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         {/* Action buttons */}
         <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
           <div className="flex gap-3">

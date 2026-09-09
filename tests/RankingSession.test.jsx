@@ -149,3 +149,32 @@ describe('RankingSession lock-ins', () => {
     expect(ranking[0].id).toBe(pool[4].id);
   });
 });
+
+describe('RankingSession resilience', () => {
+  it('skips the anchor pass when the anchor is not in the pool', () => {
+    // A stale or shared setup can name a player who is no longer present.
+    // This used to render AnchorComparison with an undefined anchor and throw.
+    const { container, ui } = start({
+      setupData: { ...emptySetup, anchor: 'not-a-real-player' },
+    });
+
+    expect(ui.queryByText('Anchor Comparison')).toBeNull();
+    expect(container.querySelectorAll('.compare-button')).toHaveLength(2);
+    expect(readProgress(ui).answered).toBe(0);
+  });
+
+  it('runs the anchor pass when the anchor does resolve', () => {
+    const { ui } = start({
+      setupData: { ...emptySetup, anchor: 'josh-allen' },
+    });
+
+    expect(ui.getByText('Anchor Comparison')).toBeTruthy();
+  });
+
+  it('tolerates setup data missing the tier fields entirely', () => {
+    // Spreading an absent topTier/bottomTier used to throw during the anchor
+    // pass.
+    const { ui } = start({ setupData: { anchor: 'josh-allen' } });
+    expect(ui.getByText('Anchor Comparison')).toBeTruthy();
+  });
+});
