@@ -232,7 +232,7 @@ const RankerResultsPage = () => {
               {showLogoBg ? 'Hide Logo BG' : 'Show Logo BG'}
             </button>
           )}
-          <div className="ml-auto">
+          <div className="sm:ml-auto">
             <ActionButton
               onClick={handleStartNew}
               className="bg-green-600 hover:bg-green-700"
