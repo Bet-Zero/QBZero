@@ -217,7 +217,7 @@ const AdjustableRankings = ({ initialRanking = [], onSave, onCancel }) => {
           • Drag and drop players to reorder them
           <br />
           • Use the ↑ ↓ buttons to move players up or down
-          <br />• Save your changes when you're happy with the adjustments
+          <br />• Save your changes when you&apos;re happy with the adjustments
         </p>
       </div>
     </div>
