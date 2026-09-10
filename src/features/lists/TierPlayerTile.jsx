@@ -2,7 +2,6 @@
 // Small visual player card used in tier layouts (ListTierExport and TierMaker).
 import React from 'react';
 import { getPlayerPositionLabel } from '@/utils/roles';
-import { formatHeight } from '@/utils/formatting';
 import TeamLogo from '@/components/shared/TeamLogo';
 
 const TierPlayerTile = ({ player }) => {

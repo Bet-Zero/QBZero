@@ -14,7 +14,7 @@ const Shelf = ({ title, qbs = [], className = '' }) => {
               <div className="w-16 h-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full mx-auto"></div>
             </div>
           )}
-          
+
           {/* Crystal balls in a flexible grid */}
           <div className="flex flex-wrap gap-4 justify-center">
             {qbs.length > 0 ? (
@@ -24,7 +24,9 @@ const Shelf = ({ title, qbs = [], className = '' }) => {
                 </div>
               ))
             ) : (
-              <div className="text-white/40 text-center py-8">No predictions yet</div>
+              <div className="text-white/40 text-center py-8">
+                No predictions yet
+              </div>
             )}
           </div>
         </div>
@@ -83,7 +85,9 @@ const Shelf = ({ title, qbs = [], className = '' }) => {
                   </div>
                 ))
               ) : (
-                <div className="text-white/40 text-center py-8">Empty shelf</div>
+                <div className="text-white/40 text-center py-8">
+                  Empty shelf
+                </div>
               )}
             </div>
           </div>

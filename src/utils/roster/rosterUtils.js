@@ -1,5 +1,3 @@
-import { POSITION_MAP } from '../roles/positionMap.js';
-
 export function normalizePlayer(player) {
   if (!player) return null;
   return {

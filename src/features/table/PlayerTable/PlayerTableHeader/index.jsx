@@ -17,7 +17,9 @@ const PlayerTableHeader = ({
     <div className="mb-2 border-b border-neutral-700/50 pb-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white mb-1">Player Database</h1>
+          <h1 className="text-2xl font-bold text-white mb-1">
+            Player Database
+          </h1>
           <p className="text-gray-400 text-sm">
             {filteredCount} players • NFL {seasonYear} Season
           </p>

@@ -281,7 +281,8 @@ const AddQBModal = ({ onClose, onAdd, existingQBNames = [] }) => {
                 <div className="text-center py-8 text-white/60">
                   <div className="text-lg mb-2">🎉 All QBs Added!</div>
                   <div className="text-sm">
-                    You've added all available quarterbacks to your rankings.
+                    You&apos;ve added all available quarterbacks to your
+                    rankings.
                   </div>
                 </div>
               ) : (
@@ -345,7 +346,7 @@ const AddQBModal = ({ onClose, onAdd, existingQBNames = [] }) => {
 
                   {filteredQBs.length === 0 && searchTerm && (
                     <div className="text-center py-8 text-white/40">
-                      No available QBs found matching "{searchTerm}"
+                      No available QBs found matching &quot;{searchTerm}&quot;
                     </div>
                   )}
                 </>

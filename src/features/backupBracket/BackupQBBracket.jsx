@@ -1,4 +1,10 @@
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   buildBracketBlueprint,
   clearDependentWinners,
@@ -30,7 +36,10 @@ const useAutoFit = () => {
       const containerWidth = container.clientWidth;
       const contentWidth = content.scrollWidth;
       if (!contentWidth) return;
-      const nextFit = Math.min(1, Math.max(MIN_SCALE, containerWidth / contentWidth));
+      const nextFit = Math.min(
+        1,
+        Math.max(MIN_SCALE, containerWidth / contentWidth)
+      );
       setFitScale(nextFit);
     };
 
@@ -56,7 +65,10 @@ const useAutoFit = () => {
 };
 
 const BackupQBBracket = ({ entrants = [], preferredSize = 32 }) => {
-  const blueprint = useMemo(() => buildBracketBlueprint(entrants, preferredSize), [entrants, preferredSize]);
+  const blueprint = useMemo(
+    () => buildBracketBlueprint(entrants, preferredSize),
+    [entrants, preferredSize]
+  );
   const { size, seeded, rounds, labels } = blueprint;
   const [winners, setWinners] = useState(blueprint.winners);
   const [hoveredMatch, setHoveredMatch] = useState(null);
@@ -79,7 +91,10 @@ const BackupQBBracket = ({ entrants = [], preferredSize = 32 }) => {
   }, [fitScale, isManualZoom]);
 
   useEffect(() => {
-    const focusScale = Math.min(MAX_SCALE, Math.max(baseScale, baseScale + HOVER_BOOST));
+    const focusScale = Math.min(
+      MAX_SCALE,
+      Math.max(baseScale, baseScale + HOVER_BOOST)
+    );
     if (hoveredMatch) {
       setDisplayScale(focusScale);
     } else {
@@ -103,7 +118,10 @@ const BackupQBBracket = ({ entrants = [], preferredSize = 32 }) => {
     });
   };
 
-  const champion = useMemo(() => getChampion(winners, seeded.byId), [winners, seeded.byId]);
+  const champion = useMemo(
+    () => getChampion(winners, seeded.byId),
+    [winners, seeded.byId]
+  );
 
   const handleZoomIn = () => {
     setIsManualZoom(true);
@@ -168,7 +186,8 @@ const BackupQBBracket = ({ entrants = [], preferredSize = 32 }) => {
         <div>
           <h2 className="text-2xl font-bold text-white">Backup QB Bracket</h2>
           <p className="text-white/60 text-sm">
-            {size}-quarterback single-elimination showdown. Click a QB to advance them and build your champion.
+            {size}-quarterback single-elimination showdown. Click a QB to
+            advance them and build your champion.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -217,8 +236,12 @@ const BackupQBBracket = ({ entrants = [], preferredSize = 32 }) => {
               🏆
             </span>
             <div>
-              <p className="text-sm text-emerald-200/80 uppercase tracking-wide">Champion</p>
-              <p className="text-lg font-semibold text-emerald-100">{champion.display_name}</p>
+              <p className="text-sm text-emerald-200/80 uppercase tracking-wide">
+                Champion
+              </p>
+              <p className="text-lg font-semibold text-emerald-100">
+                {champion.display_name}
+              </p>
             </div>
           </div>
         </div>
@@ -228,7 +251,9 @@ const BackupQBBracket = ({ entrants = [], preferredSize = 32 }) => {
         <div className="overflow-auto">
           <div
             ref={contentRef}
-            className={clsx('transition-transform duration-300 ease-out px-6 py-10')}
+            className={clsx(
+              'transition-transform duration-300 ease-out px-6 py-10'
+            )}
             style={{
               transform: `scale(${displayScale})`,
               transformOrigin: 'left top',
@@ -241,7 +266,11 @@ const BackupQBBracket = ({ entrants = [], preferredSize = 32 }) => {
                 const { centerSpacing, gap } = getRoundMeasurements(roundIndex);
 
                 return (
-                  <div key={round.roundIndex} className="flex flex-col" style={columnStyle(roundIndex)}>
+                  <div
+                    key={round.roundIndex}
+                    className="flex flex-col"
+                    style={columnStyle(roundIndex)}
+                  >
                     <h3 className="text-center text-sm font-semibold uppercase tracking-widest text-white/60 mb-4">
                       {label}
                     </h3>
@@ -259,7 +288,9 @@ const BackupQBBracket = ({ entrants = [], preferredSize = 32 }) => {
                           roundIndex === 0
                             ? []
                             : match.sources.map((source) => {
-                                const sourceLabel = labels[source.roundIndex] || `Round ${source.roundIndex + 1}`;
+                                const sourceLabel =
+                                  labels[source.roundIndex] ||
+                                  `Round ${source.roundIndex + 1}`;
                                 return `Winner of ${sourceLabel} • Match ${source.matchIndex + 1}`;
                               });
 
@@ -271,8 +302,18 @@ const BackupQBBracket = ({ entrants = [], preferredSize = 32 }) => {
                             participants={participants}
                             winnerId={winners[roundIndex][match.matchIndex]}
                             placeholderLabels={placeholderLabels}
-                            onSelect={(playerId) => handleSelectWinner(roundIndex, match.matchIndex, playerId)}
-                            onHover={() => setHoveredMatch(`${roundIndex}-${match.matchIndex}`)}
+                            onSelect={(playerId) =>
+                              handleSelectWinner(
+                                roundIndex,
+                                match.matchIndex,
+                                playerId
+                              )
+                            }
+                            onHover={() =>
+                              setHoveredMatch(
+                                `${roundIndex}-${match.matchIndex}`
+                              )
+                            }
                             onHoverEnd={() => setHoveredMatch(null)}
                             isLastRound={roundIndex === rounds.length - 1}
                             centerSpacing={centerSpacing}

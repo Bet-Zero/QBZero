@@ -171,7 +171,7 @@ const PersonalRankingArchives = ({ onClose, onLoadArchive }) => {
             </div>
           ) : (
             <div className="space-y-3">
-              {archives.map((archive, index) => (
+              {archives.map((archive) => (
                 <div
                   key={archive.id}
                   className="bg-white/5 rounded-lg border border-white/10 overflow-hidden"
@@ -192,7 +192,7 @@ const PersonalRankingArchives = ({ onClose, onLoadArchive }) => {
                           </div>
                           {archive.notes && (
                             <div className="text-white/70 text-sm mt-1 italic">
-                              "{archive.notes}"
+                              &quot;{archive.notes}&quot;
                             </div>
                           )}
                         </div>

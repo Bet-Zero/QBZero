@@ -5,7 +5,6 @@ const MATCH_HEIGHT = 96;
 const CONNECTOR_LENGTH = 56;
 
 const MatchupCard = ({
-  roundIndex,
   matchIndex,
   participants,
   winnerId,
@@ -30,7 +29,11 @@ const MatchupCard = ({
       }
 
       const isWinner = winnerId === participant.id;
-      const status = winnerId ? (isWinner ? 'winner' : 'eliminated') : 'pending';
+      const status = winnerId
+        ? isWinner
+          ? 'winner'
+          : 'eliminated'
+        : 'pending';
 
       return {
         id: participant.id,
@@ -72,8 +75,8 @@ const MatchupCard = ({
             participant.status === 'winner'
               ? 'bg-emerald-500/20 text-emerald-200 border-emerald-500/40 shadow-inner'
               : participant.status === 'eliminated'
-              ? 'bg-neutral-800/40 text-white/40 line-through'
-              : 'hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-400';
+                ? 'bg-neutral-800/40 text-white/40 line-through'
+                : 'hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-400';
 
           return (
             <button
@@ -93,7 +96,9 @@ const MatchupCard = ({
                   ? 'Waiting on previous result'
                   : `Select ${participant.label} as winner`
               }
-              style={{ minHeight: `${MATCH_HEIGHT / participantRows.length}px` }}
+              style={{
+                minHeight: `${MATCH_HEIGHT / participantRows.length}px`,
+              }}
             >
               <div className="flex items-center gap-3">
                 <span className="text-xs font-semibold text-white/50">
@@ -116,17 +121,17 @@ const MatchupCard = ({
                   participant.status === 'winner'
                     ? 'text-emerald-300'
                     : participant.status === 'eliminated'
-                    ? 'text-white/30'
-                    : 'text-white/40'
+                      ? 'text-white/30'
+                      : 'text-white/40'
                 )}
               >
                 {participant.status === 'winner'
                   ? ' '
                   : participant.status === 'eliminated'
-                  ? 'Out'
-                  : participant.isPlaceholder
-                  ? 'TBD'
-                  : 'Pick'}
+                    ? 'Out'
+                    : participant.isPlaceholder
+                      ? 'TBD'
+                      : 'Pick'}
               </span>
             </button>
           );
@@ -137,7 +142,10 @@ const MatchupCard = ({
         <div
           aria-hidden="true"
           className="absolute top-1/2 h-px bg-white/10"
-          style={{ width: `${CONNECTOR_LENGTH}px`, right: `-${CONNECTOR_LENGTH}px` }}
+          style={{
+            width: `${CONNECTOR_LENGTH}px`,
+            right: `-${CONNECTOR_LENGTH}px`,
+          }}
         />
       )}
 

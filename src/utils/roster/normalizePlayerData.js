@@ -16,7 +16,7 @@ export function normalizePlayerData(playerData) {
   (playerData.contract?.annual_salaries || []).forEach((s) => {
     let raw = s.salary;
     if (typeof raw === 'string') {
-      raw = raw.replace(/[\$,]/g, '');
+      raw = raw.replace(/[$,]/g, '');
       if (raw.includes('M')) {
         raw = raw.replace('M', '');
         salaryMap[s.year] = parseFloat(raw);

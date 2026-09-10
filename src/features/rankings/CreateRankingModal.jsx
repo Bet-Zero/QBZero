@@ -7,7 +7,6 @@ const CreateRankingModal = ({ isOpen, onClose, onCreated }) => {
   const [name, setName] = useState('');
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState('');
-  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();

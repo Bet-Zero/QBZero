@@ -8,13 +8,7 @@ import TraitFilters from './sections/TraitFilters';
 import OverallGradeFilter from './sections/OverallGradeFilter';
 import BadgeFilters from './sections/BadgeFilters';
 
-const FilterPanel = ({
-  filters,
-  setFilters,
-  getDefaultFilters,
-  onClearFilters,
-  onClose,
-}) => {
+const FilterPanel = ({ filters, setFilters, onClearFilters, onClose }) => {
   const panelRef = useRef(null);
 
   // Close when clicking outside

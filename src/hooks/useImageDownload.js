@@ -58,7 +58,7 @@ const useImageDownload = (ref) => {
         top: element.style.top,
         visibility: element.style.visibility,
         zIndex: element.style.zIndex,
-        pointerEvents: element.style.pointerEvents
+        pointerEvents: element.style.pointerEvents,
       };
 
       // Make fully visible temporarily (but keep it non-interactive and below other content)

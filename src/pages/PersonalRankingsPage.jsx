@@ -49,7 +49,7 @@ const PersonalRankingsPage = () => {
         </div>
 
         <div className="space-y-4">
-          {rankings.map((qb, index) => (
+          {rankings.map((qb) => (
             <QBRankingCard
               key={qb.id}
               qb={qb}

@@ -20,13 +20,16 @@ export const determineBracketSize = (entrantsLength, preferredSize = 32) => {
   if (entrantsLength >= preferredSize) return preferredSize;
   if (preferredSize === 32 && entrantsLength >= 16) return 16;
 
-  const highestPowerOfTwo = 2 ** Math.floor(Math.log2(Math.max(entrantsLength, 1)));
+  const highestPowerOfTwo =
+    2 ** Math.floor(Math.log2(Math.max(entrantsLength, 1)));
   return Math.max(2, highestPowerOfTwo);
 };
 
 export const generateSeedOrder = (size) => {
   if (size < 2 || (size & (size - 1)) !== 0) {
-    throw new Error('Bracket size must be a power of two greater than or equal to 2');
+    throw new Error(
+      'Bracket size must be a power of two greater than or equal to 2'
+    );
   }
 
   let seeds = [1, 2];
@@ -77,7 +80,13 @@ export const seedEntrants = (entrants, size) => {
 };
 
 export const getRoundLabels = (size) => {
-  const labels32 = ['Round of 32', 'Sweet 16', 'Elite Eight', 'Final Four', 'Championship'];
+  const labels32 = [
+    'Round of 32',
+    'Sweet 16',
+    'Elite Eight',
+    'Final Four',
+    'Championship',
+  ];
   const labels16 = ['Round of 16', 'Elite Eight', 'Final Four', 'Championship'];
   const labels8 = ['Quarterfinals', 'Semifinals', 'Championship'];
   const labels4 = ['Semifinals', 'Championship'];
@@ -219,4 +228,3 @@ export const buildBracketBlueprint = (entrants, preferredSize = 32) => {
     winners,
   };
 };
-

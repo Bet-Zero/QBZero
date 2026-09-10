@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import QBRankingCard from '@/features/rankings/QBRankingCard';
 import {
   getCurrentPersonalRanking,
   getArchivedPersonalRankings,
 } from '@/firebase/personalRankingHelpers';
 import { calculateRankingMovement } from '@/utils/rankingMovement';
-import { Eye, Calendar, TrendingUp } from 'lucide-react';
+import { Calendar, TrendingUp } from 'lucide-react';
 
 const PublicQBRankingsPage = () => {
   const [rankings, setRankings] = useState([]);
@@ -120,7 +119,7 @@ const PublicQBRankingsPage = () => {
 
         {/* Rankings List */}
         <div className="space-y-1.5 sm:space-y-2">
-          {rankings.map((qb, index) => (
+          {rankings.map((qb) => (
             <QBRankingCard
               key={qb.id}
               qb={qb}

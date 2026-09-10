@@ -13,7 +13,12 @@ const BackupQBsHome = () => {
       backupQBs.map((qb) => ({
         id: qb.id || qb.player_id,
         display_name:
-          qb.display_name || qb.displayName || qb.fullName || qb.name || qb.player_name || qb.id,
+          qb.display_name ||
+          qb.displayName ||
+          qb.fullName ||
+          qb.name ||
+          qb.player_name ||
+          qb.id,
         team: qb.bio?.Team || qb.team || qb.currentTeam || 'FA',
       })),
     [backupQBs]
@@ -34,8 +39,9 @@ const BackupQBsHome = () => {
         {/* Bracket Section */}
         <div className="space-y-6">
           <p className="text-white/70 text-sm text-center max-w-3xl mx-auto">
-            Rank the best reserves in football with our interactive bracket. Choose winners, watch them advance,
-            and crown the ultimate backup quarterback champion.
+            Rank the best reserves in football with our interactive bracket.
+            Choose winners, watch them advance, and crown the ultimate backup
+            quarterback champion.
           </p>
           <BackupQBBracket entrants={bracketEntrants} preferredSize={32} />
         </div>
