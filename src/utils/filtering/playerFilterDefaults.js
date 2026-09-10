@@ -37,7 +37,6 @@ export function getDefaultPlayerFilters() {
     salaryYear: 2025,
     freeAgentYear: '',
     freeAgentType: '',
-    birdRights: '',
     offenseRole: '',
     runningProfile: '',
     subRoles: { offense: [] },

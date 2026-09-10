@@ -2,7 +2,6 @@ import React from 'react';
 
 const PlayerContractMini = ({
   contract = {},
-  bird_rights = 'Unknown',
   option_type = {},
   free_agent_year,
   free_agent_type,
@@ -97,12 +96,6 @@ const PlayerContractMini = ({
             </span>
           </div>
         ))}
-      </div>
-      <div className="mt-2 pt-2 border-t border-white/10 text-[11px] flex justify-between">
-        <span className="text-white/50">Rights:</span>
-        <span className="font-normal text-[11px] capitalize">
-          {bird_rights.toLowerCase()}
-        </span>
       </div>
     </div>
   );

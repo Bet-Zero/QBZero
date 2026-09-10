@@ -1,9 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
-import {
-  isTwoWayContract,
-  normalizePlayer,
-  buildInitialRoster,
-} from '@/utils/roster';
+import { normalizePlayer, buildInitialRoster } from '@/utils/roster';
 import { POSITION_MAP } from '@/utils/roles';
 import {
   createRosterProject,
@@ -11,7 +7,7 @@ import {
   loadRosterProject,
   updateRosterProject,
 } from '@/firebase/rosterHelpers';
-import { TeamMap } from '@/constants/teamList';
+import { TeamMap, teamAbbrFor } from '@/constants/teamList';
 
 export const emptyRoster = {
   starters: [null, null, null, null, null],
@@ -93,16 +89,15 @@ export const useRosterManager = (allPlayers = [], isLoading = false) => {
 
       if (loadMethod === 'current') {
         if (!selectedTeam) return;
-        const rawTeamPlayers = allPlayers.filter(
-          (p) => (p.bio?.Team || '').toLowerCase() === selectedTeam.id
-        );
-
-        const teamPlayers = rawTeamPlayers
-          .filter((p) => !isTwoWayContract(p))
+        const teamPlayers = allPlayers
+          .filter(
+            (p) =>
+              (p.bio?.Team || '').toUpperCase() === teamAbbrFor(selectedTeam.id)
+          )
           .sort(
             (a, b) =>
-              parseFloat(b.system?.stats?.MP || 0) -
-              parseFloat(a.system?.stats?.MP || 0)
+              parseFloat(b.system?.stats?.YDS || 0) -
+              parseFloat(a.system?.stats?.YDS || 0)
           );
 
         setRoster(buildInitialRoster(teamPlayers));

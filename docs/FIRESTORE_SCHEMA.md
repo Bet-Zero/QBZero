@@ -1,69 +1,65 @@
-# 🗂️ FIRESTORE_SCHEMA.md
+# FIRESTORE_SCHEMA.md
 
-A full schema reference for all Firestore collections used in QBZero. Use this to understand field structures, nested paths, and usage.
-
----
-
-## 📁 Collection: `/players/{playerId}`
-
-### 📦 Top-Level Fields:
-
-- `bio`: { AGE, HT, WT, Position, Team, Years Pro }
-- `traits`: { Throwing, Accuracy, Decision, Mobility, Pocket, IQ, Leadership, Durability }
-- `roles`: { offense1, offense2, style1, style2 }
-- `blurbs`: { traits, roles, subroles, throwingProfile, playStyle }
-- `subRoles`: { offense: [], style: [] }
-- `badges`: array of badge strings
-- `overall_grade`: number or string
-- `throwingProfile`: string
-- `system.stats`: { PassYds, PassTD, INT, Comp%, Rating, etc. }
-- `contract`: raw scraped contract
-- `contract_summary`: readable metadata summary
-- `contract.extension`: full extension info (if signed)
-- `draft`: { year, round, pick, team }
-- `agent`: { name, agency }
-- `status`: 'Signed', 'FA', 'Practice Squad', etc.
-- `team`: string
-- `position`: string
-- `player_id`: string
-- `name`, `display_name`: string
-- `cap_hit`, `dead_money`, `guaranteed_money`, `no_trade_clause`, `trade_kicker`: flags
+Field reference for the Firestore collections QBZero actually uses. See
+`firestore.rules` for who may write to each, and `AGENTS.md` for the summary.
 
 ---
 
-## 📁 Collection: `/teams/{teamId}`
+## `players/{playerId}`
 
-### 📦 Fields:
+The master quarterback record. Document id matches the `id` in
+`src/features/ranker/quarterbacks.js` (e.g. `josh-allen`).
 
-- `capSheet.lastUpdated`: timestamp
-- `capSheet.players[]`: array of full player objects
+- `player_id`: string, same as the document id
+- `display_name`: string
+- `status`: `'active'` | `'retired'` — retired quarterbacks are kept forever;
+  the ranker's default pool filters on this rather than dropping them
+- `bio`: `{ Team, Position, AGE, HT, WT, 'Years Pro' }` — `Team` is an
+  abbreviation (`KC`, `ARI`), matching the `abbr` on `TeamListFull`
+- `traits`: one key per entry in `QB_TRAITS` (`src/constants/traits.js`),
+  each 0–100
+- `roles`: `{ offense1, offense2, style1, style2, armTalent }`
+- `subRoles`: `{ offense: string[] }` — names from `SubRoleMasterList`
+- `runningProfile`: one of `runningProfileTiers`
+- `badges`: string[]
+- `blurbs`: `{ traits, roles, subroles, throwingProfile, playStyle, overall }`
+- `overall_grade`: number | null
+- `system.stats`: `{ CMP, ATT, YDS, TD, INT, 'CMP%', RTG, QBR, G }` — the keys
+  in `QB_STATS` (`src/constants/stats.js`)
+- `contract`, `contract_summary`: raw contract data
+- `free_agency_year`, `free_agent_type`
 
-### 🔁 Each `capSheet.players[i]` includes:
+`normalizePlayerData` flattens this for the UI, lifting `system.stats` to the
+top level and deriving `heightInInches`, `salaryByYear` and `formattedPosition`.
+Those derived fields are not stored — do not write them back.
 
-- `name`, `player_id`, `display_name`, `position`, `age`, `height`, `weight`
-- `contract_clean`: object with:
-  - `years`, `total_value`, `average_value`
-  - `franchise_tag`, `fa_type`, `fa_year`, `has_extension`
-  - `salaries_by_year`: {
-    `2025`: {
-    `salary`: number,
-    `guaranteed`: number,
-    `option`: 'Team' | 'Player' | null,
-    `source`: string
-    }
-    }
+## `qbRankings/{rankingId}`
 
----
+Saved ranking sets, plus the current personal ranking.
 
-## 🔐 Other Collections (optional / WIP)
+## `personalRankingArchives/{archiveId}`
 
-- `/lists`, `/tierLists`: QB ranking tables
-- `/rosterProjects`: Team-specific plans (WIP)
-- `/capSheets`: Archived snapshots per team per year (future use)
+Point-in-time snapshots of a personal ranking, used for movement indicators.
 
----
+## `lists/{listId}`
 
-## 🔁 Sync Notes
+User-built lists: ordered players, optional tiers, title and subtitle.
 
-- `contract_clean` is generated during data cleaning and saved into `/teams`
-- Can be optionally pushed into `/players` if you want salary data visible in QBZero
+## `tierLists/{tierListId}`
+
+Tier maker boards: named rows holding player ids.
+
+## `rosterProjects/{projectId}`
+
+Saved roster tool projects.
+
+## `takes/{takeId}` and `takeAuthors/{authorId}`
+
+The QB Weekly takes board. Visitors claim an author name, receive a code, and
+post takes; `status` on a take is `'pending'` | `'correct'` | `'incorrect'`.
+These are the only collections a visitor may write to.
+
+## `admins/{uid}`
+
+Presence of a document grants admin. Created in the Firebase console only —
+`firestore.rules` denies all writes to it, and the app never attempts one.

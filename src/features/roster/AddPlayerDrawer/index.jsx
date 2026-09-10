@@ -83,12 +83,6 @@ const AddPlayerDrawer = ({ onClose, allPlayers, onSelect }) => {
               (opt) => opt.type?.toLowerCase() === freeAgentType
             );
           }
-          if (freeAgentType === '2w') {
-            return (
-              p.contractType?.includes('two-way') ||
-              p.original.status?.toLowerCase() === 'two-way'
-            );
-          }
           return false;
         }
 

@@ -3,5 +3,6 @@
 ```
 CreateTierListModal.jsx
 TierMakerBoard.jsx
+TierMakerExport.jsx
 TierRow.jsx
 ```
