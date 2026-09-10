@@ -8,106 +8,13 @@ import {
   Edit3,
 } from 'lucide-react';
 import useImageDownload from '@/hooks/useImageDownload';
-import RankingMovementIndicator from '@/components/shared/RankingMovementIndicator';
 import AdjustableRankings from '@/features/ranker/AdjustableRankings';
 import PropTypes from 'prop-types';
 import {
-  getLogoPath,
-  getLogoBackgroundStyle,
-  getRankBackgroundStyle,
-  getHeadshotSrc,
-  createColumns,
-} from '@/utils/rankingExportHelpers';
-
-const GridCard = ({
-  player,
-  rank,
-  showLogoBg,
-  showMovement,
-  movementData = {},
-  isExport = false,
-}) => {
-  const logoPath = getLogoPath(player.team);
-  const headshot = getHeadshotSrc(player);
-  const logoBackgroundStyle = getLogoBackgroundStyle(player.team, showLogoBg);
-  const rankBackgroundStyle = getRankBackgroundStyle(player.team);
-  const movement = movementData?.[player.id];
-
-  return (
-    <div className="inline-block w-full">
-      {/* Card */}
-      <div className="bg-gradient-to-b from-[#2a2a2a] to-[#1f1f1f] rounded-lg overflow-hidden border border-white/25 transition-all hover:border-white/40 shadow-2xl">
-        {/* Headshot Container with overlaid rank */}
-        <div
-          className="aspect-square w-full overflow-hidden bg-[#0a0a0a] relative border-b border-white/15"
-          style={logoBackgroundStyle}
-        >
-          <img
-            src={headshot}
-            alt={player.name || player.display_name}
-            className="w-full h-full object-cover transition-transform group-hover:scale-105"
-            loading="eager"
-            decoding="async"
-            crossOrigin="anonymous"
-            onError={(e) => {
-              e.target.src = '/assets/headshots/default.png';
-            }}
-          />
-          {/* Rank overlay in corner */}
-          <div className={`absolute top-2 left-2 ${rankBackgroundStyle}`}>
-            {rank}
-          </div>
-        </div>
-
-        {/* Info Section */}
-        <div className="p-3 relative bg-gradient-to-b from-[#1f1f1f] to-[#1a1a1a] border-t border-white/20">
-          <div className="text-white font-medium truncate mb-1">
-            {player.name || player.display_name}
-          </div>
-          <div className="flex items-center gap-1.5">
-            {logoPath && (
-              <div className="w-4 h-4">
-                <img
-                  src={logoPath}
-                  alt={player.team}
-                  className="w-full h-full object-contain"
-                  loading="eager"
-                  decoding="async"
-                  crossOrigin="anonymous"
-                  onError={(e) => {
-                    e.target.style.display = 'none';
-                  }}
-                />
-              </div>
-            )}
-            <span className="text-white/60 text-sm">
-              {player.team?.toUpperCase() || '—'}
-            </span>
-          </div>
-
-          {/* Movement indicator positioned absolutely in bottom-right */}
-          {showMovement && movement?.moved && (
-            <div className="absolute bottom-3 right-3">
-              <RankingMovementIndicator
-                movement={movement}
-                showMovement={true}
-              />
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-GridCard.propTypes = {
-  player: PropTypes.object.isRequired,
-  rank: PropTypes.number.isRequired,
-  showLogoBg: PropTypes.bool.isRequired,
-  showMovement: PropTypes.bool.isRequired,
-  movementData: PropTypes.object,
-  isExport: PropTypes.bool,
-};
+  RankingGridCard,
+  RankingListColumns,
+  unwrapPlayer,
+} from '@/components/shared/rankings/RankingViews';
 
 const RankingsExportModal = ({
   rankings = [],
@@ -354,16 +261,15 @@ const RankingsExportModal = ({
             }
           >
             {currentRanking.slice(0, 42).map((item, idx) => {
-              const player = item.qb || item.player || item;
+              const player = unwrapPlayer(item);
               return (
-                <GridCard
+                <RankingGridCard
                   key={player.id || player.player_id || idx}
                   player={player}
                   rank={idx + 1}
                   showLogoBg={showLogoBg}
                   showMovement={showMovement}
                   movementData={movementData}
-                  isExport={isExport}
                 />
               );
             })}
@@ -402,186 +308,25 @@ const RankingsExportModal = ({
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-2 gap-y-1">
           {/* Mobile columns (2) */}
-          {createColumns(currentRanking, numCols.base).map(
-            (column, colIndex) => (
-              <div key={colIndex} className="flex flex-col gap-1 sm:hidden">
-                {column.map(({ player: columnPlayer, rank }) => {
-                  const headshot = getHeadshotSrc(columnPlayer);
-                  const logoPath = getLogoPath(columnPlayer.team);
-
-                  return (
-                    <div
-                      key={
-                        columnPlayer.id ||
-                        columnPlayer.player_id ||
-                        columnPlayer.name
-                      }
-                      className="bg-white/5 rounded p-2 flex items-center gap-2"
-                    >
-                      <div className="w-8 h-8 flex items-center justify-center bg-white/10 rounded-full font-bold text-white/80">
-                        {rank}
-                      </div>
-                      <img
-                        src={headshot}
-                        alt={columnPlayer.name || columnPlayer.display_name}
-                        className="w-10 h-10 rounded-full object-cover"
-                        loading="eager"
-                        decoding="async"
-                        crossOrigin="anonymous"
-                        onError={(e) => {
-                          e.target.src = '/assets/headshots/default.png';
-                        }}
-                      />
-                      <div className="flex-1 truncate text-sm">
-                        <div className="font-medium text-white truncate">
-                          {columnPlayer.name || columnPlayer.display_name}
-                        </div>
-                        <div className="flex items-center gap-1 text-white/60 text-xs">
-                          {logoPath && (
-                            <div className="w-4 h-4">
-                              <img
-                                src={logoPath}
-                                alt={columnPlayer.team}
-                                className="w-full h-full object-contain"
-                                loading="eager"
-                                decoding="async"
-                                crossOrigin="anonymous"
-                                onError={(e) => {
-                                  e.target.style.display = 'none';
-                                }}
-                              />
-                            </div>
-                          )}
-                          <span>{columnPlayer.team?.toUpperCase() || '—'}</span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )
-          )}
+          <RankingListColumns
+            rankings={currentRanking}
+            cols={numCols.base}
+            className="flex flex-col gap-1 sm:hidden"
+          />
 
           {/* Tablet columns (3) */}
-          {createColumns(currentRanking, numCols.sm).map((column, colIndex) => (
-            <div
-              key={colIndex}
-              className="hidden sm:flex md:hidden flex-col gap-1"
-            >
-              {column.map(({ player: columnPlayer, rank }) => {
-                const headshot = getHeadshotSrc(columnPlayer);
-                const logoPath = getLogoPath(columnPlayer.team);
-
-                return (
-                  <div
-                    key={
-                      columnPlayer.id ||
-                      columnPlayer.player_id ||
-                      columnPlayer.name
-                    }
-                    className="bg-white/5 rounded p-2 flex items-center gap-2"
-                  >
-                    <div className="w-8 h-8 flex items-center justify-center bg-white/10 rounded-full font-bold text-white/80">
-                      {rank}
-                    </div>
-                    <img
-                      src={headshot}
-                      alt={columnPlayer.name || columnPlayer.display_name}
-                      className="w-10 h-10 rounded-full object-cover"
-                      loading="eager"
-                      decoding="async"
-                      crossOrigin="anonymous"
-                      onError={(e) => {
-                        e.target.src = '/assets/headshots/default.png';
-                      }}
-                    />
-                    <div className="flex-1 truncate text-sm">
-                      <div className="font-medium text-white truncate">
-                        {columnPlayer.name || columnPlayer.display_name}
-                      </div>
-                      <div className="flex items-center gap-1 text-white/60 text-xs">
-                        {logoPath && (
-                          <div className="w-4 h-4">
-                            <img
-                              src={logoPath}
-                              alt={columnPlayer.team}
-                              className="w-full h-full object-contain"
-                              loading="eager"
-                              decoding="async"
-                              crossOrigin="anonymous"
-                              onError={(e) => {
-                                e.target.style.display = 'none';
-                              }}
-                            />
-                          </div>
-                        )}
-                        <span>{columnPlayer.team?.toUpperCase() || '—'}</span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ))}
+          <RankingListColumns
+            rankings={currentRanking}
+            cols={numCols.sm}
+            className="hidden sm:flex md:hidden flex-col gap-1"
+          />
 
           {/* Desktop columns (4) */}
-          {createColumns(currentRanking, numCols.md).map((column, colIndex) => (
-            <div key={colIndex} className="hidden md:flex flex-col gap-1">
-              {column.map(({ player: columnPlayer, rank }) => {
-                const headshot = getHeadshotSrc(columnPlayer);
-                const logoPath = getLogoPath(columnPlayer.team);
-
-                return (
-                  <div
-                    key={
-                      columnPlayer.id ||
-                      columnPlayer.player_id ||
-                      columnPlayer.name
-                    }
-                    className="bg-white/5 rounded p-2 flex items-center gap-2"
-                  >
-                    <div className="w-8 h-8 flex items-center justify-center bg-white/10 rounded-full font-bold text-white/80">
-                      {rank}
-                    </div>
-                    <img
-                      src={headshot}
-                      alt={columnPlayer.name || columnPlayer.display_name}
-                      className="w-10 h-10 rounded-full object-cover"
-                      loading="eager"
-                      decoding="async"
-                      crossOrigin="anonymous"
-                      onError={(e) => {
-                        e.target.src = '/assets/headshots/default.png';
-                      }}
-                    />
-                    <div className="flex-1 truncate text-sm">
-                      <div className="font-medium text-white truncate">
-                        {columnPlayer.name || columnPlayer.display_name}
-                      </div>
-                      <div className="flex items-center gap-1 text-white/60 text-xs">
-                        {logoPath && (
-                          <div className="w-4 h-4">
-                            <img
-                              src={logoPath}
-                              alt={columnPlayer.team}
-                              className="w-full h-full object-contain"
-                              loading="eager"
-                              decoding="async"
-                              crossOrigin="anonymous"
-                              onError={(e) => {
-                                e.target.style.display = 'none';
-                              }}
-                            />
-                          </div>
-                        )}
-                        <span>{columnPlayer.team?.toUpperCase() || '—'}</span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ))}
+          <RankingListColumns
+            rankings={currentRanking}
+            cols={numCols.md}
+            className="hidden md:flex flex-col gap-1"
+          />
         </div>
       </div>
     );
@@ -623,67 +368,11 @@ const RankingsExportModal = ({
 
             <div className="grid grid-cols-4 gap-x-2 gap-y-1">
               {/* Always render desktop 4-column layout for export */}
-              {createColumns(currentRanking, numCols.md).map(
-                (column, colIndex) => (
-                  <div key={colIndex} className="flex flex-col gap-1">
-                    {column.map(({ player: columnPlayer, rank }) => {
-                      const headshot = getHeadshotSrc(columnPlayer);
-                      const logoPath = getLogoPath(columnPlayer.team);
-
-                      return (
-                        <div
-                          key={
-                            columnPlayer.id ||
-                            columnPlayer.player_id ||
-                            columnPlayer.name
-                          }
-                          className="bg-white/5 rounded p-2 flex items-center gap-2"
-                        >
-                          <div className="w-8 h-8 flex items-center justify-center bg-white/10 rounded-full font-bold text-white/80">
-                            {rank}
-                          </div>
-                          <img
-                            src={headshot}
-                            alt={columnPlayer.name || columnPlayer.display_name}
-                            className="w-10 h-10 rounded-full object-cover"
-                            loading="eager"
-                            decoding="async"
-                            crossOrigin="anonymous"
-                            onError={(e) => {
-                              e.target.src = '/assets/headshots/default.png';
-                            }}
-                          />
-                          <div className="flex-1 truncate text-sm">
-                            <div className="font-medium text-white truncate">
-                              {columnPlayer.name || columnPlayer.display_name}
-                            </div>
-                            <div className="flex items-center gap-1 text-white/60 text-xs">
-                              {logoPath && (
-                                <div className="w-4 h-4">
-                                  <img
-                                    src={logoPath}
-                                    alt={columnPlayer.team}
-                                    className="w-full h-full object-contain"
-                                    loading="eager"
-                                    decoding="async"
-                                    crossOrigin="anonymous"
-                                    onError={(e) => {
-                                      e.target.style.display = 'none';
-                                    }}
-                                  />
-                                </div>
-                              )}
-                              <span>
-                                {columnPlayer.team?.toUpperCase() || '—'}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )
-              )}
+              <RankingListColumns
+                rankings={currentRanking}
+                cols={numCols.md}
+                className="flex flex-col gap-1"
+              />
             </div>
           </div>
         )}

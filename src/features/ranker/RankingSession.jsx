@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import PlayerCompareCard from './PlayerCompareCard';
-import RankingResults from './RankingResults';
 import ComparisonMatrixDrawer from './ComparisonMatrixDrawer';
 import { AnchorComparison } from './AnchorComparison';
 import {
@@ -8,6 +7,7 @@ import {
   suggestNextPair,
   estimateRemainingComparisons,
   buildAnchorComparisons,
+  pairKey,
 } from '@/utils/ranker/rankingEngine';
 
 const RankingSession = ({ playerPool = [], setupData, onComplete }) => {
@@ -16,14 +16,19 @@ const RankingSession = ({ playerPool = [], setupData, onComplete }) => {
     [playerPool]
   );
 
-  // Initialize state
+  // The session's comparison record has three sources, kept separate so that
+  // progress and undo only ever act on the user's own pairwise answers:
+  //   1. `initialResults`  - implied by first/last place lock-ins
+  //   2. `anchorResults`   - the one-shot anchor sweep
+  //   3. `history`         - the user's answers and skips, in order
   const [currentPair, setCurrentPair] = useState([]);
-  const [results, setResults] = useState([]);
+  const [anchorResults, setAnchorResults] = useState([]);
+  const [history, setHistory] = useState([]);
   const [isFinished, setIsFinished] = useState(false);
   const [anchorDone, setAnchorDone] = useState(!setupData?.anchor);
-  const [comparisonTotal, setComparisonTotal] = useState(0);
 
-  // Compute initial results only once when setupData changes
+  // Comparisons implied by the first/last place lock-ins. Derived rather than
+  // pushed into state, so it can never be clobbered or undone away.
   const initialResults = useMemo(() => {
     if (!setupData || !players.length) return [];
 
@@ -45,15 +50,39 @@ const RankingSession = ({ playerPool = [], setupData, onComplete }) => {
     return initial;
   }, [setupData, players]);
 
-  // Set initial results once
-  useEffect(() => {
-    if (initialResults.length > 0) {
-      setResults(initialResults);
-    }
-  }, [initialResults]);
+  const userResults = useMemo(
+    () =>
+      history
+        .filter((entry) => entry.type === 'answer')
+        .map(({ winner, loser }) => ({ winner, loser })),
+    [history]
+  );
+
+  const skippedPairs = useMemo(
+    () =>
+      new Set(
+        history.filter((entry) => entry.type === 'skip').map((e) => e.key)
+      ),
+    [history]
+  );
+
+  const results = useMemo(
+    () => [...initialResults, ...anchorResults, ...userResults],
+    [initialResults, anchorResults, userResults]
+  );
+
+  // A stale or shared setup can name an anchor that is not in the current pool.
+  // Resolving it here means the anchor pass is skipped rather than rendering
+  // AnchorComparison with an undefined anchor, which threw on `anchor.name`.
+  const anchorPlayer = useMemo(() => {
+    if (!setupData?.anchor) return null;
+    return players.find((p) => p.id === setupData.anchor) || null;
+  }, [players, setupData]);
+
+  const anchorPending = Boolean(anchorPlayer) && !anchorDone;
 
   const groupedPlayers = useMemo(() => {
-    if (!setupData || (setupData.anchor && !anchorDone)) return players;
+    if (!setupData || anchorPending) return players;
     const { topTier = [], bottomTier = [], anchor } = setupData;
     const better = new Set();
     if (anchor) {
@@ -70,32 +99,37 @@ const RankingSession = ({ playerPool = [], setupData, onComplete }) => {
       else group = 'upper';
       return { ...p, group };
     });
-  }, [players, setupData, results, anchorDone]);
+  }, [players, setupData, results, anchorPending]);
 
   const remaining = useMemo(
-    () => estimateRemainingComparisons(results, groupedPlayers),
-    [results, groupedPlayers]
+    () => estimateRemainingComparisons(results, groupedPlayers, skippedPairs),
+    [results, groupedPlayers, skippedPairs]
   );
 
-  // Update comparison total once when starting comparisons
-  useEffect(() => {
-    if (!comparisonTotal && setupData && (!setupData.anchor || anchorDone)) {
-      setComparisonTotal(remaining);
-    }
-  }, [comparisonTotal, setupData, anchorDone, remaining]);
-
-  const comparisonsDone = comparisonTotal ? comparisonTotal - remaining : 0;
-  const progressPercent = comparisonTotal
-    ? (comparisonsDone / comparisonTotal) * 100
+  // `remaining` is a forward simulation that assumes the first player always
+  // wins, so it moves around as real answers diverge from that assumption.
+  // Deriving the total from it each render keeps the numbers in range instead
+  // of subtracting a moving estimate from a frozen one (which went negative).
+  const answered = userResults.length;
+  const estimatedTotal = answered + remaining;
+  const rawPercent = estimatedTotal
+    ? Math.min(100, (answered / estimatedTotal) * 100)
     : 0;
+
+  // The estimate is noisy enough to move backwards; hold the bar at its high
+  // water mark so it never appears to lose progress.
+  const [shownPercent, setShownPercent] = useState(0);
+  useEffect(() => {
+    setShownPercent((prev) => Math.max(prev, rawPercent));
+  }, [rawPercent]);
 
   // Handle next pair and completion
   useEffect(() => {
     if (!setupData) return;
-    if (setupData.anchor && !anchorDone) return;
+    if (anchorPending) return;
     if (groupedPlayers.length < 2) return;
 
-    const next = suggestNextPair(results, groupedPlayers);
+    const next = suggestNextPair(results, groupedPlayers, skippedPairs);
     if (next.length === 0 && !isFinished) {
       setIsFinished(true);
       setCurrentPair([]);
@@ -111,55 +145,49 @@ const RankingSession = ({ playerPool = [], setupData, onComplete }) => {
     } else if (next.length > 0) {
       setCurrentPair(next);
     }
-  }, [results, groupedPlayers, setupData, anchorDone, onComplete, isFinished]);
+  }, [
+    results,
+    groupedPlayers,
+    skippedPairs,
+    setupData,
+    anchorPending,
+    onComplete,
+    isFinished,
+  ]);
 
   const handleSelect = (winner, loser) => {
-    setResults((prev) => [...prev, { winner: winner.id, loser: loser.id }]);
+    setHistory((prev) => [
+      ...prev,
+      { type: 'answer', winner: winner.id, loser: loser.id },
+    ]);
   };
 
+  // Recording the skip is what actually advances the session: suggestNextPair
+  // is a pure function of its inputs, so re-running it unchanged returned the
+  // same pair and the button did nothing.
   const handleSkip = () => {
-    const next = suggestNextPair(results, groupedPlayers);
-    setCurrentPair(next);
+    if (currentPair.length < 2) return;
+    setHistory((prev) => [
+      ...prev,
+      { type: 'skip', key: pairKey(currentPair[0].id, currentPair[1].id) },
+    ]);
   };
 
+  // Undo walks back the user's own actions only, so lock-in and anchor
+  // comparisons can never be undone away. Skips are undoable too.
   const handleUndo = () => {
-    if (results.length === 0) return;
-    const newResults = results.slice(0, -1);
-    setResults(newResults);
+    if (history.length === 0) return;
+    setHistory((prev) => prev.slice(0, -1));
     setIsFinished(false);
   };
 
-  if (isFinished) {
-    const ranking = generateRankingFromComparisons(
-      results,
-      groupedPlayers,
-      setupData
-    );
-    return (
-      <>
-        <RankingResults ranking={ranking} />
-        <div className="text-white/30 mt-8 text-center text-sm italic px-4">
-          Ranking created on{' '}
-          {new Date().toLocaleDateString(undefined, {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-          })}
-        </div>
-        <ComparisonMatrixDrawer
-          players={groupedPlayers}
-          comparisons={results}
-        />
-      </>
-    );
-  }
-
-  if (setupData?.anchor && !anchorDone) {
-    const anchorPlayer = players.find((p) => p.id === setupData.anchor);
+  if (anchorPending) {
+    // Defaults guard against setup data saved before a field existed; spreading
+    // an undefined tier here used to throw.
     const tagged = new Set(
       [
-        ...setupData.topTier,
-        ...setupData.bottomTier,
+        ...(setupData.topTier || []),
+        ...(setupData.bottomTier || []),
         setupData.firstPlace,
         setupData.lastPlace,
       ].filter(Boolean)
@@ -175,7 +203,7 @@ const RankingSession = ({ playerPool = [], setupData, onComplete }) => {
         untagged,
         betterIds
       );
-      if (newResults.length) setResults((prev) => [...prev, ...newResults]);
+      if (newResults.length) setAnchorResults(newResults);
       setAnchorDone(true);
     };
 
@@ -206,12 +234,16 @@ const RankingSession = ({ playerPool = [], setupData, onComplete }) => {
           <div className="w-full bg-white/20 h-3 rounded-full">
             <div
               className="bg-green-500 h-3 rounded-full transition-all duration-300"
-              style={{ width: `${progressPercent}%` }}
+              data-testid="progress-bar"
+              style={{ width: `${shownPercent}%` }}
             />
           </div>
         </div>
-        <div className="mt-3 text-white/60 text-sm text-center">
-          {comparisonsDone} / {comparisonTotal} comparisons
+        <div
+          className="mt-3 text-white/60 text-sm text-center"
+          data-testid="progress-label"
+        >
+          {answered} of ~{estimatedTotal} comparisons
         </div>
       </div>
       <ComparisonMatrixDrawer players={groupedPlayers} comparisons={results} />

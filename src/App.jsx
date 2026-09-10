@@ -5,7 +5,6 @@ import ListManager from '@/pages/ListManager';
 import ListsHome from '@/pages/ListsHome';
 import TierMakerView from '@/pages/TierMakerView';
 import TierListsHome from '@/pages/TierListsHome';
-import PlayerRankerPage from '@/pages/PlayerRankerPage';
 import RankerLandingPage from '@/pages/RankerLandingPage';
 import RankerSetupPage from '@/pages/RankerSetupPage';
 import RankerComparisonsPage from '@/pages/RankerComparisonsPage';

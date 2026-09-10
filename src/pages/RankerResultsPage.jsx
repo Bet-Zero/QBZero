@@ -1,9 +1,33 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useRankerContext } from '@/context/RankerContext';
 import ComparisonMatrixDrawer from '@/features/ranker/ComparisonMatrixDrawer';
 import RankerNavBar from '@/components/ranker/RankerNavBar';
 import RankingsExportModal from '@/components/shared/RankingsExportModal';
+import { detectComparisonCycles } from '@/utils/ranker/rankingEngine';
+import { RankingBoard } from '@/components/shared/rankings/RankingViews';
+import AdjustableRankings from '@/features/ranker/AdjustableRankings';
+import PropTypes from 'prop-types';
+
+const ActionButton = ({ onClick, to, className, children }) => {
+  const shared = `px-4 py-2 rounded-lg text-white font-semibold transition-colors ${className}`;
+  return to ? (
+    <Link to={to} className={`${shared} inline-block`}>
+      {children}
+    </Link>
+  ) : (
+    <button onClick={onClick} className={shared}>
+      {children}
+    </button>
+  );
+};
+
+ActionButton.propTypes = {
+  onClick: PropTypes.func,
+  to: PropTypes.string,
+  className: PropTypes.string,
+  children: PropTypes.node,
+};
 
 const RankerResultsPage = () => {
   const navigate = useNavigate();
@@ -11,7 +35,6 @@ const RankerResultsPage = () => {
     finalRanking,
     comparisonResults,
     playerPool,
-    setCurrentPhase,
     resetRanker,
     setFinalRanking,
     generateShareableURL,
@@ -19,16 +42,31 @@ const RankerResultsPage = () => {
   } = useRankerContext();
 
   const [showRecoveryOptions, setShowRecoveryOptions] = useState(false);
-  const [showExportModal, setShowExportModal] = useState(true); // Open modal by default
+  // The rankings render on the page now; the modal is for exporting.
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [viewType, setViewType] = useState('grid');
+  const [showLogoBg, setShowLogoBg] = useState(true);
+  const [isAdjusting, setIsAdjusting] = useState(false);
+
+  // Contradictory comparisons (a > b > c > a) make the order of the players
+  // involved arbitrary. The ranking is still shown, but saying so is more
+  // honest than presenting a coin flip as a considered result.
+  const conflicts = useMemo(() => {
+    if (!comparisonResults?.length || !playerPool?.length) return [];
+    const nameById = new Map(
+      playerPool.map((p) => [p.id, p.display_name || p.name || p.id])
+    );
+    return detectComparisonCycles(comparisonResults, playerPool).map((cycle) =>
+      cycle.map((id) => nameById.get(id) || id)
+    );
+  }, [comparisonResults, playerPool]);
 
   useEffect(() => {
-    setCurrentPhase('results');
-
     // Show recovery options if no results, but don't auto-redirect
     if (!finalRanking || finalRanking.length === 0) {
       setShowRecoveryOptions(true);
     }
-  }, [setCurrentPhase, finalRanking]);
+  }, [finalRanking]);
 
   const handleStartNew = () => {
     resetRanker();
@@ -39,13 +77,20 @@ const RankerResultsPage = () => {
     setFinalRanking(adjustedRanking);
   };
 
-  const handleShareResults = () => {
-    const shareUrl = generateShareableURL('/ranker/results');
-    navigator.clipboard.writeText(shareUrl).then(() => {
+  const handleShareResults = async () => {
+    const { url, error } = generateShareableURL('/ranker/results');
+    if (error) {
+      alert(error);
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(url);
       alert(
         'Results URL copied to clipboard! Anyone can view your results with this link.'
       );
-    });
+    } catch {
+      alert(`Could not copy automatically. Here is the link:\n\n${url}`);
+    }
   };
 
   // Recovery UI when no results are available
@@ -60,8 +105,8 @@ const RankerResultsPage = () => {
                 No Results Available
               </h1>
               <p className="text-white/60 text-lg mb-8">
-                It looks like you haven&apos;t completed a ranking session yet, or
-                your results were cleared.
+                It looks like you haven&apos;t completed a ranking session yet,
+                or your results were cleared.
               </p>
             </div>
 
@@ -101,111 +146,108 @@ const RankerResultsPage = () => {
     );
   }
 
+  if (isAdjusting) {
+    return (
+      <div className="bg-neutral-900 min-h-screen">
+        <RankerNavBar />
+        <AdjustableRankings
+          initialRanking={finalRanking}
+          onSave={(adjusted) => {
+            setFinalRanking(adjusted);
+            setIsAdjusting(false);
+          }}
+          onCancel={() => setIsAdjusting(false)}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="bg-neutral-900 min-h-screen">
       <RankerNavBar />
-      <div className="max-w-5xl mx-auto px-4 py-8">
-        {/* Action buttons */}
-        <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
-          <div className="flex gap-3">
-            <button
-              onClick={handleShareResults}
-              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-white font-semibold transition-colors"
-            >
-              🔗 Share Results
-            </button>
-            <button
-              onClick={() => setShowExportModal(true)}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-semibold transition-colors"
-            >
-              📊 View Rankings
-            </button>
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        {conflicts.length > 0 && (
+          <div
+            className="mb-6 p-4 bg-amber-500/10 border border-amber-400/40 rounded-lg"
+            role="status"
+          >
+            <h2 className="text-amber-200 font-semibold mb-1 text-sm">
+              ⚠️ Some of your picks contradict each other
+            </h2>
+            <p className="text-amber-100/70 text-sm mb-2">
+              These players beat each other in a loop, so their order here is
+              arbitrary. Adjust them by hand if the result looks wrong.
+            </p>
+            <ul className="text-amber-100/80 text-sm list-disc list-inside">
+              {conflicts.map((cycle) => (
+                <li key={cycle.join('|')}>
+                  {cycle.join(' → ')} → {cycle[0]}
+                </li>
+              ))}
+            </ul>
           </div>
+        )}
 
-          <div className="flex gap-3">
+        {/* Title */}
+        <div className="mb-6">
+          <h1 className="text-3xl sm:text-4xl font-black uppercase tracking-[0.04em] text-white">
+            Your QB Rankings
+          </h1>
+          <div className="mt-2 text-white/60 text-sm">
+            {finalRanking.length} quarterbacks ranked
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex flex-wrap items-center gap-3 mb-8">
+          <ActionButton
+            onClick={() => setIsAdjusting(true)}
+            className="bg-orange-600/80 hover:bg-orange-700"
+          >
+            ✏️ Adjust Rankings
+          </ActionButton>
+          <ActionButton
+            onClick={() => setShowExportModal(true)}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            📥 Export
+          </ActionButton>
+          <ActionButton
+            onClick={handleShareResults}
+            className="bg-purple-600 hover:bg-purple-700"
+          >
+            🔗 Share Results
+          </ActionButton>
+          <button
+            onClick={() => setViewType(viewType === 'grid' ? 'list' : 'grid')}
+            className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white font-semibold transition-colors"
+          >
+            {viewType === 'grid' ? '☰ List View' : '▦ Grid View'}
+          </button>
+          {viewType === 'grid' && (
             <button
+              onClick={() => setShowLogoBg(!showLogoBg)}
+              className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white font-semibold transition-colors"
+            >
+              {showLogoBg ? 'Hide Logo BG' : 'Show Logo BG'}
+            </button>
+          )}
+          <div className="sm:ml-auto">
+            <ActionButton
               onClick={handleStartNew}
-              className="px-6 py-3 bg-green-600 hover:bg-green-700 rounded-lg text-white font-semibold transition-colors"
+              className="bg-green-600 hover:bg-green-700"
             >
               🚀 Start New Ranking
-            </button>
+            </ActionButton>
           </div>
         </div>
 
-        {/* Content when modal is closed - Navigation options instead of duplicate results */}
-        {!showExportModal && (
-          <div className="text-center py-12">
-            <div className="bg-white/5 rounded-xl p-8 border border-white/10 max-w-2xl mx-auto">
-              <h2 className="text-2xl font-bold text-white mb-4">
-                🎉 Ranking Complete!
-              </h2>
-              <p className="text-white/60 mb-6">
-                Your rankings have been successfully created. Choose what you'd like to do next:
-              </p>
-              
-              <div className="grid gap-4 max-w-md mx-auto">
-                <button
-                  onClick={() => setShowExportModal(true)}
-                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-semibold transition-colors flex items-center justify-center gap-2"
-                >
-                  📊 View & Manage Rankings
-                  <span className="text-xs bg-blue-800 px-2 py-1 rounded">Recommended</span>
-                </button>
-                
-                <button
-                  onClick={handleStartNew}
-                  className="px-6 py-3 bg-green-600 hover:bg-green-700 rounded-lg text-white font-semibold transition-colors"
-                >
-                  🚀 Start New Ranking
-                </button>
-                
-                <button
-                  onClick={handleShareResults}
-                  className="px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg text-white font-semibold transition-colors"
-                >
-                  🔗 Share Results
-                </button>
-                
-                <Link
-                  to="/ranker"
-                  className="px-6 py-3 bg-white/10 hover:bg-white/20 rounded-lg text-white font-semibold transition-colors block text-center"
-                >
-                  ← Back to Ranker Home
-                </Link>
-              </div>
-              
-              <div className="text-sm text-white/40 mt-6">
-                All ranking management features are available in the "View & Manage Rankings" modal
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Placeholder content when modal is open */}
-        {showExportModal && (
-          <div className="text-center py-12">
-            <div className="bg-white/5 rounded-xl p-8 border border-white/10 max-w-2xl mx-auto">
-              <h2 className="text-2xl font-bold text-white mb-4">
-                Your Rankings Are Ready!
-              </h2>
-              <p className="text-white/60 mb-6">
-                View your ranking results in the modal above. You can adjust rankings, change the view, and export your results.
-              </p>
-              <div className="text-sm text-white/40">
-                Close the modal to see navigation options.
-              </div>
-            </div>
-          </div>
-        )}
-
-        <div className="text-white/30 mt-8 text-center text-sm italic px-4">
-          Ranking created on{' '}
-          {new Date().toLocaleDateString(undefined, {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-          })}
-        </div>
+        {/* The rankings themselves */}
+        <RankingBoard
+          rankings={finalRanking}
+          viewType={viewType}
+          showLogoBg={showLogoBg}
+        />
 
         {/* Comparison Matrix */}
         {comparisonResults && playerPool && (
@@ -215,14 +257,14 @@ const RankerResultsPage = () => {
           />
         )}
 
-        {/* Export Modal */}
+        {/* Export Modal, opened on demand */}
         {showExportModal && (
           <RankingsExportModal
             rankings={finalRanking}
             rankingName="QB Rankings from Ranker"
             onClose={() => setShowExportModal(false)}
-            title="Ranker Results"
-            subtitle="View, adjust, and export your ranking results"
+            title="Export Rankings"
+            subtitle="Download your rankings as an image"
             onRankingAdjusted={handleRankingAdjusted}
           />
         )}

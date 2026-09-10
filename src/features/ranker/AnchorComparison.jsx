@@ -17,6 +17,10 @@ const PlayerButton = ({ player, selected, onClick }) => (
 export const AnchorComparison = ({ anchor, players = [], onComplete }) => {
   const [better, setBetter] = useState([]);
 
+  // Callers resolve the anchor from the player pool, which can fail for a
+  // stale or shared setup. Render nothing rather than throwing on anchor.name.
+  if (!anchor) return null;
+
   const toggle = (id) => {
     setBetter((prev) =>
       prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]

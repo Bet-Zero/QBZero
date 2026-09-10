@@ -6,7 +6,6 @@ import { TeamListFull } from '@/constants/teamList';
 import DrawerShell from '@/components/shared/ui/drawers/DrawerShell';
 import OpenDrawerButton from '@/components/shared/ui/drawers/OpenDrawerButton';
 import AddPlayerDrawer from '@/features/roster/AddPlayerDrawer';
-import RankingSession from './RankingSession';
 import TierPlayerTile from '@/features/lists/TierPlayerTile';
 
 const RankingBuilder = ({ onStartRanking }) => {

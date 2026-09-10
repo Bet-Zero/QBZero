@@ -9,42 +9,7 @@ import {
   UserPlus,
 } from 'lucide-react';
 import { quarterbacks } from '@/features/ranker/quarterbacks';
-
-// Mapping team abbreviations to logo file names
-const teamLogoMap = {
-  ARI: 'cardinals',
-  ATL: 'falcons',
-  BAL: 'ravens',
-  BUF: 'bills',
-  CAR: 'panthers',
-  CHI: 'bears',
-  CIN: 'bengals',
-  CLE: 'browns',
-  DAL: 'cowboys',
-  DEN: 'broncos',
-  DET: 'lions',
-  GB: 'packers',
-  HOU: 'texans',
-  IND: 'colts',
-  JAX: 'jaguars',
-  KC: 'chiefs',
-  LAC: 'chargers',
-  LAR: 'rams',
-  LV: 'raiders',
-  MIA: 'dolphins',
-  MIN: 'vikings',
-  NE: 'patriots',
-  NO: 'saints',
-  NYG: 'giants',
-  NYJ: 'jets',
-  PHI: 'eagles',
-  PIT: 'steelers',
-  SF: '49ers',
-  SEA: 'seahawks',
-  TB: 'buccaneers',
-  TEN: 'titans',
-  WAS: 'commanders',
-};
+import { TEAM_LOGO_MAP as teamLogoMap } from '@/utils/formatting/teamLogos';
 
 const AddQBModal = ({ onClose, onAdd, existingQBNames = [] }) => {
   const [showQBPool, setShowQBPool] = useState(true);

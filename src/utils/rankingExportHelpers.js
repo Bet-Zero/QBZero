@@ -2,42 +2,13 @@
  * Shared utilities for ranking exports across different components
  */
 
-// Mapping team abbreviations to logo file names
-export const teamLogoMap = {
-  ARI: 'cardinals',
-  ATL: 'falcons',
-  BAL: 'ravens',
-  BUF: 'bills',
-  CAR: 'panthers',
-  CHI: 'bears',
-  CIN: 'bengals',
-  CLE: 'browns',
-  DAL: 'cowboys',
-  DEN: 'broncos',
-  DET: 'lions',
-  GB: 'packers',
-  HOU: 'texans',
-  IND: 'colts',
-  JAX: 'jaguars',
-  KC: 'chiefs',
-  LAC: 'chargers',
-  LAR: 'rams',
-  LAV: 'raiders',
-  LV: 'raiders',
-  MIA: 'dolphins',
-  MIN: 'vikings',
-  NE: 'patriots',
-  NO: 'saints',
-  NYG: 'giants',
-  NYJ: 'jets',
-  PHI: 'eagles',
-  PIT: 'steelers',
-  SF: '49ers',
-  SEA: 'seahawks',
-  TB: 'buccaneers',
-  TEN: 'titans',
-  WAS: 'commanders',
-};
+import { TEAM_LOGO_MAP } from '@/utils/formatting/teamLogos';
+
+// Canonical map lives in utils/formatting/teamLogos.js, which the shared
+// TeamLogo component already uses. Re-exported here so existing importers keep
+// working. The previous local copy carried an extra `LAV: 'raiders'` alias that
+// appears nowhere in the data (the Raiders are `LV`).
+export const teamLogoMap = TEAM_LOGO_MAP;
 
 // Custom positioning for specific team logos in grid view background
 export const teamLogoPositioning = {
@@ -55,8 +26,7 @@ export const teamLogoPositioning = {
 
 // Teams whose logos occupy the top-left area and interfere with rank numbers
 export const teamsWithTopLeftLogos = [
-  'LV',
-  'LAV', // Raiders
+  'LV', // Raiders
   'ATL', // Falcons
   'NYG', // Giants
   'HOU', // Texans

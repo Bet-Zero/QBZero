@@ -10,12 +10,17 @@ const ComparisonMatrix = ({ players, comparisons, className = '' }) => {
   });
 
   comparisons.forEach(({ winner, loser }) => {
+    // Comparisons can reference players outside this table (a stale session or
+    // a shared link); indexing them threw a TypeError and blanked the page.
+    if (!comparisonMap[winner] || !comparisonMap[loser]) return;
     comparisonMap[winner][loser] = 'win';
     comparisonMap[loser][winner] = 'loss';
   });
 
   return (
-    <div className={`overflow-x-auto mt-8 border border-white/10 rounded text-sm ${className}`}>
+    <div
+      className={`overflow-x-auto mt-8 border border-white/10 rounded text-sm ${className}`}
+    >
       <table className="border-collapse text-white">
         <thead>
           <tr>

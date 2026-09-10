@@ -1,6 +1,7 @@
 import React from 'react';
 import PlayerHeadshot from '@/components/shared/PlayerHeadshot';
 import PlayerNameMini from '@/features/table/PlayerTable/PlayerRow/PlayerNameMini';
+import '@/features/ranker/ranker.css';
 
 const PlayerCompareCard = ({ left, right, onSelect, onSkip, onUndo }) => {
   if (!left || !right) return null;

@@ -9,37 +9,24 @@ const RankerComparisonsPage = () => {
   const {
     playerPool,
     setupData,
-    setCurrentPhase,
     setFinalRanking,
     setComparisonResults,
     canNavigateToStep,
-    generateShareableURL,
   } = useRankerContext();
 
   const [showRecoveryOptions, setShowRecoveryOptions] = useState(false);
 
   useEffect(() => {
-    setCurrentPhase('comparisons');
-
     // Show recovery options if missing prerequisites, but don't auto-redirect
     if (!playerPool?.length || !setupData) {
       setShowRecoveryOptions(true);
     }
-  }, [setCurrentPhase, playerPool, setupData]);
+  }, [playerPool, setupData]);
 
   const handleRankingComplete = (ranking, comparisons) => {
     setFinalRanking(ranking);
     setComparisonResults(comparisons);
     navigate('/ranker/results');
-  };
-
-  const handleShareSession = () => {
-    const shareUrl = generateShareableURL('/ranker/comparisons');
-    navigator.clipboard.writeText(shareUrl).then(() => {
-      alert(
-        'Session URL copied to clipboard! Others can continue this ranking session with this link.'
-      );
-    });
   };
 
   // Recovery UI when prerequisites are missing

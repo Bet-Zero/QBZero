@@ -1,47 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { ChevronUp, ChevronDown, Save, X, Edit3 } from 'lucide-react';
-
-const getLogoPath = (team) => {
-  const teamLogoMap = {
-    ARI: 'cardinals',
-    ATL: 'falcons',
-    BAL: 'ravens',
-    BUF: 'bills',
-    CAR: 'panthers',
-    CHI: 'bears',
-    CIN: 'bengals',
-    CLE: 'browns',
-    DAL: 'cowboys',
-    DEN: 'broncos',
-    DET: 'lions',
-    GB: 'packers',
-    HOU: 'texans',
-    IND: 'colts',
-    JAX: 'jaguars',
-    KC: 'chiefs',
-    LAC: 'chargers',
-    LAR: 'rams',
-    LAV: 'raiders',
-    LV: 'raiders',
-    MIA: 'dolphins',
-    MIN: 'vikings',
-    NE: 'patriots',
-    NO: 'saints',
-    NYG: 'giants',
-    NYJ: 'jets',
-    PHI: 'eagles',
-    PIT: 'steelers',
-    SF: '49ers',
-    SEA: 'seahawks',
-    TB: 'buccaneers',
-    TEN: 'titans',
-    WAS: 'commanders',
-  };
-
-  if (!team) return null;
-  const logoId = teamLogoMap[team] || team.toLowerCase();
-  return `/assets/logos/${logoId}.svg`;
-};
+import { getLogoPath, getHeadshotSrc } from '@/utils/rankingExportHelpers';
 
 const AdjustableRankings = ({ initialRanking = [], onSave, onCancel }) => {
   const [adjustedRanking, setAdjustedRanking] = useState(initialRanking);
@@ -159,9 +118,7 @@ const AdjustableRankings = ({ initialRanking = [], onSave, onCancel }) => {
       <div className="space-y-2">
         {adjustedRanking.map((player, index) => {
           const logoPath = getLogoPath(player.team);
-          const headshot =
-            player.headshotUrl ||
-            `/assets/headshots/${player.player_id || player.id}.png`;
+          const headshot = getHeadshotSrc(player);
 
           return (
             <div
@@ -260,7 +217,7 @@ const AdjustableRankings = ({ initialRanking = [], onSave, onCancel }) => {
           • Drag and drop players to reorder them
           <br />
           • Use the ↑ ↓ buttons to move players up or down
-          <br />• Save your changes when you're happy with the adjustments
+          <br />• Save your changes when you&apos;re happy with the adjustments
         </p>
       </div>
     </div>

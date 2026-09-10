@@ -5,7 +5,12 @@ import React, {
   useCallback,
   useEffect,
 } from 'react';
-import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
+import {
+  encodeRankerState,
+  decodeRankerState,
+  MAX_ENCODED_LENGTH,
+} from '@/utils/ranker/rankerStateCodec';
 
 const RankerContext = createContext();
 
@@ -17,21 +22,39 @@ export const useRankerContext = () => {
   return context;
 };
 
-// Helper functions for URL state management
-const encodeStateToURL = (state) => {
-  try {
-    return btoa(JSON.stringify(state));
-  } catch (e) {
-    return '';
-  }
-};
-
-const decodeStateFromURL = (encoded) => {
-  try {
-    return JSON.parse(atob(encoded));
-  } catch (e) {
-    return null;
-  }
+// localStorage throws in private-browsing modes and when the quota is
+// exceeded, so every access is guarded. Persistence is a convenience here; a
+// failure must never take the ranker down.
+const safeStorage = {
+  get(key) {
+    try {
+      return localStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  },
+  set(key, value) {
+    try {
+      localStorage.setItem(key, value);
+      return true;
+    } catch {
+      return false;
+    }
+  },
+  remove(key) {
+    try {
+      localStorage.removeItem(key);
+    } catch {
+      /* nothing to clean up */
+    }
+  },
+  keys() {
+    try {
+      return Object.keys(localStorage);
+    } catch {
+      return [];
+    }
+  },
 };
 
 // LocalStorage keys
@@ -45,12 +68,16 @@ const STORAGE_KEYS = {
 
 export const RankerProvider = () => {
   const location = useLocation();
-  const navigate = useNavigate();
 
-  // Generate a unique session ID to prevent state mixing between sessions
+  // Session id namespaces the stored keys. It must be persisted the moment it
+  // is minted; otherwise every reload starts a new session and orphans the
+  // previous one's saved state.
   const [sessionId, setSessionId] = useState(() => {
-    const existing = localStorage.getItem(STORAGE_KEYS.SESSION_ID);
-    return existing || Date.now().toString();
+    const existing = safeStorage.get(STORAGE_KEYS.SESSION_ID);
+    if (existing) return existing;
+    const created = Date.now().toString();
+    safeStorage.set(STORAGE_KEYS.SESSION_ID, created);
+    return created;
   });
 
   // Player pool from setup
@@ -65,70 +92,69 @@ export const RankerProvider = () => {
   // Final ranking
   const [finalRanking, setFinalRankingState] = useState([]);
 
-  // Progress tracking
-  const [currentPhase, setCurrentPhase] = useState('landing');
-
   // Load state from localStorage on mount
   useEffect(() => {
-    const loadStoredState = () => {
+    const read = (key) => {
+      const raw = safeStorage.get(`${key}_${sessionId}`);
+      if (!raw) return undefined;
       try {
-        const storedPlayerPool = localStorage.getItem(
-          `${STORAGE_KEYS.PLAYER_POOL}_${sessionId}`
-        );
-        const storedSetupData = localStorage.getItem(
-          `${STORAGE_KEYS.SETUP_DATA}_${sessionId}`
-        );
-        const storedComparisonResults = localStorage.getItem(
-          `${STORAGE_KEYS.COMPARISON_RESULTS}_${sessionId}`
-        );
-        const storedFinalRanking = localStorage.getItem(
-          `${STORAGE_KEYS.FINAL_RANKING}_${sessionId}`
-        );
-
-        if (storedPlayerPool) {
-          setPlayerPoolState(JSON.parse(storedPlayerPool));
-        }
-        if (storedSetupData) {
-          setSetupDataState(JSON.parse(storedSetupData));
-        }
-        if (storedComparisonResults) {
-          setComparisonResultsState(JSON.parse(storedComparisonResults));
-        }
-        if (storedFinalRanking) {
-          setFinalRankingState(JSON.parse(storedFinalRanking));
-        }
-      } catch (error) {
-        console.warn('Failed to load ranker state from localStorage:', error);
+        return JSON.parse(raw);
+      } catch {
+        // A corrupted entry should not block the rest of the session.
+        safeStorage.remove(`${key}_${sessionId}`);
+        return undefined;
       }
     };
 
-    loadStoredState();
+    const pool = read(STORAGE_KEYS.PLAYER_POOL);
+    const setup = read(STORAGE_KEYS.SETUP_DATA);
+    const comparisons = read(STORAGE_KEYS.COMPARISON_RESULTS);
+    const ranking = read(STORAGE_KEYS.FINAL_RANKING);
+
+    if (pool) setPlayerPoolState(pool);
+    if (setup) setSetupDataState(setup);
+    if (comparisons) setComparisonResultsState(comparisons);
+    if (ranking) setFinalRankingState(ranking);
   }, [sessionId]);
 
-  // Load state from URL parameters if available
+  // Drop entries belonging to sessions other than the current one. Before the
+  // session id was persisted, every reload minted a new one and left a full
+  // copy of the previous session's state behind, unreachable and unbounded.
   useEffect(() => {
-    const urlParams = new URLSearchParams(location.search);
-    const stateParam = urlParams.get('state');
-
-    if (stateParam) {
-      const decodedState = decodeStateFromURL(stateParam);
-      if (decodedState) {
-        if (decodedState.playerPool)
-          setPlayerPoolState(decodedState.playerPool);
-        if (decodedState.setupData) setSetupDataState(decodedState.setupData);
-        if (decodedState.comparisonResults)
-          setComparisonResultsState(decodedState.comparisonResults);
-        if (decodedState.finalRanking)
-          setFinalRankingState(decodedState.finalRanking);
+    const dataKeys = [
+      STORAGE_KEYS.PLAYER_POOL,
+      STORAGE_KEYS.SETUP_DATA,
+      STORAGE_KEYS.COMPARISON_RESULTS,
+      STORAGE_KEYS.FINAL_RANKING,
+    ];
+    safeStorage.keys().forEach((key) => {
+      const owner = dataKeys.find((k) => key.startsWith(`${k}_`));
+      if (owner && key !== `${owner}_${sessionId}`) {
+        safeStorage.remove(key);
       }
-    }
+    });
+  }, [sessionId]);
+
+  // Load state from URL parameters if available. A shared link is an explicit
+  // instruction, so it wins over whatever was restored from storage above.
+  useEffect(() => {
+    const stateParam = new URLSearchParams(location.search).get('state');
+    if (!stateParam) return;
+
+    const decoded = decodeRankerState(stateParam);
+    if (!decoded) return;
+
+    setPlayerPoolState(decoded.playerPool);
+    setSetupDataState(decoded.setupData);
+    setComparisonResultsState(decoded.comparisonResults);
+    setFinalRankingState(decoded.finalRanking);
   }, [location.search]);
 
   // Enhanced setters that persist to localStorage
   const setPlayerPool = useCallback(
     (pool) => {
       setPlayerPoolState(pool);
-      localStorage.setItem(
+      safeStorage.set(
         `${STORAGE_KEYS.PLAYER_POOL}_${sessionId}`,
         JSON.stringify(pool)
       );
@@ -139,7 +165,7 @@ export const RankerProvider = () => {
   const setSetupData = useCallback(
     (data) => {
       setSetupDataState(data);
-      localStorage.setItem(
+      safeStorage.set(
         `${STORAGE_KEYS.SETUP_DATA}_${sessionId}`,
         JSON.stringify(data)
       );
@@ -150,7 +176,7 @@ export const RankerProvider = () => {
   const setComparisonResults = useCallback(
     (results) => {
       setComparisonResultsState(results);
-      localStorage.setItem(
+      safeStorage.set(
         `${STORAGE_KEYS.COMPARISON_RESULTS}_${sessionId}`,
         JSON.stringify(results)
       );
@@ -161,7 +187,7 @@ export const RankerProvider = () => {
   const setFinalRanking = useCallback(
     (ranking) => {
       setFinalRankingState(ranking);
-      localStorage.setItem(
+      safeStorage.set(
         `${STORAGE_KEYS.FINAL_RANKING}_${sessionId}`,
         JSON.stringify(ranking)
       );
@@ -169,59 +195,59 @@ export const RankerProvider = () => {
     [sessionId]
   );
 
-  // Function to generate shareable URL with state
+  // Build a shareable URL carrying the whole session.
+  //
+  // Returns { url } on success or { error } when the session cannot be encoded
+  // into a link that will survive the trip. Callers must not report success
+  // unconditionally: an over-long URL is rejected by most servers and CDNs, so
+  // silently handing one out produces a link that simply fails to load.
   const generateShareableURL = useCallback(
     (path) => {
-      const state = {
+      const encodedState = encodeRankerState({
         playerPool,
         setupData,
         comparisonResults,
         finalRanking,
-      };
-      const encodedState = encodeStateToURL(state);
-      const baseUrl = window.location.origin;
-      return `${baseUrl}${path}?state=${encodedState}`;
+      });
+
+      if (!encodedState) {
+        return { error: 'This session could not be encoded into a link.' };
+      }
+      if (encodedState.length > MAX_ENCODED_LENGTH) {
+        return {
+          error:
+            'This session is too large to share as a link. Export your rankings instead.',
+        };
+      }
+
+      return { url: `${window.location.origin}${path}?state=${encodedState}` };
     },
     [playerPool, setupData, comparisonResults, finalRanking]
   );
 
-  // Function to navigate to a step with current state
-  const navigateToStep = useCallback(
-    (step, preserveState = true) => {
-      if (preserveState) {
-        const state = {
-          playerPool,
-          setupData,
-          comparisonResults,
-          finalRanking,
-        };
-        const encodedState = encodeStateToURL(state);
-        navigate(`/ranker/${step}?state=${encodedState}`);
-      } else {
-        navigate(`/ranker/${step}`);
-      }
-    },
-    [navigate, playerPool, setupData, comparisonResults, finalRanking]
-  );
-
   // Reset all state for new ranking session
   const resetRanker = useCallback(() => {
-    // Clear localStorage for current session
-    Object.values(STORAGE_KEYS).forEach((key) => {
-      localStorage.removeItem(`${key}_${sessionId}`);
+    // Clear the current session's stored data. SESSION_ID is deliberately
+    // excluded: it is stored unsuffixed and is replaced below.
+    [
+      STORAGE_KEYS.PLAYER_POOL,
+      STORAGE_KEYS.SETUP_DATA,
+      STORAGE_KEYS.COMPARISON_RESULTS,
+      STORAGE_KEYS.FINAL_RANKING,
+    ].forEach((key) => {
+      safeStorage.remove(`${key}_${sessionId}`);
     });
 
     // Generate new session ID
     const newSessionId = Date.now().toString();
     setSessionId(newSessionId);
-    localStorage.setItem(STORAGE_KEYS.SESSION_ID, newSessionId);
+    safeStorage.set(STORAGE_KEYS.SESSION_ID, newSessionId);
 
     // Reset state
     setPlayerPoolState([]);
     setSetupDataState(null);
     setComparisonResultsState([]);
     setFinalRankingState([]);
-    setCurrentPhase('landing');
   }, [sessionId]);
 
   // Check if we can navigate to a specific step
@@ -247,7 +273,6 @@ export const RankerProvider = () => {
     setupData,
     comparisonResults,
     finalRanking,
-    currentPhase,
     sessionId,
 
     // Setters
@@ -255,12 +280,10 @@ export const RankerProvider = () => {
     setSetupData,
     setComparisonResults,
     setFinalRanking,
-    setCurrentPhase,
 
     // Actions
     resetRanker,
     generateShareableURL,
-    navigateToStep,
     canNavigateToStep,
   };
 

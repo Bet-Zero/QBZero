@@ -6,6 +6,7 @@
   "extends": [
     "eslint:recommended",
     "plugin:react/recommended",
+    "plugin:react/jsx-runtime",
     "plugin:jsx-a11y/recommended",
     "plugin:react-hooks/recommended",
     "prettier"
@@ -17,9 +18,24 @@
       "jsx": true
     }
   },
-  "plugins": ["react", "jsx-a11y", "react-hooks"],
-  "ignorePatterns": ["dist/", "node_modules/"],
-  "rules": {},
+  "plugins": [
+    "react",
+    "jsx-a11y",
+    "react-hooks"
+  ],
+  "ignorePatterns": [
+    "dist/",
+    "node_modules/"
+  ],
+  "rules": {
+    "react/prop-types": "off",
+    "no-unused-vars": [
+      "error",
+      {
+        "varsIgnorePattern": "^React$"
+      }
+    ]
+  },
   "settings": {
     "react": {
       "version": "detect"
