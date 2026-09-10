@@ -102,26 +102,6 @@ const ContractFilters = ({ filters, setFilters }) => {
             <option value="RFA">RFA</option>
             <option value="TO">Team Option</option>
             <option value="PO">Player Option</option>
-            <option value="2W">Two-Way</option>
-          </select>
-        </div>
-
-        {/* Bird Rights */}
-        <div className="flex flex-col">
-          <label className="mb-1 text-white/50 text-[11px] uppercase tracking-wide">
-            Bird Rights
-          </label>
-          <select
-            value={filters.birdRights ?? ''}
-            onChange={(e) => update('birdRights', e.target.value)}
-            className="bg-[#2a2a2a] p-1 rounded"
-          >
-            <option value="">All</option>
-            {['None', 'Non-Bird', 'Early Bird', 'Bird', 'Two-Way'].map((br) => (
-              <option key={br} value={br}>
-                {br}
-              </option>
-            ))}
           </select>
         </div>
       </div>

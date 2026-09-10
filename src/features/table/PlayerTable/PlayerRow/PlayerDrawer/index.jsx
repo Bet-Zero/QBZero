@@ -31,7 +31,6 @@ const PlayerDrawer = ({ player }) => {
           <Divider />
           <PlayerContractMini
             contract={player.contract || {}}
-            bird_rights={player.bird_rights || 'Unknown'}
             option_type={
               player.contract?.extension?.options?.[0] ||
               player.contract?.options?.[0] ||

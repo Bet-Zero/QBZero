@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRankerContext } from '@/context/RankerContext';
 import { RankingSetup } from '@/features/ranker/RankingSetup';
-import { quarterbacks } from '@/features/ranker/quarterbacks';
+import useQBRoster from '@/hooks/useQBRoster';
 import RankerNavBar from '@/components/ranker/RankerNavBar';
 
 const RankerSetupPage = () => {
@@ -17,8 +17,12 @@ const RankerSetupPage = () => {
   // Whatever pool the user configured against is the pool they get. This used
   // to render an existing pool but then commit the hardcoded list regardless,
   // silently discarding any custom selection.
+  //
+  // Retired quarterbacks stay in the curated list for good, so the default
+  // pool is the active ones; a custom pool can still include anybody.
+  const { activeRoster } = useQBRoster();
   const pool =
-    existingPlayerPool.length > 0 ? existingPlayerPool : quarterbacks;
+    existingPlayerPool.length > 0 ? existingPlayerPool : activeRoster;
 
   const handleComplete = (data) => {
     setSetupData(data);

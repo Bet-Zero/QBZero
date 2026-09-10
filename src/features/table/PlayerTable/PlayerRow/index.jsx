@@ -98,7 +98,7 @@ const PlayerRow = ({ player }) => {
               );
             })()
           ) : (
-            <div className="text-white/40">Two-Way</div>
+            <div className="text-white/40">—</div>
           )}
         </div>
 

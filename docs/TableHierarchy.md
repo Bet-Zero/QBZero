@@ -13,6 +13,7 @@ PlayerTable/
       index.jsx
     PlayerNameMini.jsx
     RolePill.jsx
+    RunningProfileMini.jsx
     ShootingProfileMini.jsx
     index.jsx
   PlayerTableHeader/
@@ -21,5 +22,4 @@ PlayerTable/
     index.jsx
   index.jsx
 SubRolePill.jsx
-TwoWayMini.jsx
 ```

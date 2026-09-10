@@ -13,7 +13,7 @@ import {
   fetchAuthorTakes,
   createTake,
 } from '@/firebase/takeHelpers';
-import { quarterbacks } from '@/features/ranker/quarterbacks';
+import useQBRoster from '@/hooks/useQBRoster';
 import { toast } from 'react-hot-toast';
 import TakeAuthorModal from './TakeAuthorModal';
 import AdminGate from './AdminGate';
@@ -83,6 +83,7 @@ const TakeCard = ({ take }) => {
 
 const TakeBoard = () => {
   const { isAdmin, signOut } = useAuth();
+  const { roster } = useQBRoster();
   const [takes, setTakes] = useState([]);
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
@@ -105,7 +106,7 @@ const TakeBoard = () => {
 
   // Filter QBs based on search
   const filteredQBs = useMemo(() => {
-    return quarterbacks.filter((qb) =>
+    return roster.filter((qb) =>
       qb.name.toLowerCase().includes(qbSearch.toLowerCase())
     );
   }, [qbSearch]);

@@ -8,10 +8,11 @@ import {
   Users,
   UserPlus,
 } from 'lucide-react';
-import { quarterbacks } from '@/features/ranker/quarterbacks';
+import useQBRoster from '@/hooks/useQBRoster';
 import { TEAM_LOGO_MAP as teamLogoMap } from '@/utils/formatting/teamLogos';
 
 const AddQBModal = ({ onClose, onAdd, existingQBNames = [] }) => {
+  const { roster } = useQBRoster();
   const [showQBPool, setShowQBPool] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [formData, setFormData] = useState({
@@ -50,7 +51,7 @@ const AddQBModal = ({ onClose, onAdd, existingQBNames = [] }) => {
   const handleQBSelect = (qb) => {
     onAdd({
       name: qb.name,
-      team: qb.team || '', // Use team from quarterbacks.js
+      team: qb.team || '',
       imageUrl: `/assets/headshots/${qb.id}.png`,
       notes: '',
     });
@@ -61,7 +62,7 @@ const AddQBModal = ({ onClose, onAdd, existingQBNames = [] }) => {
     availableQBs.forEach((qb) => {
       onAdd({
         name: qb.name,
-        team: qb.team || '', // Use team from quarterbacks.js
+        team: qb.team || '',
         imageUrl: `/assets/headshots/${qb.id}.png`,
         notes: '',
       });
@@ -70,7 +71,7 @@ const AddQBModal = ({ onClose, onAdd, existingQBNames = [] }) => {
   };
 
   // Filter out QBs that are already added to rankings
-  const availableQBs = quarterbacks.filter(
+  const availableQBs = roster.filter(
     (qb) => !existingQBNames.includes(qb.name)
   );
 
