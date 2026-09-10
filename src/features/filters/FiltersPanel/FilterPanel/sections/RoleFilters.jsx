@@ -206,10 +206,12 @@ const RoleFilters = ({ filters, setFilters }) => {
           onChange={(val) => update('defenseRole', val)}
           options={defensiveRoles}
         />
-        <RunningProfileSelect
-          value={filters.runningProfile || ''}
-          placeholder="Any Profile"
+        <RoleSelect
+          label="Running Profile"
+          value={filters.runningProfile}
           onChange={(val) => update('runningProfile', val)}
+          options={runningProfileTiers}
+          allLabel="Any Profile"
         />
       </div>
 
