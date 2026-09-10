@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { X, User, Key } from 'lucide-react';
 import { createTakeAuthor, verifyTakeAuthor } from '@/firebase/takeAuthHelpers';
-import { toast } from 'react-hot-toast';
 
 const TakeAuthorModal = ({ onClose, onLogin, currentAuthor }) => {
   const [isNewUser, setIsNewUser] = useState(true);
@@ -78,7 +77,7 @@ const TakeAuthorModal = ({ onClose, onLogin, currentAuthor }) => {
                 🎉 Account Created!
               </div>
               <div className="text-white/80 mb-4">
-                Welcome, {authorName}! Here's your unique author code:
+                Welcome, {authorName}! Here&apos;s your unique author code:
               </div>
               <div className="bg-neutral-800 p-4 rounded-lg mb-4">
                 <div className="text-2xl font-mono font-bold text-white tracking-wider">
@@ -86,14 +85,14 @@ const TakeAuthorModal = ({ onClose, onLogin, currentAuthor }) => {
                 </div>
               </div>
               <div className="text-yellow-400 text-sm mb-4">
-                ⚠️ Save this code! You'll need it to log in again later.
+                ⚠️ Save this code! You&apos;ll need it to log in again later.
               </div>
             </div>
             <button
               onClick={onClose}
               className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-medium transition-all"
             >
-              Got it, let's start!
+              Got it, let&apos;s start!
             </button>
           </div>
         ) : (

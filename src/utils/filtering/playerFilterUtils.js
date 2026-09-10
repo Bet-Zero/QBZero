@@ -148,7 +148,7 @@ export function sortPlayers(
   return [...players].sort((a, b) => {
     const getValue = (player, field) => {
       if (traitSort.includes(field)) return player.traits?.[field] ?? -1;
-      if (player.system?.stats?.hasOwnProperty(field))
+      if (Object.hasOwn(player.system?.stats || {}, field))
         return parseFloat(player.system.stats[field]) ?? -1;
       switch (field) {
         case 'name':

@@ -1,98 +1,123 @@
 # AGENTS.md – QBZero AI Instructions
 
+See `CLAUDE.md` for how the repo owner wants updates reported.
+
 ## Project Overview
 
-QBZero is a public-facing NFL quarterback scouting platform. It displays QB bios, stats, roles, contracts, and grades using a clean layout. All quarterback data is loaded from Firebase Firestore using a flattened player structure (no nested documents).
+QBZero is a public-facing NFL quarterback scouting platform. It displays QB
+bios, stats, roles, contracts, and grades using a clean layout. Quarterback
+data is loaded from Firebase Firestore using a flattened player structure.
 
-This is a read-only scouting tool used to view quarterback attributes and evaluations. You should never write to Firestore or attempt to save data — only read.
+The site is publicly readable and **the owner can edit it in place** — player
+grades, rankings, lists and tier lists are all written back to Firestore.
+Writes are gated on Firebase Auth (see below), not on anything client-side.
+
+### History worth knowing
+
+This project was created by duplicating a basketball scouting app and
+repurposing it for quarterbacks. The conversion was not finished in one pass,
+and the recurring failure mode is a list written out in two places where one
+half was converted and the other was not — which reliably surfaces as a filter
+that silently matches nothing. Shared constants exist to stop that recurring:
+
+- `src/constants/traits.js` — `QB_TRAITS`, the trait set
+- `src/constants/stats.js` — `QB_STATS`, the box-score stats
+- `src/constants/teamList.js` — teams, carrying both `id` and `abbr`
+- `src/utils/formatting/teamLogos.js` — `TEAM_LOGO_MAP`
+
+Import from these rather than re-typing a list. If you find basketball
+vocabulary still in place (rebounds, shooting, defensive roles, positions like
+Guard/Wing/Big), it is residue, not a feature.
 
 ## Coding Conventions
 
 - Framework: React + Vite + Firebase
-- Backend: Firestore (flattened quarterback documents in 'players' collection)
+- Backend: Firestore (flattened quarterback documents in the `players` collection)
 - Style: Tailwind CSS with utility classes
-- Imports: Use alias paths (e.g., @/components/...)
+- Imports: Use alias paths (e.g., `@/components/...`)
 - File Format: Named exports preferred; default exports only for top-level views
 
 ## File Structure
 
-Project is organized by feature-first structure with scoped utility and component folders:
+Feature-first, with scoped utility and component folders:
 
+```
 src/
-components/
-layout/
-shared/
-ui/
-drawers/
-filters/
-grades/
-features/
-table/
-profile/
-roster/
-lists/
-filters/
-tierMaker/
-hooks/
-utils/
-filtering/
-formatting/
-roles/
-roster/
-constants/
-firebase/
-pages/
-styles/
+  components/   layout/ shared/ (ui/ drawers/ filters/ grades/ rankings/)
+  features/     table/ profile/ roster/ lists/ filters/ tierMaker/ ranker/
+                rankings/ backupBracket/ qbw/
+  hooks/
+  utils/        filtering/ formatting/ roles/ roster/ ranker/
+  constants/
+  firebase/
+  pages/
+  styles/
+```
 
-All new code should be grouped by feature when possible. Reusable UI or logic goes in `shared/`, `hooks/`, or `utils/`.
+New code is grouped by feature. Reusable UI or logic goes in `shared/`,
+`hooks/`, or `utils/`.
+
+## Firestore
+
+| Collection                | Contents                                      | Writable by      |
+| ------------------------- | --------------------------------------------- | ---------------- |
+| `players`                 | QB bios, traits, roles, stats, badges, blurbs  | admin            |
+| `qbRankings`              | Saved ranking sets                             | admin            |
+| `personalRankingArchives` | Archived personal rankings                     | admin            |
+| `lists`                   | User-built lists                               | admin            |
+| `tierLists`               | Tier maker boards                              | admin            |
+| `rosterProjects`          | Roster tool projects                           | admin            |
+| `takes` / `takeAuthors`   | QB Weekly takes board                          | any visitor      |
+| `admins`                  | One document per admin UID                     | nobody (console) |
+
+`firestore.rules` in the repo is the source of truth for the policy above.
+Editing it does not deploy it — that needs the Firebase console or CLI.
+
+**Auth:** admin is granted by a document at `admins/<uid>`. `useAuth` reads it
+to decide whether to show editing controls; the rules check the same document
+and are what actually enforce access. Never treat the client-side `isAdmin` as
+a security boundary.
+
+There is no `teams` collection. Earlier revisions of this file described one,
+along with `capSheet` and `contract_clean` fields; none of that exists here.
 
 ## Task Rules for Agents
 
 - ✅ Refactors should preserve visual layout and logic
 - ✅ Break large components (>200 lines) into clean, shallow subcomponents
 - ✅ Keep logic and layout separated where appropriate
-- ✅ Use smart, readable file naming (TraitGradesBlock.jsx, AddPlayerDrawer.jsx, etc.)
-- ✅ Preserve modals, filters, blurbs, and Firestore reads
-- ✅ Leave the worktree clean (git status should show no changes)
-- ❌ Never create new branches
-- ❌ Never amend or squash existing commits
+- ✅ Use readable file naming (`TraitGradesBlock.jsx`, `AddPlayerDrawer.jsx`)
+- ✅ Preserve modals, filters and blurbs
+- ✅ Work on a branch and open a PR; the owner merges
+- ❌ Never amend, squash or force-push shared history
+- ❌ Never widen a change beyond what was asked without saying so
 
-## Firestore Data Source Rules
+## Verification
 
-This project uses two Firestore collections for quarterback-related data:
+```
+npx vitest run     # full suite
+npm run build      # vite build
+npm run lint       # eslint
+```
 
-| Collection | Used For                                                                           |
-| ---------- | ---------------------------------------------------------------------------------- |
-| `/players` | Global quarterback data (bio, traits, roles, stats, badges, blurbs, raw contracts) |
-| `/teams`   | Roster-specific data (contract_clean, team cap sheets, Architect tools)            |
+Lint carries a standing backlog, mostly `jsx-a11y` in older features. Compare
+the count before and after a change rather than expecting zero.
 
-- All role, trait, stat, badge, and evaluation info comes from `/players`
-- All salary/cap validation logic must use `contract_clean` from `/teams`
-- Only `/teams` should be modified when editing contracts or roster logic
-- Codex should treat `/players` as the read-only master record
-
-📄 Reference [`DATA_SOURCE_MAP.md`](../docs/DATA_SOURCE_MAP.md) for usage patterns  
-📄 See [`FIRESTORE_SCHEMA.md`](../docs/FIRESTORE_SCHEMA.md) for full field breakdowns
-
-## Firebase Rules
-
-- All data is read from Firestore.
-  The main Firestore collections are:
-
-- `'players'`: flattened quarterback documents used for traits, roles, stats, badges, etc.
-- `'teams'`: documents that contain `capSheet.players[]` with `contract_clean` and team roster data
-
-- Do not modify Firestore read logic without validating schema against usePlayerData.js and Firebase helpers.
+Before claiming a fix works, confirm the test fails against the previous
+behavior — several bugs here were silent, and a test that only passes
+afterwards proves nothing about them.
 
 ## PR Guidelines
 
 - Start PR titles with a clear, concise summary (e.g., `refactor: split PlayerProfileView`)
 - Include a bullet summary of the changes
-- Cite file paths using `【F:path†L#】` format
+- Reference files as `path/to/file.js:42`
 - Skip descriptions for unchanged UI unless relevant to the task
 
 ## Other Notes
 
-- DEVELOPER_GUIDE.md contains detailed file structure, key files, and component logic
-- README.md contains instructions for running and setting up the project
-- Use /features/profile/ and /features/lists/ as structural examples if needed
+- `docs/` holds per-feature component hierarchies, `FILE_MAP.md`,
+  `DATA_SOURCE_MAP.md` and `FIRESTORE_SCHEMA.md`. Some predate the QB
+  conversion — check against the code before trusting them.
+- `DEVELOPER_GUIDE.md` covers file structure and component logic
+- `README.md` covers running and setting up the project

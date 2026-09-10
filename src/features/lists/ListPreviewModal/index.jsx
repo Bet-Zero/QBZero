@@ -16,8 +16,6 @@ const ListPreviewModal = ({
   title = '',
   subtitle = '',
 }) => {
-  if (!open) return null;
-
   const previewRef = useRef(null);
   const [scale, setScale] = useState(0.6);
 
@@ -48,6 +46,13 @@ const ListPreviewModal = ({
   }, []);
 
   const downloadImage = useImageDownload(previewRef);
+
+  // Every hook above must run on every render: React tracks them by call
+  // order, so returning before them made the count change when `open` flipped
+  // and React would throw "rendered more hooks than during the previous
+  // render". Its only caller happens to mount this fresh each time, which is
+  // why it never fired.
+  if (!open) return null;
 
   const handleDownload = () => {
     downloadImage(`${title || 'list'}.png`, {

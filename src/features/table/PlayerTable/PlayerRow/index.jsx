@@ -7,18 +7,10 @@ import PlayerDrawer from '@/features/table/PlayerTable/PlayerRow/PlayerDrawer';
 import TeamLogo from '@/components/shared/TeamLogo';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import AddToListButton from '@/features/lists/AddToListButton';
-import { getCurrentSeasonYear, getYearsRemaining } from '@/utils/contracts';
+import { getCurrentSeasonYear } from '@/utils/contracts';
 
-const PlayerRow = ({ player, ranking = '—' }) => {
+const PlayerRow = ({ player }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const nameParts = (
-    player.display_name ||
-    player.name ||
-    'Unknown Player'
-  ).split(' ');
-  const firstName = nameParts[0]?.toUpperCase() || '';
-  const lastName = nameParts.slice(1).join(' ').toUpperCase() || '';
-
   return (
     <div className="relative w-full max-w-[1100px] border border-black mx-auto mb-2">
       {/* Add Button - fixed small circle in top-right corner (overlay) */}

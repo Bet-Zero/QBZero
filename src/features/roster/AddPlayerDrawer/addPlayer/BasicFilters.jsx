@@ -1,6 +1,5 @@
 // src/components/filters/sections/BasicFilters.jsx
 import React from 'react';
-import MultiSelectFilter from '@/components/shared/ui/filters/MultiSelectFilter';
 import BadgeFilterSelect from '@/components/shared/ui/filters/BadgeFilterSelect';
 import { teamOptions } from '@/utils/filtering';
 import { runningProfileTiers } from '@/utils/roles';

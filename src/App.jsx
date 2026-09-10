@@ -21,7 +21,6 @@ import SiteLayout from '@/components/layout/SiteLayout';
 import NotFound from '@/pages/NotFound';
 import ListPresentationView from '@/pages/ListPresentationView';
 import Home from '@/pages/Home';
-import ComingSoon from '@/pages/ComingSoon';
 import AdminProtectedRoute from '@/components/shared/AdminProtectedRoute';
 
 const App = () => {

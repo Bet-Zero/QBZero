@@ -43,12 +43,8 @@ const PlayerStatsTable = ({ player }) => {
         <div className="w-[50px] text-center">
           {formatStat(stats['CMP%'], false, true)}
         </div>
-        <div className="w-[50px] text-center">
-          {formatStat(stats.RTG)}
-        </div>
-        <div className="w-[50px] text-center">
-          {formatStat(stats.QBR)}
-        </div>
+        <div className="w-[50px] text-center">{formatStat(stats.RTG)}</div>
+        <div className="w-[50px] text-center">{formatStat(stats.QBR)}</div>
       </div>
     </div>
   );

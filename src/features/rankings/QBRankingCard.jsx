@@ -30,7 +30,7 @@ const QBRankingCard = ({
   };
 
   // Make all notes use the smallest text size on mobile, normal on desktop
-  const getNotesTextClasses = (text) => {
+  const getNotesTextClasses = () => {
     // For archive mode, always use constrained classes to prevent stretching
     if (isArchiveMode) {
       return 'text-[11px] leading-[12px] sm:text-sm sm:leading-normal line-clamp-2 overflow-hidden';

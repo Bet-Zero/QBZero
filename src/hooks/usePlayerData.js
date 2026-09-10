@@ -24,7 +24,6 @@ const createFallbackQBData = () => {
       offense2: '',
       style1: '',
       style2: '',
-      twoWay: 50,
       armTalent: 50,
     },
     subRoles: {

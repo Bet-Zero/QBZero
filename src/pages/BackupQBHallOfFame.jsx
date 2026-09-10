@@ -9,8 +9,8 @@ const BackupQBHallOfFame = () => {
       <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
-          <Link 
-            to="/backup-qbs" 
+          <Link
+            to="/backup-qbs"
             className="p-2 hover:bg-white/10 rounded-lg transition-colors"
           >
             <ArrowLeftIcon className="h-6 w-6" />
@@ -20,7 +20,8 @@ const BackupQBHallOfFame = () => {
               Backup QB Hall of Fame
             </h1>
             <p className="text-white/70 mt-2">
-              Honoring the legendary backup quarterbacks who made their mark on NFL history
+              Honoring the legendary backup quarterbacks who made their mark on
+              NFL history
             </p>
           </div>
         </div>
@@ -29,10 +30,14 @@ const BackupQBHallOfFame = () => {
         <div className="mb-12 text-center">
           <div className="inline-block p-8 bg-gradient-to-br from-orange-900/30 to-red-900/30 rounded-xl border border-orange-500/30">
             <div className="text-6xl mb-4">🏛️</div>
-            <h2 className="text-2xl font-bold mb-4">Welcome to the Hall of Fame</h2>
+            <h2 className="text-2xl font-bold mb-4">
+              Welcome to the Hall of Fame
+            </h2>
             <p className="text-white/80 max-w-2xl leading-relaxed">
-              These quarterbacks may not have been full-time starters, but they've earned their place in backup QB lore 
-              through clutch performances, veteran leadership, and unforgettable moments when their teams needed them most.
+              These quarterbacks may not have been full-time starters, but
+              they&apos;ve earned their place in backup QB lore through clutch
+              performances, veteran leadership, and unforgettable moments when
+              their teams needed them most.
             </p>
           </div>
         </div>
@@ -55,8 +60,14 @@ const BackupQBHallOfFame = () => {
                           e.target.nextSibling.style.display = 'flex';
                         }}
                       />
-                      <div className="w-full h-full flex items-center justify-center text-2xl font-bold text-orange-400" style={{display: 'none'}}>
-                        {qb.name.split(' ').map(n => n[0]).join('')}
+                      <div
+                        className="w-full h-full flex items-center justify-center text-2xl font-bold text-orange-400"
+                        style={{ display: 'none' }}
+                      >
+                        {qb.name
+                          .split(' ')
+                          .map((n) => n[0])
+                          .join('')}
                       </div>
                     </div>
                   </div>
@@ -70,7 +81,10 @@ const BackupQBHallOfFame = () => {
                       </span>
                       <div className="flex items-center gap-1">
                         {[...Array(5)].map((_, i) => (
-                          <StarIcon key={i} className="h-4 w-4 text-yellow-400 fill-current" />
+                          <StarIcon
+                            key={i}
+                            className="h-4 w-4 text-yellow-400 fill-current"
+                          />
                         ))}
                       </div>
                     </div>
@@ -81,12 +95,16 @@ const BackupQBHallOfFame = () => {
 
                     {/* Accomplishments */}
                     <div>
-                      <h4 className="text-lg font-semibold mb-3 text-orange-400">Career Highlights</h4>
+                      <h4 className="text-lg font-semibold mb-3 text-orange-400">
+                        Career Highlights
+                      </h4>
                       <div className="grid md:grid-cols-2 gap-2">
                         {qb.accomplishments.map((accomplishment, idx) => (
                           <div key={idx} className="flex items-center gap-2">
                             <div className="w-2 h-2 bg-orange-400 rounded-full flex-shrink-0"></div>
-                            <span className="text-white/70">{accomplishment}</span>
+                            <span className="text-white/70">
+                              {accomplishment}
+                            </span>
                           </div>
                         ))}
                       </div>
@@ -97,7 +115,9 @@ const BackupQBHallOfFame = () => {
                   <div className="flex-shrink-0">
                     <div className="text-center">
                       <div className="text-3xl mb-1">🏆</div>
-                      <div className="text-xs text-orange-400 font-medium">HOF</div>
+                      <div className="text-xs text-orange-400 font-medium">
+                        HOF
+                      </div>
                       <div className="text-xs text-white/60">#{index + 1}</div>
                     </div>
                   </div>
@@ -112,8 +132,8 @@ const BackupQBHallOfFame = () => {
           <div className="inline-block p-6 bg-neutral-800/50 rounded-xl border border-white/10">
             <h3 className="text-xl font-bold mb-2">More Legends Coming Soon</h3>
             <p className="text-white/60">
-              We're constantly evaluating more backup QB legends for induction into the Hall of Fame. 
-              Stay tuned for future inductees!
+              We&apos;re constantly evaluating more backup QB legends for
+              induction into the Hall of Fame. Stay tuned for future inductees!
             </p>
           </div>
         </div>
@@ -121,7 +141,9 @@ const BackupQBHallOfFame = () => {
         {/* Stats Section */}
         <div className="mt-12 grid md:grid-cols-3 gap-6">
           <div className="text-center p-6 bg-neutral-800/30 rounded-xl border border-white/10">
-            <div className="text-3xl font-bold text-orange-400 mb-2">{BACKUP_QB_HALL_OF_FAME.length}</div>
+            <div className="text-3xl font-bold text-orange-400 mb-2">
+              {BACKUP_QB_HALL_OF_FAME.length}
+            </div>
             <div className="text-white/80">Hall of Famers</div>
           </div>
           <div className="text-center p-6 bg-neutral-800/30 rounded-xl border border-white/10">
