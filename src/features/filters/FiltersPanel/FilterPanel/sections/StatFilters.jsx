@@ -91,7 +91,7 @@ const ActiveFiltersList = ({ activeFilters, removeFilter }) => {
 const StatFilters = ({ filters, setFilters }) => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [newFilter, setNewFilter] = useState({
-    stat: 'PPG',
+    stat: statOptions[0].label,
     operator: '>=',
     value: '',
   });
@@ -108,7 +108,7 @@ const StatFilters = ({ filters, setFilters }) => {
       [filterKey]: parseFloat(newFilter.value),
     }));
 
-    setNewFilter({ stat: 'PPG', operator: '>=', value: '' });
+    setNewFilter({ stat: statOptions[0].label, operator: '>=', value: '' });
     setShowAddForm(false);
   };
 

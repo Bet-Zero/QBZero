@@ -19,7 +19,6 @@ const AddPlayerDrawer = ({ onClose, allPlayers, onSelect }) => {
       position,
       runningProfile,
       offenseRole,
-      defenseRole,
       subRoles,
       badges,
       minSalary,
@@ -43,18 +42,8 @@ const AddPlayerDrawer = ({ onClose, allPlayers, onSelect }) => {
         )
           return false;
         if (
-          defenseRole &&
-          !p.defenseRoles.some((r) => r.includes(defenseRole.toLowerCase()))
-        )
-          return false;
-        if (
           subRoles.offense.length > 0 &&
           !subRoles.offense.every((sr) => p.offenseSubroles.includes(sr))
-        )
-          return false;
-        if (
-          subRoles.defense.length > 0 &&
-          !subRoles.defense.every((sr) => p.defenseSubroles.includes(sr))
         )
           return false;
         if (runningProfile && p.runningProfile !== runningProfile.toLowerCase())

@@ -39,11 +39,9 @@ export function normalizePlayerData(playerData) {
     age: parseInt(playerData.bio?.AGE || 0),
     headshotUrl: `/assets/headshots/${playerData.player_id}.png`,
     offenseRole: playerData.roles?.offense1 || '—',
-    defenseRole: playerData.roles?.defense1 || '—',
     runningProfile: playerData.runningProfile || '—',
     subRoles: {
       offense: playerData.subRoles?.offense || [],
-      defense: playerData.subRoles?.defense || [],
     },
     traits: playerData.traits || {},
     badges: playerData.badges || [],

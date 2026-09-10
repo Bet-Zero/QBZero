@@ -1,15 +1,12 @@
-import React, { useState } from 'react';
+import React, { useId, useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import RoleChecklist from '@/components/shared/ui/filters/RoleChecklist';
-import {
-  toggleSubroleSelection,
-  offensiveRoles,
-  defensiveRoles,
-} from '@/utils/roles';
+import { toggleSubroleSelection, offensiveRoles } from '@/utils/roles';
 import { SubRoleMasterList } from '@/constants/SubRoleMasterList';
 
 const RolesFilters = ({ filters, setFilters }) => {
   const [showSubroles, setShowSubroles] = useState(false);
+  const playstyleId = useId();
 
   const handleToggleSubrole = (roleName) => {
     setFilters((prev) => ({
@@ -24,37 +21,22 @@ const RolesFilters = ({ filters, setFilters }) => {
         {' '}
         {/* Added wrapper div */}
         <div>
-          <label className="block mb-1 text-white/70 text-xs">
-            Offense Role
+          <label
+            className="block mb-1 text-white/70 text-xs"
+            htmlFor={playstyleId}
+          >
+            Playstyle
           </label>
           <select
+            id={playstyleId}
             value={filters.offenseRole}
             onChange={(e) =>
               setFilters({ ...filters, offenseRole: e.target.value })
             }
             className="w-full bg-[#2a2a2a] text-white px-2 py-1 rounded text-xs"
           >
-            <option value="">All Roles</option>
+            <option value="">All Playstyles</option>
             {offensiveRoles.map((role) => (
-              <option key={role} value={role}>
-                {role}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block mb-1 text-white/70 text-xs">
-            Defense Role
-          </label>
-          <select
-            value={filters.defenseRole}
-            onChange={(e) =>
-              setFilters({ ...filters, defenseRole: e.target.value })
-            }
-            className="w-full bg-[#2a2a2a] text-white px-2 py-1 rounded text-xs"
-          >
-            <option value="">All Roles</option>
-            {defensiveRoles.map((role) => (
               <option key={role} value={role}>
                 {role}
               </option>

@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import useFirebaseQuery from './useFirebaseQuery';
 import { normalizePlayerData } from '@/utils/roster';
+import { emptyTraits } from '@/constants/traits';
 import { quarterbacks } from '@/features/ranker/quarterbacks';
 
 // Fallback QB data for development/testing
@@ -17,16 +18,7 @@ const createFallbackQBData = () => {
       WT: null,
       'Years Pro': null,
     },
-    traits: {
-      Throwing: 0,
-      Accuracy: 0,
-      Decision: 0,
-      Mobility: 0,
-      Pocket: 0,
-      IQ: 0,
-      Leadership: 0,
-      Durability: 0,
-    },
+    traits: emptyTraits(),
     roles: {
       offense1: '',
       offense2: '',
@@ -37,7 +29,6 @@ const createFallbackQBData = () => {
     },
     subRoles: {
       offense: [],
-      defense: [],
     },
     badges: [],
     blurbs: {

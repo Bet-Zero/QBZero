@@ -1,17 +1,9 @@
 // components/PlayerTraitsGrid.jsx
 import React from 'react';
 import { NotebookText } from 'lucide-react';
+import { QB_TRAITS } from '@/constants/traits';
 
-const TRAIT_ORDER = [
-  'Throwing',
-  'Accuracy', 
-  'Decision',
-  'Mobility',
-  'Pocket',
-  'IQ',
-  'Leadership',
-  'Durability',
-];
+const TRAIT_ORDER = QB_TRAITS;
 
 const getTraitColor = (rating) => {
   if (rating >= 98) return '#13895b';

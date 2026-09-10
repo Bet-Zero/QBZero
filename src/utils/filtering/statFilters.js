@@ -1,28 +1,12 @@
-export const statOptions = [
-  { label: 'PPG', key: 'PPG' },
-  { label: 'RPG', key: 'RPG' },
-  { label: 'APG', key: 'APG' },
-  { label: 'FG%', key: 'FGP' },
-  { label: '3PT%', key: 'TPP' },
-  { label: 'FT%', key: 'FTP' },
-  { label: 'eFG%', key: 'eFGP' },
-  { label: 'MIN', key: 'MIN' },
-  { label: 'G', key: 'G' },
-];
+import { QB_STATS } from '@/constants/stats';
 
-const defaultMaxValues = {
-  PPG: 50,
-  RPG: 20,
-  APG: 20,
-  FGP: 100,
-  TPP: 100,
-  FTP: 100,
-  eFGP: 100,
-  MIN: 48,
-  G: 82,
-};
+export const statOptions = QB_STATS.map(({ label, key }) => ({ label, key }));
 
-export const getDefaultMaxValue = (statKey) => defaultMaxValues[statKey] || 100;
+const defaultMaxValues = Object.fromEntries(
+  QB_STATS.map((stat) => [stat.key, stat.max])
+);
+
+export const getDefaultMaxValue = (statKey) => defaultMaxValues[statKey] ?? 100;
 
 export function getActiveStatFilters(filters) {
   const activeFilters = [];

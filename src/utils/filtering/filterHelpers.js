@@ -1,31 +1,20 @@
 import { formatHeight } from '@/utils/formatting';
+import { QB_TRAITS, QB_TRAIT_ABBREVIATIONS } from '@/constants/traits';
+import { QB_STATS, QB_STAT_ABBREVIATIONS } from '@/constants/stats';
+
+const percentStatKeys = QB_STATS.filter((s) => s.isPercent).map((s) => s.key);
 
 export function getFilterDisplayValue(key, value) {
   const statAbbreviations = {
-    PPG: 'ppg',
-    RPG: 'rpg',
-    APG: 'apg',
-    FGP: 'fg%',
-    TPP: '3p%',
-    FTP: 'ft%',
-    eFGP: 'efg%',
-    MIN: 'min',
-    G: 'games',
-    Defense: 'def',
-    Energy: 'energy',
-    Feel: 'feel',
-    IQ: 'iq',
-    Passing: 'pass',
-    Playmaking: 'play',
-    Rebounding: 'reb',
-    Shooting: 'shot',
+    ...QB_STAT_ABBREVIATIONS,
+    ...QB_TRAIT_ABBREVIATIONS,
   };
 
   if (key.startsWith('min_') || key.startsWith('max_')) {
     const statKey = key.split('_')[1];
     const abbreviation = statAbbreviations[statKey] || '';
     const symbol = key.startsWith('min_') ? '≥ ' : '≤ ';
-    if (['FGP', 'TPP', 'FTP', 'eFGP'].includes(statKey)) {
+    if (percentStatKeys.includes(statKey)) {
       return `${symbol}${value}% ${abbreviation}`;
     }
     return `${symbol}${value} ${abbreviation}`;
@@ -64,7 +53,7 @@ export function getFilterDisplayValue(key, value) {
       return `${value.min} - ${value.max}`;
     }
     if (key === 'subRoles') {
-      return [...(value.offense || []), ...(value.defense || [])].join(', ');
+      return (value.offense || []).join(', ');
     }
   }
   if (value !== '' && value !== null && value !== undefined) {
@@ -87,14 +76,6 @@ export function getFilterStyles(key, value) {
       textClass: 'text-white/80',
     };
   }
-  if (key.toLowerCase().includes('defense') || key === 'defenseRole') {
-    return {
-      bgClass: 'bg-blue-900/40',
-      borderClass: 'border-blue-500',
-      textClass: 'text-white/80',
-    };
-  }
-
   if (key.toLowerCase().includes('shooting')) {
     const shootingTiers = {
       Elite: { borderClass: 'border-green-500', textClass: 'text-green-500' },
@@ -206,18 +187,7 @@ export function getFilterStyles(key, value) {
 
   if (key.startsWith('min_') || key.startsWith('max_')) {
     const statKey = key.split('_')[1];
-    if (
-      [
-        'Defense',
-        'Energy',
-        'Feel',
-        'IQ',
-        'Passing',
-        'Playmaking',
-        'Rebounding',
-        'Shooting',
-      ].includes(statKey)
-    ) {
+    if (QB_TRAITS.includes(statKey)) {
       const numValue = parseInt(value);
       if (!isNaN(numValue)) {
         if (numValue >= 98)

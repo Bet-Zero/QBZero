@@ -3,11 +3,7 @@
 import React from 'react';
 import MultiSelectFilter from '@/components/shared/ui/filters/MultiSelectFilter';
 import { TeamListFull } from '@/constants/teamList';
-import {
-  offensiveRoles,
-  defensiveRoles,
-  runningProfileTiers,
-} from '@/utils/roles';
+import { offensiveRoles, runningProfileTiers } from '@/utils/roles';
 
 const FilterPanelCondensed = ({ filters, setFilters }) => {
   const update = (key, value) => {
@@ -42,16 +38,7 @@ const FilterPanelCondensed = ({ filters, setFilters }) => {
           value={filters.offenseRole || ''}
           options={offensiveRoles}
           onChange={(val) => update('offenseRole', val)}
-          allLabel="Offensive Role"
-          containerClass="shrink-0"
-          selectClass={selectClass}
-        />
-
-        <MultiSelectFilter
-          value={filters.defenseRole || ''}
-          options={defensiveRoles}
-          onChange={(val) => update('defenseRole', val)}
-          allLabel="Defensive Role"
+          allLabel="Playstyle"
           containerClass="shrink-0"
           selectClass={selectClass}
         />
