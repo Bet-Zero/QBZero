@@ -26,7 +26,6 @@ export function getDefaultPlayerFilters() {
     sortBy: '',
     sortAsc: false,
     team: '',
-    position: '',
     minHeight: 0,
     maxHeight: null,
     minWeight: 0,

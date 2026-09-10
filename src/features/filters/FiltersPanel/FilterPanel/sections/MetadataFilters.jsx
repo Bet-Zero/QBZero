@@ -21,16 +21,6 @@ const MetadataFilters = ({ filters, setFilters }) => {
           allLabel="All"
           selectClass="w-[125px]"
         />
-
-        {/* Position Dropdown */}
-        <MultiSelectFilter
-          label="Position"
-          value={filters.position || ''}
-          options={['Guard', 'Wing', 'Forward', 'Big', 'Center']}
-          onChange={(val) => update('position', val)}
-          allLabel="All"
-          selectClass="w-[125px]"
-        />
       </div>
     </div>
   );

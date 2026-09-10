@@ -7,9 +7,11 @@ import { getDefaultPlayerFilters } from '@/utils/filtering/playerFilterDefaults'
 import { QB_TRAITS, emptyTraits } from '@/constants/traits';
 import { QB_STATS } from '@/constants/stats';
 import { statOptions } from '@/utils/filtering/statFilters';
+import { TeamListFull } from '@/constants/teamList';
 
 const qb = (overrides) => ({
   display_name: 'Test QB',
+  bio: { Team: 'KC', Position: 'QB' },
   age: 25,
   heightInInches: 74,
   weight: 220,
@@ -172,5 +174,38 @@ describe('filterPlayers — stats', () => {
       'RTG',
       'QBR',
     ]);
+  });
+});
+
+describe('filterPlayers — team', () => {
+  it('matches the dropdown id against the stored abbreviation', () => {
+    // The dropdown emits TeamListFull ids ('cardinals') while records store
+    // bio.Team as an abbreviation ('ARI'), so every team yielded no results.
+    const players = [
+      qb({ display_name: 'Cardinal', bio: { Team: 'ARI' } }),
+      qb({ display_name: 'Chief', bio: { Team: 'KC' } }),
+    ];
+
+    const matched = filterPlayers(players, {
+      ...getDefaultPlayerFilters(),
+      team: 'cardinals',
+    }).map((p) => p.display_name);
+
+    expect(matched).toEqual(['Cardinal']);
+  });
+
+  it('accepts an abbreviation directly too', () => {
+    const players = [qb({ display_name: 'Chief', bio: { Team: 'KC' } })];
+
+    expect(
+      filterPlayers(players, { ...getDefaultPlayerFilters(), team: 'KC' })
+    ).toHaveLength(1);
+  });
+
+  it('gives every team an abbreviation', () => {
+    expect(TeamListFull).toHaveLength(32);
+    TeamListFull.forEach((team) => {
+      expect(team.abbr, `${team.id} has no abbr`).toMatch(/^[A-Z]{2,3}$/);
+    });
   });
 });

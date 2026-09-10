@@ -8,7 +8,6 @@ export const defaultFilters = {
 export function getDefaultAddPlayerFilters() {
   return {
     team: '',
-    position: '',
     runningProfile: '',
     offenseRole: '',
     subRoles: {

@@ -7,7 +7,10 @@ export const savePlayerData = async (playerId, playerData) => {
     await setDoc(doc(db, 'players', playerId), playerData, { merge: true });
     console.log(`✅ Player ${playerId} saved to Firebase`);
   } catch (error) {
+    // Swallowing this made a rejected write indistinguishable from a saved
+    // one: the caller cleared its dirty flag and the edit vanished on reload.
     console.error('❌ Error saving player:', error);
+    throw error;
   }
 };
 

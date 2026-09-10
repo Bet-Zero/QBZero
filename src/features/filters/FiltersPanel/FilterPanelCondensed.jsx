@@ -26,15 +26,6 @@ const FilterPanelCondensed = ({ filters, setFilters }) => {
         />
 
         <MultiSelectFilter
-          value={filters.position || ''}
-          options={['Guard', 'Wing', 'Forward', 'Big', 'Center']}
-          onChange={(val) => update('position', val)}
-          allLabel="All Positions"
-          containerClass="shrink-0"
-          selectClass={selectClass}
-        />
-
-        <MultiSelectFilter
           value={filters.offenseRole || ''}
           options={offensiveRoles}
           onChange={(val) => update('offenseRole', val)}
