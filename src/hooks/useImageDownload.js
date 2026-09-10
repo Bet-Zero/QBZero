@@ -1,4 +1,5 @@
 import { toPng } from 'html-to-image';
+import { toast } from 'react-hot-toast';
 import { antonBase64CSS } from '@/fonts/antonBase64';
 
 const waitForImages = async (root) => {
@@ -51,8 +52,13 @@ const useImageDownload = (ref) => {
         ref.current.prepend(styleEl);
       }
 
-      // 2. Temporarily make the container fully visible for mobile browsers
-      // Mobile browsers are more aggressive about not loading images in hidden/scaled elements
+      // 2. Un-hide for capture. Mobile browsers skip loading images inside a
+      // `visibility: hidden` subtree, which is what made headshots come out
+      // blank. Note the ref points at an inner node while the off-screen
+      // wrapper above it holds `top: -9999px`: `visibility` is inherited so
+      // overriding it here does reach the images, but `top` and `zIndex` on a
+      // statically positioned child do nothing. They are left in place
+      // pending a real-device check rather than removed on inspection alone.
       const element = ref.current;
       originalStyles = {
         top: element.style.top,
@@ -90,7 +96,16 @@ const useImageDownload = (ref) => {
       link.href = dataUrl;
       link.click();
     } catch (err) {
+      // A swallowed failure here is indistinguishable from a download the
+      // browser silently blocked, which is most of why mobile export was so
+      // hard to diagnose. Say something.
       console.error('Failed to download image', err);
+      toast.error(
+        `Could not build the image: ${err?.message || 'unknown error'}`,
+        {
+          id: 'image-download-error',
+        }
+      );
     } finally {
       // Restore original styles
       if (originalStyles && ref.current) {
