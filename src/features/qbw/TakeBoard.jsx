@@ -17,6 +17,7 @@ import { quarterbacks } from '@/features/ranker/quarterbacks';
 import { toast } from 'react-hot-toast';
 import TakeAuthorModal from './TakeAuthorModal';
 import AdminGate from './AdminGate';
+import useAuth from '@/hooks/useAuth';
 
 const TakeCard = ({ take }) => {
   const getStatusIcon = () => {
@@ -81,6 +82,7 @@ const TakeCard = ({ take }) => {
 };
 
 const TakeBoard = () => {
+  const { isAdmin, signOut } = useAuth();
   const [takes, setTakes] = useState([]);
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
@@ -111,14 +113,13 @@ const TakeBoard = () => {
   const [adminMode, setAdminMode] = useState(false);
   const [showAdminGate, setShowAdminGate] = useState(false);
 
-  // Check for admin mode on mount
+  // Admin mode follows the signed-in account.
   useEffect(() => {
-    const isAdmin = localStorage.getItem('qbzero_admin') === 'true';
     if (isAdmin) {
       setAdminMode(true);
       setAuthor({ id: 'admin', name: 'Admin' });
     }
-  }, []);
+  }, [isAdmin]);
 
   useEffect(() => {
     if (author) {
@@ -178,7 +179,6 @@ const TakeBoard = () => {
   // Load author from localStorage on mount
   useEffect(() => {
     const savedAuthor = localStorage.getItem('takeAuthor');
-    const isAdmin = localStorage.getItem('qbzero_admin') === 'true';
 
     if (isAdmin) {
       setAdminMode(true);
@@ -186,7 +186,7 @@ const TakeBoard = () => {
     } else if (savedAuthor) {
       setAuthor(JSON.parse(savedAuthor));
     }
-  }, []);
+  }, [isAdmin]);
 
   const filteredTakes = takes.filter((take) => {
     if (filter !== 'all' && take.status !== filter) return false;
@@ -230,8 +230,10 @@ const TakeBoard = () => {
           <h2 className="text-2xl font-bold text-white/90 mb-2">
             🎯 Take Board
           </h2>
-          <p className="text-white/60 mb-4 md:mb-0">QB predictions and hot takes</p>
-          
+          <p className="text-white/60 mb-4 md:mb-0">
+            QB predictions and hot takes
+          </p>
+
           {/* Mobile: Login/Add Button positioned near title */}
           <div className="md:hidden absolute top-0 right-0">
             {!author ? (
@@ -239,16 +241,14 @@ const TakeBoard = () => {
                 onClick={() => setShowAuthorModal(true)}
                 className="flex items-center gap-1 px-3 py-1.5 bg-blue-600/80 hover:bg-blue-700 rounded-lg text-white text-xs font-medium transition-all whitespace-nowrap"
               >
-                <Plus size={14} />
-                + Add Take
+                <Plus size={14} />+ Add Take
               </button>
             ) : (
               <button
                 onClick={() => setShowForm(!showForm)}
                 className="flex items-center gap-1 px-3 py-1.5 bg-blue-600/80 hover:bg-blue-700 rounded-lg text-white text-xs font-medium transition-all whitespace-nowrap"
               >
-                <Plus size={14} />
-                + Add Take
+                <Plus size={14} />+ Add Take
               </button>
             )}
           </div>
@@ -299,8 +299,8 @@ const TakeBoard = () => {
                   onClick={() => {
                     setAdminMode(false);
                     setAuthor(null);
-                    localStorage.removeItem('qbzero_admin');
                     localStorage.removeItem('takeAuthor');
+                    signOut();
                     toast.success('Logged out');
                   }}
                   className="px-3 py-2 bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 rounded-lg text-red-300 text-xs font-medium transition-all"
@@ -342,16 +342,14 @@ const TakeBoard = () => {
               }`}
             >
               <User size={14} className="text-white/60" />
-              <span className="text-white font-medium">
-                {author.name}
-              </span>
+              <span className="text-white font-medium">{author.name}</span>
               {adminMode && (
                 <span className="text-xs bg-purple-500/20 text-purple-300 px-2 py-1 rounded">
                   ADMIN
                 </span>
               )}
             </div>
-            
+
             <select
               value={viewingAuthorId || ''}
               onChange={(e) => setViewingAuthorId(e.target.value || null)}
@@ -362,7 +360,7 @@ const TakeBoard = () => {
             </select>
           </div>
         )}
-        
+
         {/* Mobile: Admin Button */}
         <div className="flex justify-center">
           {!author ? (
@@ -378,8 +376,8 @@ const TakeBoard = () => {
               onClick={() => {
                 setAdminMode(false);
                 setAuthor(null);
-                localStorage.removeItem('qbzero_admin');
                 localStorage.removeItem('takeAuthor');
+                signOut();
                 toast.success('Logged out');
               }}
               className="px-3 py-2 bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 rounded-lg text-red-300 text-sm font-medium transition-all"
@@ -552,7 +550,7 @@ const TakeBoard = () => {
               ⏳ Pending ({statusCounts.pending || 0})
             </button>
           </div>
-          
+
           {/* Mobile: Search bar separated */}
           <div className="flex justify-center">
             <div className="relative w-[280px]">
