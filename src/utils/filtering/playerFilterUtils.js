@@ -1,5 +1,6 @@
 import { expandPositionGroup } from '@/utils/roles';
 import { QB_TRAITS } from '@/constants/traits';
+import { QB_STATS } from '@/constants/stats';
 
 const runningProfileRank = {
   Elite: 6,
@@ -109,22 +110,14 @@ export function filterPlayers(players = [], filters) {
       return false;
     }
 
-    const passesStat = (key, min, max) => {
-      const val = parseFloat(p[key] ?? 0) * (key.includes('%') ? 100 : 1);
-      return val >= filters[`min_${min}`] && val <= filters[`max_${max}`];
+    // Percentages are stored either as 0-1 or as 0-100; normalize to 0-100.
+    const passesStat = ({ key, field, isPercent }) => {
+      const raw = parseFloat(p[field] ?? 0) || 0;
+      const val = isPercent && raw <= 1 ? raw * 100 : raw;
+      return val >= filters[`min_${key}`] && val <= filters[`max_${key}`];
     };
 
-    if (
-      !passesStat('PTS', 'PPG', 'PPG') ||
-      !passesStat('TRB', 'RPG', 'RPG') ||
-      !passesStat('AST', 'APG', 'APG') ||
-      !passesStat('FG%', 'FGP', 'FGP') ||
-      !passesStat('3P%', 'TPP', 'TPP') ||
-      !passesStat('FT%', 'FTP', 'FTP') ||
-      !passesStat('eFG%', 'eFGP', 'eFGP') ||
-      !passesStat('MP', 'MIN', 'MIN') ||
-      !passesStat('G', 'G', 'G')
-    ) {
+    if (!QB_STATS.every(passesStat)) {
       return false;
     }
 

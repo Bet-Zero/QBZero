@@ -5,6 +5,8 @@ import {
 } from '@/utils/filtering/playerFilterUtils';
 import { getDefaultPlayerFilters } from '@/utils/filtering/playerFilterDefaults';
 import { QB_TRAITS, emptyTraits } from '@/constants/traits';
+import { QB_STATS } from '@/constants/stats';
+import { statOptions } from '@/utils/filtering/statFilters';
 
 const qb = (overrides) => ({
   display_name: 'Test QB',
@@ -103,5 +105,72 @@ describe('filterPlayers — running profile', () => {
     );
 
     expect(order).toEqual(['Elite', 'Capable', 'Hesitant']);
+  });
+});
+
+describe('filterPlayers — stats', () => {
+  it('keeps players when no stat filter is narrowed', () => {
+    const starter = qb({
+      display_name: 'Starter',
+      CMP: 401,
+      ATT: 597,
+      YDS: 4183,
+      TD: 27,
+      INT: 14,
+      'CMP%': 67.2,
+      RTG: 93.5,
+      QBR: 62.1,
+    });
+
+    expect(
+      filterPlayers([starter, qb({})], getDefaultPlayerFilters())
+    ).toHaveLength(2);
+  });
+
+  it('narrows on a quarterback stat', () => {
+    // The filters gated on PTS/TRB/AST, which no quarterback carries, so any
+    // stat floor compared 0 against it and emptied the table.
+    const busy = qb({ display_name: 'Busy', YDS: 4183 });
+    const quiet = qb({ display_name: 'Quiet', YDS: 900 });
+
+    const matched = filterPlayers([busy, quiet], {
+      ...getDefaultPlayerFilters(),
+      min_YDS: 3000,
+    }).map((p) => p.display_name);
+
+    expect(matched).toEqual(['Busy']);
+  });
+
+  it('reads completion percentage stored either way', () => {
+    const asFraction = qb({ display_name: 'Fraction', 'CMP%': 0.672 });
+    const asPercent = qb({ display_name: 'Percent', 'CMP%': 67.2 });
+
+    const matched = filterPlayers([asFraction, asPercent], {
+      ...getDefaultPlayerFilters(),
+      min_CMPP: 65,
+    }).map((p) => p.display_name);
+
+    expect(matched).toEqual(['Fraction', 'Percent']);
+  });
+
+  it('defines a bound for every stat it gates on', () => {
+    const filters = getDefaultPlayerFilters();
+    QB_STATS.forEach((stat) => {
+      expect(filters[`min_${stat.key}`]).toBeTypeOf('number');
+      expect(filters[`max_${stat.key}`]).toBeTypeOf('number');
+    });
+  });
+
+  it('offers only quarterback stats in the filter UI', () => {
+    expect(statOptions.map((s) => s.label)).toEqual([
+      'CMP',
+      'ATT',
+      'YDS',
+      'TD',
+      'INT',
+      'CMP%',
+      'RTG',
+      'QBR',
+    ]);
   });
 });
