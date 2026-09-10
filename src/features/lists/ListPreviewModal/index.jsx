@@ -63,6 +63,7 @@ const ListPreviewModal = ({
 
   return (
     <div
+      role="presentation"
       className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-8 overflow-auto"
       onClick={onClose}
     >

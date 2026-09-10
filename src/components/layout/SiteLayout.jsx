@@ -1,5 +1,5 @@
 // SiteLayout.jsx
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, Outlet } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { ChevronDown, Menu, X, Lock } from 'lucide-react';
@@ -48,11 +48,22 @@ const NavGroup = ({ label, children, align = 'left', isMobile = false }) => {
 };
 
 const MobileMenu = ({ isOpen, onClose }) => {
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   return (
     <>
       <div
+        role="presentation"
         className="fixed inset-0 bg-black/50 z-40 lg:hidden"
         onClick={onClose}
       />

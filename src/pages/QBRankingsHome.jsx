@@ -225,28 +225,26 @@ const QBRankingsHome = () => {
 
                   {currentPersonal?.rankings?.length > 0 ? (
                     <div className="space-y-3 max-h-96 overflow-y-auto">
-                      {currentPersonal.rankings
-                        .slice(0, 10)
-                        .map((qb, index) => (
-                          <div
-                            key={qb.id}
-                            className="bg-white/5 rounded-lg p-3 flex items-center gap-3"
-                          >
-                            <div className="w-8 h-8 flex items-center justify-center bg-green-600/20 rounded-full font-bold text-green-400">
-                              {qb.rank}
-                            </div>
-                            <div className="flex-1">
-                              <div className="font-medium text-white">
-                                {qb.name}
-                              </div>
-                              {qb.team && (
-                                <div className="text-white/60 text-sm">
-                                  {qb.team}
-                                </div>
-                              )}
-                            </div>
+                      {currentPersonal.rankings.slice(0, 10).map((qb) => (
+                        <div
+                          key={qb.id}
+                          className="bg-white/5 rounded-lg p-3 flex items-center gap-3"
+                        >
+                          <div className="w-8 h-8 flex items-center justify-center bg-green-600/20 rounded-full font-bold text-green-400">
+                            {qb.rank}
                           </div>
-                        ))}
+                          <div className="flex-1">
+                            <div className="font-medium text-white">
+                              {qb.name}
+                            </div>
+                            {qb.team && (
+                              <div className="text-white/60 text-sm">
+                                {qb.team}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
                       {currentPersonal.rankings.length > 10 && (
                         <div className="text-center py-2">
                           <span className="text-white/60 text-sm">
@@ -356,9 +354,11 @@ const QBRankingsHome = () => {
                 {personalArchives.length > 0 ? (
                   <div className="space-y-2 max-h-96 overflow-y-auto overflow-x-hidden archive-scrollbar">
                     {personalArchives.map((archive) => (
-                      <div
+                      <button
                         key={archive.id}
-                        className={`p-3 rounded-lg border cursor-pointer transition-all transform hover:scale-[1.02] ${
+                        type="button"
+                        aria-pressed={selectedArchive?.id === archive.id}
+                        className={`w-full text-left p-3 rounded-lg border cursor-pointer transition-all transform hover:scale-[1.02] ${
                           selectedArchive?.id === archive.id
                             ? 'bg-blue-600/30 border-blue-400/70 shadow-lg'
                             : 'bg-white/5 border-white/10 hover:bg-white/15'
@@ -393,7 +393,7 @@ const QBRankingsHome = () => {
                             ? 'Viewing archive'
                             : 'Click to view →'}
                         </div>
-                      </div>
+                      </button>
                     ))}
                   </div>
                 ) : (

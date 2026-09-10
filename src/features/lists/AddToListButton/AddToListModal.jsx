@@ -1,5 +1,5 @@
 // AddToListModal.jsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useId, useState } from 'react';
 import { db } from '@/firebaseConfig';
 import {
   collection,
@@ -13,6 +13,7 @@ import { toast } from 'react-hot-toast';
 import { Toaster } from 'react-hot-toast';
 
 const AddToListModal = ({ player, onClose }) => {
+  const fieldId = useId();
   const [lists, setLists] = useState([]);
   const [selectedList, setSelectedList] = useState('');
   const [newListName, setNewListName] = useState('');
@@ -94,10 +95,14 @@ const AddToListModal = ({ player, onClose }) => {
 
         {lists.length > 0 && (
           <div className="mb-4">
-            <label className="text-white/60 text-sm mb-1 block">
+            <label
+              htmlFor={`${fieldId}-existing`}
+              className="text-white/60 text-sm mb-1 block"
+            >
               Select Existing List
             </label>
             <select
+              id={`${fieldId}-existing`}
               value={selectedList}
               onChange={(e) => setSelectedList(e.target.value)}
               className="w-full bg-neutral-800 text-white p-2 rounded border border-white/10"
@@ -113,10 +118,14 @@ const AddToListModal = ({ player, onClose }) => {
         )}
 
         <div className="mb-4">
-          <label className="text-white/60 text-sm mb-1 block">
+          <label
+            htmlFor={`${fieldId}-new`}
+            className="text-white/60 text-sm mb-1 block"
+          >
             Or Create New List
           </label>
           <input
+            id={`${fieldId}-new`}
             type="text"
             value={newListName}
             onChange={(e) => setNewListName(e.target.value)}

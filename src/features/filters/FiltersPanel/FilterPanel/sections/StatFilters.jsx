@@ -1,16 +1,20 @@
-import React, { useState } from 'react';
+import React, { useId, useState } from 'react';
 import { Plus, X } from 'lucide-react';
 import { statOptions, getActiveStatFilters } from '@/utils/filtering';
 
 const AddFilterForm = ({ newFilter, setNewFilter, onAdd }) => {
   const { stat, operator, value } = newFilter;
+  const fieldId = useId();
 
   return (
     <div className="bg-[#333] p-3 rounded mb-3">
       <div className="grid grid-cols-4 gap-2 text-xs">
         <div>
-          <label className="text-white mb-1 block">Stat</label>
+          <label htmlFor={`${fieldId}-stat`} className="text-white mb-1 block">
+            Stat
+          </label>
           <select
+            id={`${fieldId}-stat`}
             value={stat}
             onChange={(e) =>
               setNewFilter((prev) => ({ ...prev, stat: e.target.value }))
@@ -25,8 +29,14 @@ const AddFilterForm = ({ newFilter, setNewFilter, onAdd }) => {
           </select>
         </div>
         <div>
-          <label className="text-white mb-1 block">Condition</label>
+          <label
+            htmlFor={`${fieldId}-operator`}
+            className="text-white mb-1 block"
+          >
+            Condition
+          </label>
           <select
+            id={`${fieldId}-operator`}
             value={operator}
             onChange={(e) =>
               setNewFilter((prev) => ({ ...prev, operator: e.target.value }))
@@ -38,8 +48,11 @@ const AddFilterForm = ({ newFilter, setNewFilter, onAdd }) => {
           </select>
         </div>
         <div>
-          <label className="text-white mb-1 block">Value</label>
+          <label htmlFor={`${fieldId}-value`} className="text-white mb-1 block">
+            Value
+          </label>
           <input
+            id={`${fieldId}-value`}
             type="text"
             value={value}
             onChange={(e) =>

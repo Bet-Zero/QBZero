@@ -1,10 +1,10 @@
 // CreateRankingModal.jsx
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useId, useState } from 'react';
 import { createQBRanking } from '@/firebase/listHelpers';
 
 const CreateRankingModal = ({ isOpen, onClose, onCreated }) => {
   const [name, setName] = useState('');
+  const fieldId = useId();
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState('');
 
@@ -44,17 +44,20 @@ const CreateRankingModal = ({ isOpen, onClose, onCreated }) => {
 
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label className="block text-white/70 text-sm mb-2">
+            <label
+              htmlFor={`${fieldId}-name`}
+              className="block text-white/70 text-sm mb-2"
+            >
               Ranking Name
             </label>
             <input
+              id={`${fieldId}-name`}
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="w-full p-3 rounded bg-black border border-white/20 text-white placeholder-white/40 focus:border-blue-500 focus:outline-none"
               placeholder="e.g., 2025 QB Rankings, Dynasty Rankings..."
               disabled={isCreating}
-              autoFocus
             />
           </div>
 

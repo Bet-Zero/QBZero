@@ -57,13 +57,15 @@ const RunningProfileSelector = ({ value, onChange }) => {
         `;
 
         return (
-          <div
+          <button
             key={label}
+            type="button"
+            aria-pressed={isSelected}
             onClick={() => handleSelect(label)}
             className={classes}
           >
             {label}
-          </div>
+          </button>
         );
       })}
     </div>

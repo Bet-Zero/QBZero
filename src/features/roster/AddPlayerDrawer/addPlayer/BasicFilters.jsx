@@ -1,17 +1,25 @@
 // src/components/filters/sections/BasicFilters.jsx
-import React from 'react';
+import React, { useId } from 'react';
 import BadgeFilterSelect from '@/components/shared/ui/filters/BadgeFilterSelect';
 import { teamOptions } from '@/utils/filtering';
 import { runningProfileTiers } from '@/utils/roles';
 
 const BasicFilters = ({ filters, setFilters }) => {
+  const fieldId = useId();
+
   return (
     <div className="p-2 space-y-3">
       {/* First Filter Row (matches ContractFilters' FA Year + FA Type structure) */}
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="block mb-1 text-white/70 text-xs">Team</label>
+          <label
+            htmlFor={`${fieldId}-team`}
+            className="block mb-1 text-white/70 text-xs"
+          >
+            Team
+          </label>
           <select
+            id={`${fieldId}-team`}
             value={filters.team}
             onChange={(e) => setFilters({ ...filters, team: e.target.value })}
             className="w-full bg-[#2a2a2a] text-white px-2 py-1 rounded text-xs"
@@ -27,8 +35,14 @@ const BasicFilters = ({ filters, setFilters }) => {
       </div>
       {/* Running Profile Filter */}
       <div>
-        <label className="block mb-1 text-white/70 text-xs">Running</label>
+        <label
+          htmlFor={`${fieldId}-running`}
+          className="block mb-1 text-white/70 text-xs"
+        >
+          Running
+        </label>
         <select
+          id={`${fieldId}-running`}
           value={filters.runningProfile}
           onChange={(e) =>
             setFilters({ ...filters, runningProfile: e.target.value })

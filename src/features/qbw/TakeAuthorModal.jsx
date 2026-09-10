@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useId, useState } from 'react';
 import { X, User, Key } from 'lucide-react';
 import { createTakeAuthor, verifyTakeAuthor } from '@/firebase/takeAuthHelpers';
 
 const TakeAuthorModal = ({ onClose, onLogin, currentAuthor }) => {
   const [isNewUser, setIsNewUser] = useState(true);
+  const fieldId = useId();
   const [authorName, setAuthorName] = useState('');
   const [authorCode, setAuthorCode] = useState('');
   const [error, setError] = useState('');
@@ -128,7 +129,10 @@ const TakeAuthorModal = ({ onClose, onLogin, currentAuthor }) => {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-white/80 font-medium mb-2">
+                <label
+                  htmlFor={`${fieldId}-name`}
+                  className="block text-white/80 font-medium mb-2"
+                >
                   Your Name *
                 </label>
                 <div className="relative">
@@ -137,6 +141,7 @@ const TakeAuthorModal = ({ onClose, onLogin, currentAuthor }) => {
                     className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40"
                   />
                   <input
+                    id={`${fieldId}-name`}
                     type="text"
                     value={authorName}
                     onChange={(e) => setAuthorName(e.target.value)}
@@ -153,7 +158,10 @@ const TakeAuthorModal = ({ onClose, onLogin, currentAuthor }) => {
 
               {!isNewUser && (
                 <div>
-                  <label className="block text-white/80 font-medium mb-2">
+                  <label
+                    htmlFor={`${fieldId}-code`}
+                    className="block text-white/80 font-medium mb-2"
+                  >
                     Your Code *
                   </label>
                   <div className="relative">
@@ -162,6 +170,7 @@ const TakeAuthorModal = ({ onClose, onLogin, currentAuthor }) => {
                       className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40"
                     />
                     <input
+                      id={`${fieldId}-code`}
                       type="text"
                       value={authorCode}
                       onChange={(e) =>

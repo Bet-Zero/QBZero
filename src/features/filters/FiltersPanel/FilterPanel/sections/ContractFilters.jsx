@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useId, useState } from 'react';
 
 const ContractFilters = ({ filters, setFilters }) => {
+  const fieldId = useId();
   const [localMin, setLocalMin] = useState(filters.minSalary ?? '');
   const [localMax, setLocalMax] = useState(filters.maxSalary ?? '');
 
@@ -42,9 +43,9 @@ const ContractFilters = ({ filters, setFilters }) => {
       <div className="grid grid-cols-4 gap-x-4 gap-y-1 text-white text-sm">
         {/* Salary Range */}
         <div className="flex flex-col">
-          <label className="mb-1 text-white/50 text-[11px] uppercase tracking-wide">
+          <span className="mb-1 text-white/50 text-[11px] uppercase tracking-wide">
             Salary ($M)
-          </label>
+          </span>
           <div className="flex items-center gap-2">
             <input
               type="text"
@@ -70,10 +71,14 @@ const ContractFilters = ({ filters, setFilters }) => {
 
         {/* Free Agent Year */}
         <div className="flex flex-col">
-          <label className="mb-1 text-white/50 text-[11px] uppercase tracking-wide">
+          <label
+            htmlFor={`${fieldId}-fa-year`}
+            className="mb-1 text-white/50 text-[11px] uppercase tracking-wide"
+          >
             Free Agent Year
           </label>
           <select
+            id={`${fieldId}-fa-year`}
             value={filters.freeAgentYear ?? ''}
             onChange={(e) => update('freeAgentYear', e.target.value)}
             className="bg-[#2a2a2a] p-1 rounded"
@@ -89,10 +94,14 @@ const ContractFilters = ({ filters, setFilters }) => {
 
         {/* Free Agent Type */}
         <div className="flex flex-col">
-          <label className="mb-1 text-white/50 text-[11px] uppercase tracking-wide">
+          <label
+            htmlFor={`${fieldId}-fa-type`}
+            className="mb-1 text-white/50 text-[11px] uppercase tracking-wide"
+          >
             Free Agent Type
           </label>
           <select
+            id={`${fieldId}-fa-type`}
             value={filters.freeAgentType ?? ''}
             onChange={(e) => update('freeAgentType', e.target.value)}
             className="bg-[#2a2a2a] p-1 rounded"

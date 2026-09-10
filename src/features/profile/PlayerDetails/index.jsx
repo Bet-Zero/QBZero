@@ -5,12 +5,14 @@ import PlayerTraitsGrid from './PlayerTraitsGrid';
 import PlayerRolesSection from './PlayerRolesSection';
 import BadgeSelector from './BadgeSelector';
 import OverallBlurbBox from './OverallBlurbBox';
+import PlayerStatusSelect from './PlayerStatusSelect';
 
 const PlayerDetails = ({
   player,
   selectedPlayer,
   traits,
   onTraitChange,
+  onTraitSet,
   roles,
   onRoleChange,
   subRoles,
@@ -23,15 +25,21 @@ const PlayerDetails = ({
   onBlurbChange,
   overallGrade,
   setOverallGrade,
+  status,
+  setStatus,
   setOpenModal,
 }) => (
   <>
     <PlayerHeader player={player} selectedPlayer={selectedPlayer} />
+    <div className="w-full max-w-[750px] flex justify-end mb-2">
+      <PlayerStatusSelect status={status} onChange={setStatus} />
+    </div>
     <PlayerStatsTable player={player} />
     <div className="flex gap-[1.25rem] w-full max-w-[750px]">
       <PlayerTraitsGrid
         traits={traits}
         onTraitClick={onTraitChange}
+        onTraitSet={onTraitSet}
         setOpenModal={setOpenModal}
       />
       <PlayerRolesSection

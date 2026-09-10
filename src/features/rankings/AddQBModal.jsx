@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useId, useState } from 'react';
 import {
   X,
   User,
@@ -13,6 +13,7 @@ import { TEAM_LOGO_MAP as teamLogoMap } from '@/utils/formatting/teamLogos';
 
 const AddQBModal = ({ onClose, onAdd, existingQBNames = [] }) => {
   const { roster } = useQBRoster();
+  const fieldId = useId();
   const [showQBPool, setShowQBPool] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [formData, setFormData] = useState({
@@ -148,10 +149,14 @@ const AddQBModal = ({ onClose, onAdd, existingQBNames = [] }) => {
             <form onSubmit={handleSubmit} className="p-6 space-y-6">
               {/* QB Name */}
               <div>
-                <label className="block text-white/80 font-medium mb-2">
+                <label
+                  htmlFor={`${fieldId}-name`}
+                  className="block text-white/80 font-medium mb-2"
+                >
                   QB Name *
                 </label>
                 <input
+                  id={`${fieldId}-name`}
                   type="text"
                   value={formData.name}
                   onChange={(e) => handleInputChange('name', e.target.value)}
@@ -182,10 +187,14 @@ const AddQBModal = ({ onClose, onAdd, existingQBNames = [] }) => {
 
               {/* Team */}
               <div>
-                <label className="block text-white/80 font-medium mb-2">
+                <label
+                  htmlFor={`${fieldId}-team`}
+                  className="block text-white/80 font-medium mb-2"
+                >
                   Team (Optional)
                 </label>
                 <input
+                  id={`${fieldId}-team`}
                   type="text"
                   value={formData.team}
                   onChange={(e) =>
@@ -199,11 +208,15 @@ const AddQBModal = ({ onClose, onAdd, existingQBNames = [] }) => {
 
               {/* Image URL */}
               <div>
-                <label className="flex items-center gap-2 text-white/80 font-medium mb-2">
+                <label
+                  htmlFor={`${fieldId}-image`}
+                  className="flex items-center gap-2 text-white/80 font-medium mb-2"
+                >
                   <Camera size={16} />
                   Image URL (Optional)
                 </label>
                 <input
+                  id={`${fieldId}-image`}
                   type="url"
                   value={formData.imageUrl}
                   onChange={(e) =>
@@ -219,11 +232,15 @@ const AddQBModal = ({ onClose, onAdd, existingQBNames = [] }) => {
 
               {/* Notes */}
               <div>
-                <label className="flex items-center gap-2 text-white/80 font-medium mb-2">
+                <label
+                  htmlFor={`${fieldId}-notes`}
+                  className="flex items-center gap-2 text-white/80 font-medium mb-2"
+                >
                   <FileText size={16} />
                   Notes (Optional)
                 </label>
                 <textarea
+                  id={`${fieldId}-notes`}
                   value={formData.notes}
                   onChange={(e) => handleInputChange('notes', e.target.value)}
                   placeholder="Add your thoughts about this QB..."

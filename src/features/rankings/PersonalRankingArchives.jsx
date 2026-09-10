@@ -106,7 +106,7 @@ const PersonalRankingArchives = ({ onClose, onLoadArchive }) => {
           {/* Archive Content */}
           <div className="p-6 overflow-y-auto h-[calc(100%-120px)]">
             <div className="space-y-4">
-              {viewingArchive.rankings?.map((qb, index) => (
+              {viewingArchive.rankings?.map((qb) => (
                 <QBRankingCard
                   key={qb.id}
                   qb={qb}
@@ -224,7 +224,7 @@ const PersonalRankingArchives = ({ onClose, onLoadArchive }) => {
                           Quick Preview:
                         </div>
                         <div className="space-y-2 max-h-40 overflow-y-auto">
-                          {archive.rankings?.slice(0, 5).map((qb, qbIndex) => (
+                          {archive.rankings?.slice(0, 5).map((qb) => (
                             <div
                               key={qb.id}
                               className="flex items-center gap-3 text-sm"

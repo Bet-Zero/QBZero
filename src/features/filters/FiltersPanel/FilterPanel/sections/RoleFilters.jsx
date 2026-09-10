@@ -116,8 +116,12 @@ const SubroleMenu = ({ show, toggleShow, filters, onToggleRole, menuRef }) => (
             <div className="grid grid-cols-1 gap-1">
               {SubRoleMasterList.filter((r) => r.group === group).map(
                 (role) => (
-                  <div
+                  <button
                     key={role.name}
+                    type="button"
+                    aria-pressed={(filters.subRoles?.offense || []).includes(
+                      role.name
+                    )}
                     onClick={() => onToggleRole(role.name)}
                     className={`flex items-center justify-between px-3 py-1 rounded cursor-pointer text-sm ${
                       (filters.subRoles?.offense || []).includes(role.name)
@@ -133,7 +137,7 @@ const SubroleMenu = ({ show, toggleShow, filters, onToggleRole, menuRef }) => (
                     <span className="text-xs opacity-70">
                       {role.isPositive ? '✓' : '✗'}
                     </span>
-                  </div>
+                  </button>
                 )
               )}
             </div>

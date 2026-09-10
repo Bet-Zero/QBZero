@@ -64,10 +64,19 @@ const PlayerRowMini = ({ player, onClick }) => {
           {position}
         </div>
 
-        {/* Chevron Icon – now using <div role="button"> to avoid nesting inside button */}
+        {/* Cannot be a <button>: it sits inside one. Given the role it also
+            needs to be focusable and respond to Enter/Space. */}
         <div
           role="button"
+          tabIndex={0}
+          aria-label={isExpanded ? 'Collapse details' : 'Expand details'}
           onClick={handleChevronClick}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              handleChevronClick(e);
+            }
+          }}
           className="absolute bottom-1 right-2 p-1 text-white/30 hover:text-white/60 transition-colors cursor-pointer"
         >
           {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}

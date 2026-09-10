@@ -19,6 +19,7 @@ const buildPlayerUpdate = ({
   badges,
   runningProfile,
   overallGrade,
+  status,
   blurbs,
 }) => ({
   player_id: player.player_id ?? player.id,
@@ -30,6 +31,7 @@ const buildPlayerUpdate = ({
   badges,
   runningProfile,
   overall_grade: overallGrade,
+  status,
   blurbs,
 });
 
@@ -42,6 +44,7 @@ const useAutoSavePlayer = ({
   badges,
   runningProfile,
   overallGrade,
+  status,
   blurbs,
   hasChanges,
   setHasChanges,
@@ -63,6 +66,7 @@ const useAutoSavePlayer = ({
             badges,
             runningProfile,
             overallGrade,
+            status,
             blurbs,
           })
         );
@@ -90,6 +94,7 @@ const useAutoSavePlayer = ({
     badges,
     runningProfile,
     overallGrade,
+    status,
     blurbs,
     hasChanges,
     setHasChanges,

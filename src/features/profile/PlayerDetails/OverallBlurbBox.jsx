@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useId } from 'react';
 import OverallGradeBlock from '@/components/shared/ui/grades/OverallGradeBlock';
 
 const OverallBlurbBox = ({
@@ -7,12 +7,16 @@ const OverallBlurbBox = ({
   overallGrade,
   setOverallGrade,
 }) => {
+  const fieldId = useId();
   return (
     <div className="w-full max-w-[750px] bg-neutral-800 rounded-xl p-4 flex flex-col gap-3">
-      <label className="text-white text-sm mb-1">Overall</label>
+      <label htmlFor={`${fieldId}-overall`} className="text-white text-sm mb-1">
+        Overall
+      </label>
 
       <div className="flex w-full gap-4">
         <textarea
+          id={`${fieldId}-overall`}
           value={overallBlurb}
           onChange={(e) => setOverallBlurb(e.target.value)}
           placeholder="Write your overall scouting summary..."
@@ -20,9 +24,7 @@ const OverallBlurbBox = ({
         />
 
         <div className="flex flex-col items-center pr-1 -mt-6">
-          <label className="text-white text-sm mb-[4px] text-center">
-            Grade
-          </label>
+          <span className="text-white text-sm mb-[4px] text-center">Grade</span>
           <OverallGradeBlock
             grade={overallGrade}
             onGradeChange={(val) => {

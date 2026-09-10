@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useId } from 'react';
 
 const OverallGradeFilter = ({ filters, setFilters }) => {
+  const fieldId = useId();
   const min = filters.min_overall_grade ?? '';
   const max = filters.max_overall_grade ?? '';
 
@@ -21,10 +22,14 @@ const OverallGradeFilter = ({ filters, setFilters }) => {
       <h2 className="text-white text-sm font-bold mb-3">Overall Grade</h2>
       <div className="flex gap-x-2 items-end text-xs">
         <div className="flex flex-col">
-          <label className="text-white mb-1 text-[11px] tracking-wide uppercase">
+          <label
+            htmlFor={`${fieldId}-min`}
+            className="text-white mb-1 text-[11px] tracking-wide uppercase"
+          >
             Min
           </label>
           <input
+            id={`${fieldId}-min`}
             type="text"
             inputMode="numeric"
             pattern="[0-9]*"
@@ -36,10 +41,14 @@ const OverallGradeFilter = ({ filters, setFilters }) => {
         </div>
         <div className="text-white/50 text-[11px] mb-1 pt-3">to</div>
         <div className="flex flex-col">
-          <label className="text-white mb-1 text-[11px] tracking-wide uppercase">
+          <label
+            htmlFor={`${fieldId}-max`}
+            className="text-white mb-1 text-[11px] tracking-wide uppercase"
+          >
             Max
           </label>
           <input
+            id={`${fieldId}-max`}
             type="text"
             inputMode="numeric"
             pattern="[0-9]*"
