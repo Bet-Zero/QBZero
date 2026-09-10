@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useId, useState } from 'react';
 import { Plus, X } from 'lucide-react';
 import { QB_TRAITS } from '@/constants/traits';
 
@@ -12,6 +12,7 @@ const TraitFilters = ({ filters, setFilters }) => {
   });
 
   const traitOptions = QB_TRAITS;
+  const fieldId = useId();
 
   const getActiveTraitFilters = () => {
     const activeFilters = [];
@@ -90,8 +91,14 @@ const TraitFilters = ({ filters, setFilters }) => {
         <div className="bg-[#333] p-3 rounded mb-3">
           <div className="grid grid-cols-4 gap-2 text-xs">
             <div>
-              <label className="text-white mb-1 block">Trait</label>
+              <label
+                htmlFor={`${fieldId}-trait`}
+                className="text-white mb-1 block"
+              >
+                Trait
+              </label>
               <select
+                id={`${fieldId}-trait`}
                 value={newFilter.trait}
                 onChange={(e) =>
                   setNewFilter((prev) => ({ ...prev, trait: e.target.value }))
@@ -106,8 +113,14 @@ const TraitFilters = ({ filters, setFilters }) => {
               </select>
             </div>
             <div>
-              <label className="text-white mb-1 block">Condition</label>
+              <label
+                htmlFor={`${fieldId}-operator`}
+                className="text-white mb-1 block"
+              >
+                Condition
+              </label>
               <select
+                id={`${fieldId}-operator`}
                 value={newFilter.operator}
                 onChange={(e) =>
                   setNewFilter((prev) => ({
@@ -122,8 +135,14 @@ const TraitFilters = ({ filters, setFilters }) => {
               </select>
             </div>
             <div>
-              <label className="text-white mb-1 block">Grade</label>
+              <label
+                htmlFor={`${fieldId}-grade`}
+                className="text-white mb-1 block"
+              >
+                Grade
+              </label>
               <input
+                id={`${fieldId}-grade`}
                 type="number"
                 value={newFilter.value}
                 onChange={(e) =>

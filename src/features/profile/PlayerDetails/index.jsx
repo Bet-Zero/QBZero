@@ -12,6 +12,7 @@ const PlayerDetails = ({
   selectedPlayer,
   traits,
   onTraitChange,
+  onTraitSet,
   roles,
   onRoleChange,
   subRoles,
@@ -38,6 +39,7 @@ const PlayerDetails = ({
       <PlayerTraitsGrid
         traits={traits}
         onTraitClick={onTraitChange}
+        onTraitSet={onTraitSet}
         setOpenModal={setOpenModal}
       />
       <PlayerRolesSection

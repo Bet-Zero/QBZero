@@ -165,7 +165,7 @@ const BrowseRankingsPage = () => {
 
                 {currentPersonal?.rankings?.length > 0 ? (
                   <div className="space-y-3 max-h-96 overflow-y-auto">
-                    {currentPersonal.rankings.slice(0, 10).map((qb, index) => (
+                    {currentPersonal.rankings.slice(0, 10).map((qb) => (
                       <div
                         key={qb.id}
                         className="bg-white/5 rounded-lg p-3 flex items-center gap-3"
@@ -217,9 +217,10 @@ const BrowseRankingsPage = () => {
               {otherRankings.length > 0 ? (
                 <div className="space-y-2">
                   {otherRankings.slice(0, 5).map((ranking) => (
-                    <div
+                    <button
                       key={ranking.id}
-                      className="p-3 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 cursor-pointer transition-all"
+                      type="button"
+                      className="w-full text-left p-3 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 cursor-pointer transition-all"
                       onClick={() => navigate(`/rankings/other/${ranking.id}`)}
                     >
                       <div className="text-white font-medium text-sm">
@@ -232,7 +233,7 @@ const BrowseRankingsPage = () => {
                             ranking.createdAt?.toDate?.()?.toISOString()
                         )}
                       </div>
-                    </div>
+                    </button>
                   ))}
                   {otherRankings.length > 5 && (
                     <button
@@ -270,9 +271,11 @@ const BrowseRankingsPage = () => {
               {personalArchives.length > 0 ? (
                 <div className="space-y-2 max-h-96 overflow-y-auto overflow-x-hidden archive-scrollbar">
                   {personalArchives.map((archive) => (
-                    <div
+                    <button
                       key={archive.id}
-                      className={`p-3 rounded-lg border cursor-pointer transition-all transform hover:scale-[1.02] ${
+                      type="button"
+                      aria-pressed={selectedArchive?.id === archive.id}
+                      className={`w-full text-left p-3 rounded-lg border cursor-pointer transition-all transform hover:scale-[1.02] ${
                         selectedArchive?.id === archive.id
                           ? 'bg-blue-600/30 border-blue-400/70 shadow-lg'
                           : 'bg-white/5 border-white/10 hover:bg-white/15'
@@ -307,7 +310,7 @@ const BrowseRankingsPage = () => {
                           ? 'Viewing archive'
                           : 'Click to view →'}
                       </div>
-                    </div>
+                    </button>
                   ))}
                 </div>
               ) : (

@@ -129,6 +129,11 @@ const PlayerProfileView = () => {
     setHasChanges(true);
   };
 
+  const handleTraitSet = (trait, value) => {
+    setTraits((prev) => ({ ...prev, [trait]: value }));
+    setHasChanges(true);
+  };
+
   const handleRoleChange = (key, value) => {
     setRoles((prev) => ({ ...prev, [key]: value }));
     setHasChanges(true);
@@ -202,6 +207,7 @@ const PlayerProfileView = () => {
             selectedPlayer={selectedPlayer}
             traits={traits}
             onTraitChange={handleTraitChange}
+            onTraitSet={handleTraitSet}
             roles={roles}
             onRoleChange={handleRoleChange}
             subRoles={subRoles}

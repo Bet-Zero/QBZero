@@ -92,6 +92,7 @@ const ListSearchBar = ({
         (listResults.length > 0 || playerResults.length > 0) && (
           <>
             <div
+              role="presentation"
               className="fixed inset-0 z-[1000] bg-black/40"
               onClick={() => setShowSuggestions(false)}
             />
@@ -102,13 +103,14 @@ const ListSearchBar = ({
                     Lists
                   </div>
                   {listResults.map((id) => (
-                    <div
+                    <button
                       key={`list-${id}`}
-                      className="px-2 py-1 text-white hover:bg-neutral-700 cursor-pointer"
+                      type="button"
+                      className="w-full text-left px-2 py-1 text-white hover:bg-neutral-700 cursor-pointer"
                       onClick={() => handleSelect(id)}
                     >
                       {listsData[id]?.name || id}
-                    </div>
+                    </button>
                   ))}
                 </>
               )}
@@ -126,13 +128,14 @@ const ListSearchBar = ({
                         {player.name}
                       </div>
                       {player.lists.map((lid) => (
-                        <div
+                        <button
                           key={lid}
-                          className="ml-2 px-2 py-1 hover:bg-neutral-700 cursor-pointer"
+                          type="button"
+                          className="w-full text-left ml-2 px-2 py-1 hover:bg-neutral-700 cursor-pointer"
                           onClick={() => handleSelect(lid)}
                         >
                           {listsData[lid]?.name || lid}
-                        </div>
+                        </button>
                       ))}
                     </div>
                   ))}

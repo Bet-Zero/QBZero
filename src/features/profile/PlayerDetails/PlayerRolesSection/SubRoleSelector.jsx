@@ -61,30 +61,34 @@ const RoleGroup = ({ group, selected, onToggle }) => {
       <div className="flex gap-4">
         <div className="w-1/2">
           {positiveRoles.map((role) => (
-            <div
+            <button
               key={role.name}
-              className={`flex items-center px-3 py-1 mb-1 rounded cursor-pointer text-[11px] ${
+              type="button"
+              aria-pressed={selected.includes(role.name)}
+              className={`w-full text-left flex items-center px-3 py-1 mb-1 rounded cursor-pointer text-[11px] ${
                 selected.includes(role.name) ? 'bg-gray-700' : 'bg-neutral-800'
               }`}
               onClick={() => onToggle(role.name)}
             >
               <span className="text-green-500 mr-2">✓</span>
               {role.name}
-            </div>
+            </button>
           ))}
         </div>
         <div className="w-1/2">
           {negativeRoles.map((role) => (
-            <div
+            <button
               key={role.name}
-              className={`flex items-center px-3 py-1 mb-1 rounded cursor-pointer text-[11px] ${
+              type="button"
+              aria-pressed={selected.includes(role.name)}
+              className={`w-full text-left flex items-center px-3 py-1 mb-1 rounded cursor-pointer text-[11px] ${
                 selected.includes(role.name) ? 'bg-gray-700' : 'bg-neutral-800'
               }`}
               onClick={() => onToggle(role.name)}
             >
               <span className="text-red-500 mr-2">✗</span>
               {role.name}
-            </div>
+            </button>
           ))}
         </div>
       </div>
@@ -178,7 +182,19 @@ const SubRoleSelector = ({ subRoles = {}, setSubRoles, setOpenModal }) => {
   const handleEdit = (role) => setOpenModal?.(`trait_${role}`);
 
   return (
-    <div className="w-full cursor-pointer" onClick={handleOpen}>
+    <div
+      role="button"
+      tabIndex={0}
+      aria-label="Edit subroles"
+      className="w-full cursor-pointer"
+      onClick={handleOpen}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleOpen();
+        }
+      }}
+    >
       <div className="h-20 rounded-lg -mt-1.5">
         <SelectedRoleList roles={safeSubRoles.offense} onEdit={handleEdit} />
       </div>

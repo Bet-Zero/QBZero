@@ -44,12 +44,14 @@ const PlayerSearchBar = ({ playersData, onSelect }) => {
       {results.length > 0 && (
         <ul className="absolute z-10 mt-1 w-full bg-neutral-800 border border-black rounded-md max-h-52 overflow-y-auto">
           {results.map((id) => (
-            <li
-              key={id}
-              className="px-2 py-1 text-white hover:bg-neutral-700 cursor-pointer text-sm"
-              onClick={() => handleSelect(id)}
-            >
-              {playersData[id]?.display_name || playersData[id]?.name || id}
+            <li key={id}>
+              <button
+                type="button"
+                className="w-full text-left px-2 py-1 text-white hover:bg-neutral-700 cursor-pointer text-sm"
+                onClick={() => handleSelect(id)}
+              >
+                {playersData[id]?.display_name || playersData[id]?.name || id}
+              </button>
             </li>
           ))}
         </ul>

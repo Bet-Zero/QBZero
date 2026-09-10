@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 const getTraitColor = (rating) => {
   if (rating >= 98) return '#13895b';
@@ -18,6 +18,7 @@ const getTraitColor = (rating) => {
 };
 
 const OverallGradeBlock = ({ grade, onGradeChange, readOnly = false }) => {
+  const inputRef = useRef(null);
   const [isEditing, setIsEditing] = useState(false);
   const [inputValue, setInputValue] = useState(
     typeof grade === 'number' ? grade.toString() : ''
@@ -26,6 +27,12 @@ const OverallGradeBlock = ({ grade, onGradeChange, readOnly = false }) => {
   useEffect(() => {
     setInputValue(typeof grade === 'number' ? grade.toString() : '');
   }, [grade]);
+
+  // Replaces autoFocus, which fired on mount and could pull focus away from
+  // someone tabbing through the page. This only focuses on entering edit mode.
+  useEffect(() => {
+    if (isEditing) inputRef.current?.focus();
+  }, [isEditing]);
 
   const color =
     typeof grade === 'number' ? getTraitColor(grade) : 'transparent';
@@ -55,7 +62,7 @@ const OverallGradeBlock = ({ grade, onGradeChange, readOnly = false }) => {
 
   return isEditing ? (
     <input
-      autoFocus
+      ref={inputRef}
       type="number"
       min={0}
       max={100}
@@ -69,16 +76,18 @@ const OverallGradeBlock = ({ grade, onGradeChange, readOnly = false }) => {
       className="w-[84px] h-[60px] rounded-md border-2 border-black text-center text-lg font-bold bg-neutral-800 text-white outline-none"
     />
   ) : (
-    <div
+    <button
+      type="button"
       onClick={() => setIsEditing(true)}
       className="w-[84px] h-[60px] rounded-md border-2 border-black flex items-center justify-center cursor-pointer"
       style={{ backgroundColor: color }}
       title="Click to edit"
+      aria-label={`Overall grade ${rounded}. Activate to edit.`}
     >
       <span className="text-black text-lg font-bold leading-none">
         {rounded}
       </span>
-    </div>
+    </button>
   );
 };
 

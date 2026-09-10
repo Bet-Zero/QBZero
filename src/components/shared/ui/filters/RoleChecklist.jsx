@@ -11,8 +11,10 @@ const RoleChecklist = ({
     {roles.map((role) => {
       const isSelected = (selected[role.type] || []).includes(role.name);
       return (
-        <div
+        <button
           key={role.name}
+          type="button"
+          aria-pressed={isSelected}
           onClick={() => onToggle(role.name)}
           className={`flex items-center justify-between px-2 py-1 rounded cursor-pointer text-xs ${
             isSelected
@@ -28,7 +30,7 @@ const RoleChecklist = ({
           <span className="text-xs opacity-70">
             {role.isPositive ? '✓' : '✗'}
           </span>
-        </div>
+        </button>
       );
     })}
   </div>

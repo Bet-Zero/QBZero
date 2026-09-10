@@ -22,7 +22,17 @@ const getTraitColor = (rating) => {
   return '#891313';
 };
 
-const PlayerTraitsGrid = ({ traits, onTraitClick, setOpenModal }) => {
+// Each bar is a slider: clicking sets the grade from the horizontal position.
+// It cannot be a <button> because it contains one (the blurb note), so it
+// carries the slider role and its own key handling instead.
+const clampGrade = (value) => Math.max(0, Math.min(100, value));
+
+const PlayerTraitsGrid = ({
+  traits,
+  onTraitClick,
+  onTraitSet,
+  setOpenModal,
+}) => {
   return (
     <div
       className="bg-[#1f1f1f] rounded-2xl shadow-lg px-3 py-4 text-white text-sm font-medium flex flex-col gap-3 justify-center"
@@ -37,12 +47,36 @@ const PlayerTraitsGrid = ({ traits, onTraitClick, setOpenModal }) => {
         return (
           <div
             key={trait}
+            role="slider"
+            tabIndex={0}
+            aria-label={`${trait} grade`}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={isUngraded ? 0 : value}
+            aria-valuetext={isUngraded ? 'Not graded' : String(value)}
             className={`flex items-center justify-between text-base font-bold px-5 h-11 rounded-full cursor-pointer text-black transition-all ${borderClass}`}
             style={{
               backgroundColor: color,
               boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.1)',
             }}
             onClick={(e) => onTraitClick(e, trait)}
+            onKeyDown={(e) => {
+              const current = isUngraded ? 0 : value;
+              const step = e.shiftKey ? 10 : 1;
+              if (e.key === 'ArrowRight' || e.key === 'ArrowUp') {
+                e.preventDefault();
+                onTraitSet(trait, clampGrade(current + step));
+              } else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
+                e.preventDefault();
+                onTraitSet(trait, clampGrade(current - step));
+              } else if (e.key === 'Home') {
+                e.preventDefault();
+                onTraitSet(trait, 0);
+              } else if (e.key === 'End') {
+                e.preventDefault();
+                onTraitSet(trait, 100);
+              }
+            }}
           >
             <div className="flex items-center gap-2">
               <span>{trait}</span>

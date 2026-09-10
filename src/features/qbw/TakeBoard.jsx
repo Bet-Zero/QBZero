@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useId, useState, useEffect, useMemo } from 'react';
 import {
   CheckCircle,
   XCircle,
@@ -84,6 +84,7 @@ const TakeCard = ({ take }) => {
 const TakeBoard = () => {
   const { isAdmin, signOut } = useAuth();
   const { roster } = useQBRoster();
+  const fieldId = useId();
   const [takes, setTakes] = useState([]);
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
@@ -394,10 +395,14 @@ const TakeBoard = () => {
         <div className="bg-[#1a1a1a] rounded-xl border border-white/20 p-6">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-white/80 font-medium mb-2">
+              <label
+                htmlFor={`${fieldId}-title`}
+                className="block text-white/80 font-medium mb-2"
+              >
                 Take Title *
               </label>
               <input
+                id={`${fieldId}-title`}
                 type="text"
                 value={formData.title}
                 onChange={(e) =>
@@ -410,10 +415,14 @@ const TakeBoard = () => {
             </div>
 
             <div>
-              <label className="block text-white/80 font-medium mb-2">
+              <label
+                htmlFor={`${fieldId}-description`}
+                className="block text-white/80 font-medium mb-2"
+              >
                 Description *
               </label>
               <textarea
+                id={`${fieldId}-description`}
                 value={formData.description}
                 onChange={(e) =>
                   setFormData((prev) => ({
@@ -430,11 +439,15 @@ const TakeBoard = () => {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-white/80 font-medium mb-2">
+                <label
+                  htmlFor={`${fieldId}-qb`}
+                  className="block text-white/80 font-medium mb-2"
+                >
                   QB Name *
                 </label>
                 <div className="relative">
                   <input
+                    id={`${fieldId}-qb`}
                     type="text"
                     value={qbSearch}
                     onChange={(e) => setQbSearch(e.target.value)}
@@ -465,10 +478,14 @@ const TakeBoard = () => {
               </div>
 
               <div>
-                <label className="block text-white/80 font-medium mb-2">
+                <label
+                  htmlFor={`${fieldId}-status`}
+                  className="block text-white/80 font-medium mb-2"
+                >
                   Status *
                 </label>
                 <select
+                  id={`${fieldId}-status`}
                   value={formData.status}
                   onChange={(e) =>
                     setFormData((prev) => ({ ...prev, status: e.target.value }))
@@ -484,10 +501,14 @@ const TakeBoard = () => {
             </div>
 
             <div>
-              <label className="block text-white/80 font-medium mb-2">
+              <label
+                htmlFor={`${fieldId}-proof`}
+                className="block text-white/80 font-medium mb-2"
+              >
                 Proof Date
               </label>
               <input
+                id={`${fieldId}-proof`}
                 type="text"
                 value={formData.proofDate}
                 onChange={(e) =>

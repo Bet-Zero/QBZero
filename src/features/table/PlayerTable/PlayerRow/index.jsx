@@ -143,12 +143,15 @@ const PlayerRow = ({ player }) => {
         </div>
 
         {/* Expand Toggle */}
-        <div
+        <button
+          type="button"
+          aria-expanded={isExpanded}
+          aria-label={isExpanded ? 'Collapse player' : 'Expand player'}
           className="absolute bottom-0 right-0 cursor-pointer text-white/20 hover:text-white transition"
           onClick={() => setIsExpanded(!isExpanded)}
         >
           {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={16} />}
-        </div>
+        </button>
       </div>
 
       {/* Drawer */}
