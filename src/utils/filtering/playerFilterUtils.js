@@ -1,5 +1,5 @@
-import { expandPositionGroup } from '@/utils/roles';
 import { QB_TRAITS } from '@/constants/traits';
+import { teamAbbrFor } from '@/constants/teamList';
 import { QB_STATS } from '@/constants/stats';
 
 const runningProfileRank = {
@@ -21,7 +21,6 @@ const normalizeProfile = (profile) =>
 
 export function filterPlayers(players = [], filters) {
   if (!players) return [];
-  const selectedPositions = expandPositionGroup(filters.position);
 
   return players.filter((p) => {
     if (filters.nameSearch) {
@@ -30,14 +29,12 @@ export function filterPlayers(players = [], filters) {
       if (!playerName.includes(searchTerm)) return false;
     }
 
+    // The dropdown is keyed by team id ('cardinals'); records store the
+    // abbreviation ('ARI'). Comparing them directly matched nothing, ever.
     if (
       filters.team &&
-      (p.bio?.Team || '').toLowerCase() !== filters.team.toLowerCase()
+      (p.bio?.Team || '').toUpperCase() !== teamAbbrFor(filters.team)
     ) {
-      return false;
-    }
-
-    if (filters.position && !selectedPositions.includes(p.formattedPosition)) {
       return false;
     }
 

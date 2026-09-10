@@ -1,7 +1,7 @@
 // src/components/roster/AddPlayerDrawer.jsx
 import React, { useState, useMemo } from 'react';
 import PlayerRowMini from './PlayerRowMini';
-import { expandPositionGroup } from '@/utils/roles';
+import { teamAbbrFor } from '@/constants/teamList';
 import { getDefaultAddPlayerFilters } from '@/utils/filtering';
 import DrawerHeader from './addPlayer/DrawerHeader';
 import PlayerSearchBar from './addPlayer/PlayerSearchBar';
@@ -16,7 +16,6 @@ const AddPlayerDrawer = ({ onClose, allPlayers, onSelect }) => {
     const searchTerm = search.toLowerCase();
     const {
       team,
-      position,
       runningProfile,
       offenseRole,
       subRoles,
@@ -27,14 +26,10 @@ const AddPlayerDrawer = ({ onClose, allPlayers, onSelect }) => {
       freeAgentType,
     } = filters;
 
-    const positionOptions = position ? expandPositionGroup(position) : null;
-
     return allPlayers
       .filter((p) => {
         if (searchTerm && !p.name.includes(searchTerm)) return false;
-        const playerTeamId = (p.team || '').toLowerCase().replace(/\s+/g, '');
-        if (team && playerTeamId !== team) return false;
-        if (positionOptions && !positionOptions.includes(p.position))
+        if (team && (p.team || '').toUpperCase() !== teamAbbrFor(team))
           return false;
         if (
           offenseRole &&

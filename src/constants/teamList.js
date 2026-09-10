@@ -1,4 +1,14 @@
-export const TeamListFull = [
+import { TEAM_LOGO_MAP } from '@/utils/formatting/teamLogos';
+
+// TEAM_LOGO_MAP is keyed by abbreviation and valued by the nickname each team
+// uses as its id here, so invert it rather than writing the pairing out twice.
+const ABBR_BY_ID = Object.fromEntries(
+  Object.entries(TEAM_LOGO_MAP)
+    .filter(([key]) => /^[A-Z]{2,3}$/.test(key))
+    .map(([abbr, nickname]) => [nickname, abbr])
+);
+
+const TEAMS = [
   {
     id: 'cardinals',
     teamName: 'Arizona Cardinals',
@@ -193,4 +203,17 @@ export const TeamListFull = [
   },
 ];
 
+// Player records store the abbreviation (bio.Team is 'ARI'), while the filter
+// dropdowns are keyed by id ('cardinals'). Carrying both lets the two meet.
+export const TeamListFull = TEAMS.map((team) => ({
+  ...team,
+  abbr: ABBR_BY_ID[team.id],
+}));
+
 export const TeamMap = Object.fromEntries(TeamListFull.map((t) => [t.id, t]));
+
+// Accepts either an id ('cardinals') or an abbreviation ('ARI'/'ari').
+export const teamAbbrFor = (idOrAbbr) => {
+  if (!idOrAbbr) return '';
+  return (TeamMap[idOrAbbr]?.abbr || idOrAbbr).toUpperCase();
+};

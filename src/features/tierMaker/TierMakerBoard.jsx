@@ -5,7 +5,7 @@ import TierRow from '@/features/tierMaker/TierRow';
 import usePlayerData from '@/hooks/usePlayerData.js';
 import useFirebaseQuery from '@/hooks/useFirebaseQuery';
 import { POSITION_MAP } from '@/utils/roles';
-import { TeamListFull } from '@/constants/teamList';
+import { TeamListFull, teamAbbrFor } from '@/constants/teamList';
 import DrawerShell from '@/components/shared/ui/drawers/DrawerShell';
 import OpenDrawerButton from '@/components/shared/ui/drawers/OpenDrawerButton';
 import AddPlayerDrawer from '@/features/roster/AddPlayerDrawer';
@@ -197,7 +197,7 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
   const handleAddTeamRoster = () => {
     if (!selectedTeam) return;
     const teamPlayers = allPlayers.filter(
-      (p) => (p.bio?.Team || '').toLowerCase() === selectedTeam.id
+      (p) => (p.bio?.Team || '').toUpperCase() === teamAbbrFor(selectedTeam.id)
     );
     addPlayersToPool(teamPlayers);
     setSelectedTeam(null);

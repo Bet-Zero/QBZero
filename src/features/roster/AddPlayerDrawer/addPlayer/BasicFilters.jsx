@@ -25,23 +25,6 @@ const BasicFilters = ({ filters, setFilters }) => {
             ))}
           </select>
         </div>
-        <div>
-          <label className="block mb-1 text-white/70 text-xs">Position</label>
-          <select
-            value={filters.position}
-            onChange={(e) =>
-              setFilters({ ...filters, position: e.target.value })
-            }
-            className="w-full bg-[#2a2a2a] text-white px-2 py-1 rounded text-xs"
-          >
-            <option value="">All Positions</option>
-            {['Guard', 'Wing', 'Forward', 'Big', 'Center'].map((pos) => (
-              <option key={pos} value={pos}>
-                {pos}
-              </option>
-            ))}
-          </select>
-        </div>
       </div>
       {/* Running Profile Filter */}
       <div>
