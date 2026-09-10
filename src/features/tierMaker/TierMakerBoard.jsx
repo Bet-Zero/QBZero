@@ -34,12 +34,7 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
           player.roles?.offense1?.toLowerCase() || '',
           player.roles?.offense2?.toLowerCase() || '',
         ],
-        defenseRoles: [
-          player.roles?.defense1?.toLowerCase() || '',
-          player.roles?.defense2?.toLowerCase() || '',
-        ],
         offenseSubroles: player.subRoles?.offense || [],
-        defenseSubroles: player.subRoles?.defense || [],
         runningProfile: (player.runningProfile || '').toLowerCase(),
         badges: player.badges || [],
         salary: player.contract?.annual_salaries?.find((s) => s.year === 2025)

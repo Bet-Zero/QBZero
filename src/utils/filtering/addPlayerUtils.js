@@ -11,10 +11,8 @@ export function getDefaultAddPlayerFilters() {
     position: '',
     runningProfile: '',
     offenseRole: '',
-    defenseRole: '',
     subRoles: {
       offense: [],
-      defense: [],
     },
     badges: [],
     minSalary: undefined,

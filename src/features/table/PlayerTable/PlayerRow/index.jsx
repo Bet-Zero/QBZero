@@ -70,13 +70,6 @@ const PlayerRow = ({ player, ranking = '—' }) => {
             colorClass="border-purple-500 text-white/80"
             bgClass="bg-purple-900/40"
           />
-          {player.defenseRole && (
-            <RolePill
-              label={player.defenseRole}
-              colorClass="border-blue-500 text-white/80"
-              bgClass="bg-blue-900/40"
-            />
-          )}
         </div>
 
         {/* Contract Info */}

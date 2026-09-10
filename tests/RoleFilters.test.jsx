@@ -1,16 +1,15 @@
-import { render, within, cleanup, fireEvent } from '@testing-library/react';
+import {
+  render,
+  screen,
+  cleanup,
+  fireEvent,
+  within,
+} from '@testing-library/react';
 import { describe, it, expect, afterEach } from 'vitest';
 import RoleFilters from '@/features/filters/FiltersPanel/FilterPanel/sections/RoleFilters.jsx';
 import { runningProfileTiers } from '@/utils/roles';
 
 afterEach(cleanup);
-
-// The three role selects are siblings with no label association, so address
-// the running profile one by the placeholder option it alone carries.
-const runningProfileSelect = (container) =>
-  [...container.querySelectorAll('select')].find((select) =>
-    [...select.options].some((option) => option.text === 'Any Profile')
-  );
 
 describe('RoleFilters', () => {
   it('renders without throwing', () => {
@@ -23,12 +22,9 @@ describe('RoleFilters', () => {
   });
 
   it('offers every running profile tier', () => {
-    const { container } = render(
-      <RoleFilters filters={{}} setFilters={() => {}} />
-    );
-    const select = runningProfileSelect(container);
+    render(<RoleFilters filters={{}} setFilters={() => {}} />);
+    const select = screen.getByLabelText('Running Profile');
 
-    expect(select).toBeTruthy();
     expect(select.value).toBe('');
     runningProfileTiers.forEach((tier) => {
       expect(within(select).getByText(tier)).toBeTruthy();
@@ -41,13 +37,28 @@ describe('RoleFilters', () => {
       filters = update(filters);
     };
 
-    const { container } = render(
-      <RoleFilters filters={filters} setFilters={setFilters} />
-    );
-    fireEvent.change(runningProfileSelect(container), {
+    render(<RoleFilters filters={filters} setFilters={setFilters} />);
+    fireEvent.change(screen.getByLabelText('Running Profile'), {
       target: { value: 'Elite' },
     });
 
     expect(filters.runningProfile).toBe('Elite');
+  });
+
+  it('offers no defensive role filter', () => {
+    // The app was duplicated from a basketball project. Quarterbacks have no
+    // defensive side, nothing ever writes roles.defense1/2, and the defensive
+    // subrole list is empty -- so the panel offered basketball defenders
+    // ("Anchor Big", "Post Defender") above an empty subrole column.
+    render(<RoleFilters filters={{}} setFilters={() => {}} />);
+
+    expect(screen.queryByLabelText(/defensive role/i)).toBeNull();
+    expect(
+      screen.queryByText(/Anchor Big|Post Defender|Wing Stopper/)
+    ).toBeNull();
+
+    fireEvent.click(screen.getByText('Subroles'));
+    expect(screen.queryByText(/Defensive Subroles/i)).toBeNull();
+    expect(screen.getByText('Elite Arm Strength')).toBeTruthy();
   });
 });

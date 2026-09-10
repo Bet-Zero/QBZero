@@ -12,20 +12,6 @@ export const offensiveRoles = [
   'Option',
 ];
 
-export const defensiveRoles = [
-  'Point-of-Attack',
-  'Chaser',
-  'Wing Stopper',
-  'Off-Ball Helper',
-  'Defensive Playmaker',
-  'Defensive Quarterback',
-  'Switchable Wing',
-  'Switchable Big',
-  'Mobile Big',
-  'Post Defender',
-  'Anchor Big',
-];
-
 export const runningProfileTiers = [
   'Elite',
   'Plus',

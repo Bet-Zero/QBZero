@@ -23,17 +23,15 @@ const ActiveFiltersDisplay = ({
 
       if (isActive) {
         if (key === 'subRoles' && value) {
-          [...(value.offense || []), ...(value.defense || [])].forEach(
-            (item) => {
-              activeFilters.push({
-                key,
-                label: 'Subrole',
-                value: item,
-                isArrayItem: true,
-                isSubrole: true,
-              });
-            }
-          );
+          (value.offense || []).forEach((item) => {
+            activeFilters.push({
+              key,
+              label: 'Subrole',
+              value: item,
+              isArrayItem: true,
+              isSubrole: true,
+            });
+          });
         } else if (Array.isArray(value) && value.length > 0) {
           value.forEach((item) => {
             activeFilters.push({

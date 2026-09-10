@@ -1,3 +1,15 @@
+import { QB_TRAITS } from '@/constants/traits';
+
+// filterPlayers gates on every trait, so each one needs a bound here; a
+// missing pair compares against undefined and filters out every player.
+const defaultTraitBounds = () =>
+  Object.fromEntries(
+    QB_TRAITS.flatMap((trait) => [
+      [`min_${trait}`, 0],
+      [`max_${trait}`, 100],
+    ])
+  );
+
 export function getDefaultPlayerFilters() {
   return {
     nameSearch: '',
@@ -19,9 +31,8 @@ export function getDefaultPlayerFilters() {
     freeAgentType: '',
     birdRights: '',
     offenseRole: '',
-    defenseRole: '',
     runningProfile: '',
-    subRoles: { offense: [], defense: [] },
+    subRoles: { offense: [] },
     min_PPG: 0,
     max_PPG: 50,
     min_RPG: 0,
@@ -40,22 +51,7 @@ export function getDefaultPlayerFilters() {
     max_MIN: 48,
     min_G: 0,
     max_G: 82,
-    min_Defense: 0,
-    max_Defense: 100,
-    min_Energy: 0,
-    max_Energy: 100,
-    min_Feel: 0,
-    max_Feel: 100,
-    min_IQ: 0,
-    max_IQ: 100,
-    min_Passing: 0,
-    max_Passing: 100,
-    min_Playmaking: 0,
-    max_Playmaking: 100,
-    min_Rebounding: 0,
-    max_Rebounding: 100,
-    min_Shooting: 0,
-    max_Shooting: 100,
+    ...defaultTraitBounds(),
     badges: [],
   };
 }

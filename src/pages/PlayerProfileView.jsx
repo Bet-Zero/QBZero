@@ -10,17 +10,9 @@ import PlayerDetails from '@/features/profile/PlayerDetails';
 import BreakdownModal from '@/features/profile/BreakdownModal';
 import { getPlayersForTeam } from '@/utils/profileHelpers';
 import PlayerSearchBar from '@/features/profile/PlayerSearchBar';
+import { emptyTraits } from '@/constants/traits';
 
-const defaultTraits = {
-  Throwing: 0,
-  Accuracy: 0,
-  Decision: 0,
-  Mobility: 0,
-  Pocket: 0,
-  IQ: 0,
-  Leadership: 0,
-  Durability: 0,
-};
+const defaultTraits = emptyTraits();
 
 const defaultRoles = {
   offense1: '',
@@ -48,7 +40,7 @@ const PlayerProfileView = () => {
   const [traits, setTraits] = useState(defaultTraits);
   const [roles, setRoles] = useState(defaultRoles);
   const [runningProfile, setRunningProfile] = useState('');
-  const [subRoles, setSubRoles] = useState({ offense: [], defense: [] });
+  const [subRoles, setSubRoles] = useState({ offense: [] });
   const [badges, setBadges] = useState([]);
   const [openModal, setOpenModal] = useState(null);
   const [editedBlurbs, setEditedBlurbs] = useState(defaultBlurbs);
@@ -82,7 +74,7 @@ const PlayerProfileView = () => {
     setPlayer(data);
     setTraits(data.traits || { ...defaultTraits });
     setRoles({ ...defaultRoles, ...(data.roles || {}) });
-    setSubRoles(data.subRoles || { offense: [], defense: [] });
+    setSubRoles(data.subRoles || { offense: [] });
     setBadges(data.badges || []);
     setRunningProfile(data.runningProfile || '');
     setEditedBlurbs(data.blurbs || { ...defaultBlurbs });

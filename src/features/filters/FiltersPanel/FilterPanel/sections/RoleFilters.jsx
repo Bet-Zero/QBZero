@@ -1,10 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useId, useRef, useState } from 'react';
 import { SubRoleMasterList } from '@/constants/SubRoleMasterList';
-import {
-  defensiveRoles,
-  offensiveRoles,
-  runningProfileTiers,
-} from '@/utils/roles';
+import { offensiveRoles, runningProfileTiers } from '@/utils/roles';
 import { toggleSubroleSelection } from '@/utils/roles';
 
 const RoleSelect = ({
@@ -13,28 +9,36 @@ const RoleSelect = ({
   onChange,
   options,
   allLabel = 'All Roles',
-}) => (
-  <div className="flex flex-col">
-    <label className="mb-1 text-white/70 text-xs uppercase tracking-wider">
-      {label}
-    </label>
-    <select
-      value={value || ''}
-      onChange={(e) => onChange(e.target.value)}
-      className="bg-[#2a2a2a] p-2 rounded text-sm border border-white/10"
-    >
-      <option value="">{allLabel}</option>
-      {options.map((opt) => (
-        <option key={opt} value={opt}>
-          {opt}
-        </option>
-      ))}
-    </select>
-  </div>
-);
+}) => {
+  const selectId = useId();
+
+  return (
+    <div className="flex flex-col">
+      <label
+        htmlFor={selectId}
+        className="mb-1 text-white/70 text-xs uppercase tracking-wider"
+      >
+        {label}
+      </label>
+      <select
+        id={selectId}
+        value={value || ''}
+        onChange={(e) => onChange(e.target.value)}
+        className="bg-[#2a2a2a] p-2 rounded text-sm border border-white/10"
+      >
+        <option value="">{allLabel}</option>
+        {options.map((opt) => (
+          <option key={opt} value={opt}>
+            {opt}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+};
 
 const SelectedSubroles = ({ subRoles }) => {
-  const selected = [...(subRoles.offense || []), ...(subRoles.defense || [])];
+  const selected = subRoles.offense || [];
   if (selected.length === 0) return null;
 
   return (
@@ -61,6 +65,11 @@ const SelectedSubroles = ({ subRoles }) => {
     </div>
   );
 };
+
+// Every subrole is an offensive one — quarterbacks have no defensive side.
+const subroleGroups = Array.from(
+  new Set(SubRoleMasterList.map((r) => r.group))
+);
 
 const SubroleMenu = ({ show, toggleShow, filters, onToggleRole, menuRef }) => (
   <div className="mt-4" ref={menuRef}>
@@ -101,46 +110,33 @@ const SubroleMenu = ({ show, toggleShow, filters, onToggleRole, menuRef }) => (
     </button>
     {show && (
       <div className="mt-3 grid grid-cols-2 gap-6 bg-[#1f1f1f] p-4 rounded-md border border-white/10 max-h-[400px] overflow-y-auto">
-        {['offense', 'defense'].map((type) => (
-          <div key={type} className="space-y-4">
-            <h3 className="text-xs font-semibold text-white/80 uppercase tracking-wider border-b border-white/10 pb-1">
-              {type === 'offense' ? 'Offensive Subroles' : 'Defensive Subroles'}
-            </h3>
-            {Array.from(
-              new Set(
-                SubRoleMasterList.filter((r) => r.type === type).map(
-                  (r) => r.group
+        {subroleGroups.map((group) => (
+          <div key={group} className="space-y-2">
+            <div className="text-xs text-white/60 font-medium">{group}</div>
+            <div className="grid grid-cols-1 gap-1">
+              {SubRoleMasterList.filter((r) => r.group === group).map(
+                (role) => (
+                  <div
+                    key={role.name}
+                    onClick={() => onToggleRole(role.name)}
+                    className={`flex items-center justify-between px-3 py-1 rounded cursor-pointer text-sm ${
+                      (filters.subRoles?.offense || []).includes(role.name)
+                        ? role.isPositive
+                          ? 'bg-green-900/50 text-green-100'
+                          : 'bg-red-900/50 text-red-100'
+                        : role.isPositive
+                          ? 'bg-[#2a2a2a] text-green-100 hover:bg-green-900/30'
+                          : 'bg-[#2a2a2a] text-red-100 hover:bg-red-900/30'
+                    }`}
+                  >
+                    <span className="flex-1">{role.name}</span>
+                    <span className="text-xs opacity-70">
+                      {role.isPositive ? '✓' : '✗'}
+                    </span>
+                  </div>
                 )
-              )
-            ).map((group) => (
-              <div key={group} className="space-y-2">
-                <div className="text-xs text-white/60 font-medium">{group}</div>
-                <div className="grid grid-cols-1 gap-1">
-                  {SubRoleMasterList.filter(
-                    (r) => r.type === type && r.group === group
-                  ).map((role) => (
-                    <div
-                      key={role.name}
-                      onClick={() => onToggleRole(role.name)}
-                      className={`flex items-center justify-between px-3 py-1 rounded cursor-pointer text-sm ${
-                        (filters.subRoles?.[type] || []).includes(role.name)
-                          ? role.isPositive
-                            ? 'bg-green-900/50 text-green-100'
-                            : 'bg-red-900/50 text-red-100'
-                          : role.isPositive
-                            ? 'bg-[#2a2a2a] text-green-100 hover:bg-green-900/30'
-                            : 'bg-[#2a2a2a] text-red-100 hover:bg-red-900/30'
-                      }`}
-                    >
-                      <span className="flex-1">{role.name}</span>
-                      <span className="text-xs opacity-70">
-                        {role.isPositive ? '✓' : '✗'}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
+              )}
+            </div>
           </div>
         ))}
         <div className="col-span-2 pt-2 border-t border-white/10">
@@ -193,18 +189,13 @@ const RoleFilters = ({ filters, setFilters }) => {
         Roles
       </h2>
 
-      <div className="grid grid-cols-3 gap-4 text-white text-sm mb-4">
+      <div className="grid grid-cols-2 gap-4 text-white text-sm mb-4">
         <RoleSelect
-          label="Offensive Role"
+          label="Playstyle"
           value={filters.offenseRole}
           onChange={(val) => update('offenseRole', val)}
           options={offensiveRoles}
-        />
-        <RoleSelect
-          label="Defensive Role"
-          value={filters.defenseRole}
-          onChange={(val) => update('defenseRole', val)}
-          options={defensiveRoles}
+          allLabel="All Playstyles"
         />
         <RoleSelect
           label="Running Profile"

@@ -1,16 +1,8 @@
 // components/PlayerTraitsMiniGrid.jsx
 import React from 'react';
+import { QB_TRAITS } from '@/constants/traits';
 
-const TRAIT_ORDER = [
-  'Shooting',
-  'Passing',
-  'Playmaking',
-  'Rebounding',
-  'Defense',
-  'IQ',
-  'Feel',
-  'Energy',
-];
+const TRAIT_ORDER = QB_TRAITS;
 
 const getTraitColor = (rating) => {
   if (rating >= 98) return '#13895b';

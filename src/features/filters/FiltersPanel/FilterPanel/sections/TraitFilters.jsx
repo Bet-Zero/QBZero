@@ -1,25 +1,17 @@
 import React, { useState } from 'react';
 import { Plus, X } from 'lucide-react';
+import { QB_TRAITS } from '@/constants/traits';
 
 const TraitFilters = ({ filters, setFilters }) => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [addedFilters, setAddedFilters] = useState(new Set()); // ✅ TRACK user-added filters only
   const [newFilter, setNewFilter] = useState({
-    trait: 'Shooting',
+    trait: QB_TRAITS[0],
     operator: '>=',
     value: '',
   });
 
-  const traitOptions = [
-    'Shooting',
-    'Passing',
-    'Playmaking',
-    'Rebounding',
-    'Defense',
-    'IQ',
-    'Feel',
-    'Energy',
-  ];
+  const traitOptions = QB_TRAITS;
 
   const getActiveTraitFilters = () => {
     const activeFilters = [];
@@ -61,7 +53,7 @@ const TraitFilters = ({ filters, setFilters }) => {
     // ✅ Mark it as user-added so it gets tracked for display
     setAddedFilters((prev) => new Set([...prev, filterKey]));
 
-    setNewFilter({ trait: 'Shooting', operator: '>=', value: '' });
+    setNewFilter({ trait: QB_TRAITS[0], operator: '>=', value: '' });
     setShowAddForm(false);
   };
 

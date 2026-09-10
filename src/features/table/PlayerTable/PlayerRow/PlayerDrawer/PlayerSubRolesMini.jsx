@@ -35,23 +35,13 @@ const MiniSubRoleLine = ({ roles = [] }) => {
   );
 };
 
-const PlayerSubRolesMini = ({ subRoles }) => {
-  // Separate offense and defense roles from the subRoles prop
-  const offenseRoles = subRoles?.offense || [];
-  const defenseRoles = subRoles?.defense || [];
-
-  return (
-    <div className="w-[180px] rounded-md p-2 mt-1 shadow-sm">
-      <div className="text-[11px] font-semibold mb-2 text-purple-400">
-        Offense
-      </div>
-      <MiniSubRoleLine roles={offenseRoles} />
-      <div className="text-[11px] font-semibold mt-4 mb-2 text-blue-400">
-        Defense
-      </div>
-      <MiniSubRoleLine roles={defenseRoles} />
+const PlayerSubRolesMini = ({ subRoles }) => (
+  <div className="w-[180px] rounded-md p-2 mt-1 shadow-sm">
+    <div className="text-[11px] font-semibold mb-2 text-purple-400">
+      Subroles
     </div>
-  );
-};
+    <MiniSubRoleLine roles={subRoles?.offense || []} />
+  </div>
+);
 
 export default PlayerSubRolesMini;

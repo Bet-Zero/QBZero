@@ -266,9 +266,6 @@ export const SubRoleMasterList = [
 export const offensiveSubRoles = SubRoleMasterList.filter(
   (r) => r.type === 'offense'
 ).map((r) => r.name);
-export const defensiveSubRoles = SubRoleMasterList.filter(
-  (r) => r.type === 'defense'
-).map((r) => r.name);
 export const positiveSubRoles = SubRoleMasterList.filter(
   (r) => r.isPositive
 ).map((r) => r.name);

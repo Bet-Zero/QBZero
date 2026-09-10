@@ -1,4 +1,5 @@
 import { expandPositionGroup } from '@/utils/roles';
+import { QB_TRAITS } from '@/constants/traits';
 
 const runningProfileRank = {
   Elite: 6,
@@ -9,16 +10,13 @@ const runningProfileRank = {
   Non: 1,
 };
 
-const traitSort = [
-  'Throwing',
-  'Accuracy',
-  'Decision',
-  'Mobility',
-  'Pocket',
-  'IQ',
-  'Leadership',
-  'Durability',
-];
+const traitSort = QB_TRAITS;
+
+// Stored casing varies, so match the rank table's keys before looking up.
+const normalizeProfile = (profile) =>
+  typeof profile === 'string'
+    ? profile.charAt(0).toUpperCase() + profile.slice(1).toLowerCase()
+    : profile;
 
 export function filterPlayers(players = [], filters) {
   if (!players) return [];
@@ -94,41 +92,21 @@ export function filterPlayers(players = [], filters) {
       return false;
     }
 
+    // Stored profiles are not consistently cased — useRosterManager lowercases
+    // them, normalizePlayerData passes them through — so compare case-blind.
     if (
-      filters.defenseRole &&
-      ![p.roles?.defense1, p.roles?.defense2]
-        .filter(Boolean)
-        .some((role) =>
-          role.toLowerCase().includes(filters.defenseRole.toLowerCase())
-        )
+      filters.runningProfile &&
+      (p.runningProfile || '').toLowerCase() !==
+        filters.runningProfile.toLowerCase()
     ) {
       return false;
     }
 
-    if (filters.runningProfile && p.runningProfile !== filters.runningProfile) {
-      return false;
-    }
-
     if (
-      filters.subRoles?.offense?.length ||
-      filters.subRoles?.defense?.length
+      filters.subRoles?.offense?.length &&
+      !filters.subRoles.offense.every((sub) => p.subRoles.offense.includes(sub))
     ) {
-      if (
-        filters.subRoles.offense?.length &&
-        !filters.subRoles.offense.every((sub) =>
-          p.subRoles.offense.includes(sub)
-        )
-      ) {
-        return false;
-      }
-      if (
-        filters.subRoles.defense?.length &&
-        !filters.subRoles.defense.every((sub) =>
-          p.subRoles.defense.includes(sub)
-        )
-      ) {
-        return false;
-      }
+      return false;
     }
 
     const passesStat = (key, min, max) => {
@@ -155,16 +133,7 @@ export function filterPlayers(players = [], filters) {
       return val >= filters[`min_${trait}`] && val <= filters[`max_${trait}`];
     };
 
-    if (
-      !passesTrait('Throwing') ||
-      !passesTrait('Accuracy') ||
-      !passesTrait('Decision') ||
-      !passesTrait('Mobility') ||
-      !passesTrait('Pocket') ||
-      !passesTrait('IQ') ||
-      !passesTrait('Leadership') ||
-      !passesTrait('Durability')
-    ) {
+    if (!QB_TRAITS.every(passesTrait)) {
       return false;
     }
 
@@ -203,7 +172,9 @@ export function sortPlayers(
         case 'salary':
           return player.salaryByYear?.[salaryYear] ?? -1;
         case 'runningProfile':
-          return runningProfileRank[player.runningProfile] ?? 0;
+          return (
+            runningProfileRank[normalizeProfile(player.runningProfile)] ?? 0
+          );
         case 'yearsRemaining':
           return parseInt(player.free_agency_year) - 2024 || -1;
         case 'totalContract':
