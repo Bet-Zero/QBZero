@@ -45,6 +45,7 @@ const PlayerProfileView = () => {
   const [openModal, setOpenModal] = useState(null);
   const [editedBlurbs, setEditedBlurbs] = useState(defaultBlurbs);
   const [overallGrade, setOverallGrade] = useState(null);
+  const [status, setStatus] = useState('active');
   const [hasChanges, setHasChanges] = useState(false);
 
   useEffect(() => {
@@ -79,6 +80,7 @@ const PlayerProfileView = () => {
     setRunningProfile(data.runningProfile || '');
     setEditedBlurbs(data.blurbs || { ...defaultBlurbs });
     setOverallGrade(data.overall_grade || null);
+    setStatus(data.status || 'active');
     setHasChanges(false);
   }, [selectedPlayer, playersData]);
 
@@ -91,6 +93,7 @@ const PlayerProfileView = () => {
     badges,
     runningProfile,
     overallGrade,
+    status,
     blurbs: editedBlurbs,
     hasChanges,
     setHasChanges,
@@ -212,6 +215,11 @@ const PlayerProfileView = () => {
             overallGrade={overallGrade}
             setOverallGrade={(val) => {
               setOverallGrade(val);
+              setHasChanges(true);
+            }}
+            status={status}
+            setStatus={(val) => {
+              setStatus(val);
               setHasChanges(true);
             }}
             setOpenModal={setOpenModal}

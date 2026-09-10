@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import usePlayerData from '@/hooks/usePlayerData';
 import { quarterbacks } from '@/features/ranker/quarterbacks';
+import { ACTIVE, isActive } from '@/constants/playerStatus';
 
 /**
  * The curated quarterback list, with the fields that go stale resolved from
@@ -27,13 +28,13 @@ const useQBRoster = () => {
       return {
         ...qb,
         team: record?.bio?.Team || qb.team,
-        status: record?.status || 'active',
+        status: record?.status || ACTIVE,
       };
     });
   }, [players]);
 
   const activeRoster = useMemo(
-    () => roster.filter((qb) => qb.status === 'active'),
+    () => roster.filter((qb) => isActive(qb.status)),
     [roster]
   );
 
