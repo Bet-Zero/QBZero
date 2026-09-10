@@ -1,90 +1,55 @@
-import { useState } from 'react';
-import { X, Lock } from 'lucide-react';
+import { X, Shield } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import useAuth from '@/hooks/useAuth';
 
 const AdminGate = ({ onAdminAccess, onClose }) => {
-  const [passwordInput, setPasswordInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const correctPassword = 'Sidearm9!'; // Using the same password as your main PasswordGate
+  const { user, isAdmin, loading, signIn } = useAuth();
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-
-    setTimeout(() => {
-      if (passwordInput === correctPassword) {
-        localStorage.setItem('qbzero_admin', 'true');
-        toast.success('Admin mode activated');
-        onAdminAccess();
-      } else {
-        toast.error('Incorrect password');
-        setPasswordInput('');
-      }
-      setIsLoading(false);
-    }, 500); // Small delay to prevent timing attacks
+  const handleSignIn = async () => {
+    try {
+      await signIn();
+      toast.success('Signed in');
+      onAdminAccess();
+    } catch (error) {
+      if (error?.code === 'auth/popup-closed-by-user') return;
+      toast.error(error?.message || 'Sign-in failed');
+    }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-[#1a1a1a] rounded-xl border border-white/20 w-full max-w-md shadow-2xl">
-        <div className="flex items-center justify-between p-6 border-b border-white/10">
-          <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <Lock size={20} className="text-purple-400" />
-            Admin Access
-          </h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+      <div className="bg-neutral-800 p-8 rounded-xl border border-white/20 w-full max-w-sm relative text-center">
+        <button
+          onClick={onClose}
+          className="absolute right-3 top-3 text-white/40 hover:text-white"
+        >
+          <X size={16} />
+        </button>
+
+        <Shield className="w-10 h-10 text-purple-400 mx-auto mb-4" />
+        <h2 className="text-lg font-bold text-white mb-2">Admin Mode</h2>
+
+        {loading ? (
+          <p className="text-white/50 text-sm">Checking access…</p>
+        ) : isAdmin ? (
           <button
-            onClick={onClose}
-            className="p-2 hover:bg-white/10 rounded-lg transition-all"
+            onClick={onAdminAccess}
+            className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-lg font-medium transition-colors"
           >
-            <X className="text-white/60" size={20} />
+            Continue as admin
           </button>
-        </div>
-
-        <div className="p-6">
-          <div className="text-white/60 text-sm mb-4">
-            Enter admin password to access posting without authentication.
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-white/80 font-medium mb-2">
-                Password *
-              </label>
-              <div className="relative">
-                <Lock
-                  size={16}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40"
-                />
-                <input
-                  type="password"
-                  value={passwordInput}
-                  onChange={(e) => setPasswordInput(e.target.value)}
-                  placeholder="Enter admin password..."
-                  className="w-full pl-10 pr-3 py-3 bg-neutral-700 border border-white/20 rounded-lg text-white placeholder-white/40 focus:border-purple-500 focus:outline-none"
-                  required
-                  autoFocus
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-3 pt-4">
-              <button
-                type="button"
-                onClick={onClose}
-                className="flex-1 px-4 py-3 bg-white/10 hover:bg-white/20 rounded-lg text-white text-sm font-medium transition-all"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="flex-1 px-4 py-3 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-white text-sm font-medium transition-all"
-              >
-                {isLoading ? 'Verifying...' : 'Access Admin'}
-              </button>
-            </div>
-          </form>
-        </div>
+        ) : user ? (
+          <p className="text-white/60 text-sm">
+            Signed in as {user.email}, which is not an admin account.
+          </p>
+        ) : (
+          <button
+            onClick={handleSignIn}
+            className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-lg font-medium transition-colors"
+          >
+            Sign in with Google
+          </button>
+        )}
       </div>
     </div>
   );

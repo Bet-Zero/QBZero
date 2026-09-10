@@ -1,0 +1,78 @@
+rules_version = '2';
+
+// QBZero access rules.
+//
+// Everything is publicly readable -- the site is a public reference. Writes
+// are the owner's, except the QB Weekly takes board, which is a participation
+// feature and stays open to visitors.
+//
+// Admin is granted by a document at admins/<uid>. Create one in the Firebase
+// console for your own account; there is no way to grant it from the app,
+// which is deliberate.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAdmin() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    // The admin list itself. Readable so the app can show or hide editing
+    // controls; writable only from the console.
+    match /admins/{uid} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // The owner's content.
+    match /players/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /qbRankings/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /personalRankingArchives/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /lists/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /tierLists/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /rosterProjects/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // QB Weekly takes board. Visitors claim an author name and post takes, so
+    // creation stays open; editing and deleting other people's entries does
+    // not. Tighten these to isAdmin() if you would rather it be private.
+    match /takes/{takeId} {
+      allow read: if true;
+      allow create: if true;
+      allow update, delete: if isAdmin();
+    }
+
+    match /takeAuthors/{authorId} {
+      allow read: if true;
+      allow create, update: if true;
+      allow delete: if isAdmin();
+    }
+
+    // Anything not named above is closed.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
