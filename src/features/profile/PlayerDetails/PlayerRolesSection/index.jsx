@@ -54,7 +54,6 @@ const PlayerRolesSection = ({
   setSubRoles,
   runningProfile,
   setRunningProfile,
-  onTwoWayChange,
   onArmTalentChange,
   setOpenModal,
 }) => {

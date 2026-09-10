@@ -18,15 +18,8 @@
       "jsx": true
     }
   },
-  "plugins": [
-    "react",
-    "jsx-a11y",
-    "react-hooks"
-  ],
-  "ignorePatterns": [
-    "dist/",
-    "node_modules/"
-  ],
+  "plugins": ["react", "jsx-a11y", "react-hooks"],
+  "ignorePatterns": ["dist/", "node_modules/"],
   "rules": {
     "react/prop-types": "off",
     "no-unused-vars": [
@@ -40,5 +33,19 @@
     "react": {
       "version": "detect"
     }
-  }
+  },
+  "overrides": [
+    {
+      "files": ["*.js", "*.cjs"],
+      "env": {
+        "node": true
+      }
+    },
+    {
+      "files": ["tests/**/*.js", "tests/**/*.jsx"],
+      "env": {
+        "node": true
+      }
+    }
+  ]
 }

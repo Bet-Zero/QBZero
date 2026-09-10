@@ -1,13 +1,8 @@
 // populateQBs.js - Script to populate Firestore with QB data
 import { initializeApp } from 'firebase/app';
-import {
-  getFirestore,
-  collection,
-  doc,
-  setDoc,
-  getDoc,
-} from 'firebase/firestore';
+import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore';
 import { quarterbacks } from './src/features/ranker/quarterbacks.js';
+import { emptyTraits } from './src/constants/traits.js';
 
 // Firebase config (using environment variables)
 const firebaseConfig = {
@@ -32,38 +27,19 @@ async function populateQBs() {
       // Check if document already exists
       const docSnap = await getDoc(docRef);
 
+      const existing = docSnap.exists() ? docSnap.data() : {};
+
       // Basic QB data structure matching what the components expect
       const qbData = {
-        player_id: qb.id,
-        display_name: qb.name,
-        bio: {
-          Team: qb.team,
-          Position: 'QB',
-          AGE: null,
-          HT: null,
-          WT: null,
-          'Years Pro': null,
-        },
-        traits: {
-          Throwing: 0,
-          Accuracy: 0,
-          Decision: 0,
-          Mobility: 0,
-          Pocket: 0,
-          IQ: 0,
-          Leadership: 0,
-          Durability: 0,
-        },
+        traits: emptyTraits(),
         roles: {
           offense1: '',
           offense2: '',
           style1: '',
           style2: '',
-          twoWay: 50,
         },
         subRoles: {
           offense: [],
-          defense: [],
         },
         badges: [],
         blurbs: {
@@ -82,13 +58,24 @@ async function populateQBs() {
         contract_summary: {},
         overall_grade: null,
         status: 'active',
-        // Keep existing data if document exists
-        ...(docSnap.exists() ? docSnap.data() : {}),
-        // Always update these core fields
+        // Anything already saved wins over the defaults above.
+        ...existing,
+        // Always refreshed from the curated list. bio is merged by hand: these
+        // were written as 'bio.Team' and 'bio.Position', but setDoc does not
+        // read dotted keys as paths the way updateDoc does, so they landed as
+        // top-level fields with dots in their names and the real bio was never
+        // updated -- leaving a moved quarterback on last year's team forever.
         player_id: qb.id,
         display_name: qb.name,
-        'bio.Team': qb.team,
-        'bio.Position': 'QB',
+        bio: {
+          AGE: null,
+          HT: null,
+          WT: null,
+          'Years Pro': null,
+          ...(existing.bio || {}),
+          Team: qb.team,
+          Position: 'QB',
+        },
       };
 
       await setDoc(docRef, qbData, { merge: true });

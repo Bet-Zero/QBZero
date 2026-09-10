@@ -41,7 +41,6 @@ const PlayerDetails = ({
         setSubRoles={setSubRoles}
         runningProfile={runningProfile}
         setRunningProfile={setRunningProfile}
-        onTwoWayChange={(value) => onRoleChange('twoWay', value)}
         onArmTalentChange={(value) => onRoleChange('armTalent', value)}
         setOpenModal={setOpenModal}
       />
