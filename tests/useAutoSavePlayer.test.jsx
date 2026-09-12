@@ -5,6 +5,9 @@ const savePlayerData = vi.fn().mockResolvedValue(undefined);
 vi.mock('@/firebaseHelpers', () => ({ savePlayerData }));
 vi.mock('react-hot-toast', () => ({ toast: { error: vi.fn() } }));
 
+const authState = { user: null, isAdmin: false };
+vi.mock('@/hooks/useAuth', () => ({ default: () => authState }));
+
 const useAutoSavePlayer = (await import('@/hooks/useAutoSavePlayer')).default;
 
 // setHasChanges must be stable across renders, as a useState setter is: the
@@ -157,18 +160,52 @@ describe('useAutoSavePlayer — permission errors', () => {
     setHasChanges.mockClear();
   });
 
-  it('says you are not signed in rather than quoting Firebase', async () => {
+  const permissionDenied = () => {
     const denied = new Error('Missing or insufficient permissions.');
     denied.code = 'permission-denied';
-    savePlayerData.mockRejectedValueOnce(denied);
+    return denied;
+  };
+
+  it('says you are signed out when nobody is signed in', async () => {
+    Object.assign(authState, { user: null, isAdmin: false });
+    savePlayerData.mockRejectedValueOnce(permissionDenied());
 
     const { result } = renderAutosave();
     await flush();
 
     expect(result.current.saveState).toBe('error');
+    expect(result.current.saveError).toBe('Not saved: you are not signed in.');
+  });
+
+  it('names the account when it is signed in but not an admin', async () => {
+    Object.assign(authState, {
+      user: { email: 'someone@example.com' },
+      isAdmin: false,
+    });
+    savePlayerData.mockRejectedValueOnce(permissionDenied());
+
+    const { result } = renderAutosave();
+    await flush();
+
     expect(result.current.saveError).toBe(
-      'Not saved: you are not signed in as an admin.'
+      'Not saved: someone@example.com is not an admin account.'
     );
+  });
+
+  it('points at unpublished rules when the app already thinks you are admin', async () => {
+    // The two states can disagree: the client only reads admins/<uid>, while
+    // the write is judged by whatever ruleset is actually live in Firebase.
+    Object.assign(authState, {
+      user: { email: 'owner@example.com' },
+      isAdmin: true,
+    });
+    savePlayerData.mockRejectedValueOnce(permissionDenied());
+
+    const { result } = renderAutosave();
+    await flush();
+
+    expect(result.current.saveError).toMatch(/firestore\.rules/);
+    expect(result.current.saveError).toMatch(/not the ones/);
   });
 
   it('reports other failures verbatim', async () => {
