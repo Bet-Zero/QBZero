@@ -15,6 +15,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { quarterbacks } from '../src/features/ranker/quarterbacks.js';
 import { TEAM_LOGO_MAP } from '../src/utils/formatting/teamLogos.js';
+import { slugifyPlayerName } from '../src/utils/formatting/playerSlug.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const headshotDir = path.join(here, '..', 'public', 'assets', 'headshots');
@@ -56,11 +57,7 @@ quarterbacks.forEach((qb, index) => {
   // The id is derived from the name everywhere it is used, so a mismatch means
   // the headshot path and the document id disagree with the display name.
   if (qb.id && qb.name) {
-    const expected = qb.name
-      .toLowerCase()
-      .replace(/[.']/g, '')
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '');
+    const expected = slugifyPlayerName(qb.name);
     if (qb.id !== expected) {
       warnings.push(
         `${where}: id "${qb.id}" is not the slug of the name ("${expected}"). ` +
