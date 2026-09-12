@@ -1,3 +1,16 @@
+// The curated quarterback roster, current for the 2026 season.
+//
+// This list decides who the app carries. `team` is a seed value: the saved
+// player record wins at runtime (see useQBRoster), so correcting a team here
+// and re-running populateQBs is what actually moves someone.
+//
+// Never remove an entry. Grades and any past ranking containing a quarterback
+// depend on it existing — mark them retired on their profile instead, which
+// keeps them rankable for past seasons while dropping them from the ranker's
+// default pool. Ids are Firestore document ids and must never change once a
+// quarterback has been graded.
+//
+// Run `npm run check-roster` after editing.
 export const quarterbacks = [
   { id: 'aaron-rodgers', name: 'Aaron Rodgers', team: 'PIT' },
   { id: 'anthony-richardson', name: 'Anthony Richardson', team: 'IND' },
@@ -11,9 +24,12 @@ export const quarterbacks = [
   { id: 'carson-wentz', name: 'Carson Wentz', team: 'MIN' },
   { id: 'dak-prescott', name: 'Dak Prescott', team: 'DAL' },
   { id: 'daniel-jones', name: 'Daniel Jones', team: 'IND' },
+  { id: 'deshaun-watson', name: 'Deshaun Watson', team: 'CLE' },
   { id: 'drake-maye', name: 'Drake Maye', team: 'NE' },
-  { id: 'geno-smith', name: 'Geno Smith', team: 'LV' },
+  { id: 'fernando-mendoza', name: 'Fernando Mendoza', team: 'LV' },
+  { id: 'geno-smith', name: 'Geno Smith', team: 'NYJ' },
   { id: 'j-j-mccarthy', name: 'J.J. McCarthy', team: 'MIN' },
+  { id: 'jacoby-brissett', name: 'Jacoby Brissett', team: 'ARI' },
   { id: 'jalen-hurts', name: 'Jalen Hurts', team: 'PHI' },
   { id: 'jameis-winston', name: 'Jameis Winston', team: 'NYG' },
   { id: 'jared-goff', name: 'Jared Goff', team: 'DET' },
@@ -25,10 +41,11 @@ export const quarterbacks = [
   { id: 'josh-allen', name: 'Josh Allen', team: 'BUF' },
   { id: 'justin-fields', name: 'Justin Fields', team: 'NYJ' },
   { id: 'justin-herbert', name: 'Justin Herbert', team: 'LAC' },
-  { id: 'kirk-cousins', name: 'Kirk Cousins', team: 'ATL' },
-  { id: 'kyler-murray', name: 'Kyler Murray', team: 'ARI' },
+  { id: 'kirk-cousins', name: 'Kirk Cousins', team: 'LV' },
+  { id: 'kyler-murray', name: 'Kyler Murray', team: 'MIN' },
   { id: 'lamar-jackson', name: 'Lamar Jackson', team: 'BAL' },
   { id: 'mac-jones', name: 'Mac Jones', team: 'SF' },
+  { id: 'malik-willis', name: 'Malik Willis', team: 'MIA' },
   { id: 'marcus-mariota', name: 'Marcus Mariota', team: 'WAS' },
   { id: 'matthew-stafford', name: 'Matthew Stafford', team: 'LAR' },
   { id: 'michael-penix-jr', name: 'Michael Penix Jr', team: 'ATL' },
@@ -39,6 +56,7 @@ export const quarterbacks = [
   { id: 'spencer-rattler', name: 'Spencer Rattler', team: 'NO' },
   { id: 'taylor-heinicke', name: 'Taylor Heinicke', team: 'LAC' },
   { id: 'trevor-lawrence', name: 'Trevor Lawrence', team: 'JAX' },
-  { id: 'tua-tagovailoa', name: 'Tua Tagovailoa', team: 'MIA' },
-  { id: 'tyrod-taylor', name: 'Tyrod Taylor', team: 'NYJ' },
+  { id: 'tua-tagovailoa', name: 'Tua Tagovailoa', team: 'ATL' },
+  { id: 'tyler-shough', name: 'Tyler Shough', team: 'NO' },
+  { id: 'tyrod-taylor', name: 'Tyrod Taylor', team: 'GB' },
 ];
