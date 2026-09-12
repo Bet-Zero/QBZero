@@ -122,7 +122,7 @@ const usePlayerData = () => {
 
     // If no Firestore data or error, return fallback data
     return fallbackQBs;
-  }, [firestoreData, loading, error]);
+  }, [firestoreData, loading]);
 
   return { players, loading, error };
 };

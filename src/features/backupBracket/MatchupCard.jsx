@@ -1,6 +1,9 @@
 import React, { useMemo } from 'react';
 import clsx from 'clsx';
 
+// A stable default: a fresh [] each render would defeat the memo below.
+const EMPTY_LABELS = [];
+
 const MATCH_HEIGHT = 96;
 const CONNECTOR_LENGTH = 56;
 
@@ -13,7 +16,7 @@ const MatchupCard = ({
   onHoverEnd,
   isLastRound,
   centerSpacing,
-  placeholderLabels = [],
+  placeholderLabels = EMPTY_LABELS,
 }) => {
   const participantRows = useMemo(() => {
     return participants.map((participant, participantIndex) => {
@@ -44,7 +47,7 @@ const MatchupCard = ({
         isPlaceholder: false,
       };
     });
-  }, [participants, winnerId]);
+  }, [participants, winnerId, placeholderLabels]);
 
   const handleSelect = (participant) => {
     if (participant.isPlaceholder) return;

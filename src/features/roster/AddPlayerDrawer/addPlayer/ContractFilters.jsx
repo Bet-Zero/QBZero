@@ -51,8 +51,6 @@ const ContractFilters = ({ filters, setFilters }) => {
             <option value="UFA">UFA</option>
             <option value="RFA">RFA</option>
             <option value="TO">Team Option</option>
-            <option value="PO">Player Option</option>
-            <option value="ETO">Early Termination Option</option>
           </select>
         </div>
       </div>

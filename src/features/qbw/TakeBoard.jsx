@@ -1,4 +1,4 @@
-import React, { useId, useState, useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useId, useMemo, useState } from 'react';
 import {
   CheckCircle,
   XCircle,
@@ -110,7 +110,7 @@ const TakeBoard = () => {
     return roster.filter((qb) =>
       qb.name.toLowerCase().includes(qbSearch.toLowerCase())
     );
-  }, [qbSearch]);
+  }, [qbSearch, roster]);
 
   const [adminMode, setAdminMode] = useState(false);
   const [showAdminGate, setShowAdminGate] = useState(false);
@@ -127,9 +127,9 @@ const TakeBoard = () => {
     if (author) {
       loadTakes();
     }
-  }, [author, viewingAuthorId]);
+  }, [author, loadTakes]);
 
-  const loadTakes = async () => {
+  const loadTakes = useCallback(async () => {
     try {
       const takesData = viewingAuthorId
         ? await fetchAuthorTakes(viewingAuthorId)
@@ -139,7 +139,7 @@ const TakeBoard = () => {
       console.error('Error loading takes:', error);
       toast.error('Failed to load takes');
     }
-  };
+  }, [viewingAuthorId]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

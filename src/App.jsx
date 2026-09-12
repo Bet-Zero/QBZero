@@ -63,7 +63,14 @@ const App = () => {
         />
 
         {/* Other Rankings Management */}
-        <Route path="/rankings/all" element={<QBRankingsHome />} />
+        <Route
+          path="/rankings/all"
+          element={
+            <AdminProtectedRoute>
+              <QBRankingsHome />
+            </AdminProtectedRoute>
+          }
+        />
         <Route
           path="/rankings/other/:rankingId"
           element={
@@ -74,7 +81,14 @@ const App = () => {
         />
 
         <Route path="/qbw" element={<QBWPage />} />
-        <Route path="/lists" element={<ListsHome />} />
+        <Route
+          path="/lists"
+          element={
+            <AdminProtectedRoute>
+              <ListsHome />
+            </AdminProtectedRoute>
+          }
+        />
         <Route
           path="/lists/:listId"
           element={
@@ -84,7 +98,14 @@ const App = () => {
           }
         />
         <Route path="/list-presentation" element={<ListPresentationView />} />
-        <Route path="/tier-lists" element={<TierListsHome />} />
+        <Route
+          path="/tier-lists"
+          element={
+            <AdminProtectedRoute>
+              <TierListsHome />
+            </AdminProtectedRoute>
+          }
+        />
         <Route
           path="/tier-maker/:tierListId?"
           element={

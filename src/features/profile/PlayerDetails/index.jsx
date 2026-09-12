@@ -5,8 +5,7 @@ import PlayerTraitsGrid from './PlayerTraitsGrid';
 import PlayerRolesSection from './PlayerRolesSection';
 import BadgeSelector from './BadgeSelector';
 import OverallBlurbBox from './OverallBlurbBox';
-import PlayerStatusSelect from './PlayerStatusSelect';
-import SaveStatus from '@/features/profile/SaveStatus';
+import PlayerStatusToggle from './PlayerStatusToggle';
 
 const PlayerDetails = ({
   player,
@@ -28,20 +27,16 @@ const PlayerDetails = ({
   setOverallGrade,
   status,
   setStatus,
-  saveState,
-  saveError,
-  onRetrySave,
   setOpenModal,
 }) => (
   <>
-    <PlayerHeader player={player} selectedPlayer={selectedPlayer} />
-    <div className="w-full max-w-[750px] flex items-center justify-between mb-2">
-      <SaveStatus
-        saveState={saveState}
-        saveError={saveError}
-        onRetry={onRetrySave}
+    <div className="relative w-full max-w-[750px]">
+      <PlayerHeader player={player} selectedPlayer={selectedPlayer} />
+      <PlayerStatusToggle
+        status={status}
+        onChange={setStatus}
+        className="absolute top-0 right-0"
       />
-      <PlayerStatusSelect status={status} onChange={setStatus} />
     </div>
     <PlayerStatsTable player={player} />
     <div className="flex gap-[1.25rem] w-full max-w-[750px]">
