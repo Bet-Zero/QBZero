@@ -115,6 +115,15 @@ rankable for past seasons while dropping them from the ranker's default pool.
 Ids are Firestore document ids. Once a quarterback has been graded, changing
 their id orphans everything saved against it.
 
+`tests/quarterbackRoster.test.js` enforces the invariants the check script only
+warns about — no duplicate ids, valid team abbreviations, all 32 teams covered,
+and no headshot left on disk without a list entry. That last one is how a
+deleted quarterback gets caught: removing an entry fails the suite.
+
+The bottom of `quarterbacks.js` carries a `VERIFY` comment listing entries whose
+team is a last-known value rather than a confirmed roster spot. Work through it
+before each season rather than trusting the whole list equally.
+
 ### What fills bio, stats and contract
 
 Nothing in this repository. `populateQBs.js` writes them empty and the profile
