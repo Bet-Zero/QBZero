@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import QBRankingCard from '@/features/rankings/QBRankingCard';
 import AddQBModal from '@/features/rankings/AddQBModal';
@@ -7,15 +7,22 @@ import QBRankingsExport from '@/features/rankings/QBRankingsExport';
 import {
   getCurrentPersonalRanking,
   saveCurrentPersonalRankings,
-  updateCurrentPersonalRankings,
-  getArchivedPersonalRankings,
+  savePersonalRankingNotes,
+  PersonalRankingConflictError,
 } from '@/firebase/personalRankingHelpers';
 import {
   fetchQBRanking,
   saveQBRanking,
   createQBRanking,
 } from '@/firebase/listHelpers';
-import { calculateRankingMovement } from '@/utils/rankingMovement';
+import usePersonalRankingMovement from '@/hooks/usePersonalRankingMovement';
+import useQBRoster from '@/hooks/useQBRoster';
+import {
+  appendToRanking,
+  withRanks,
+  resolveRankingEntries,
+  rankingEntryIds,
+} from '@/utils/rankings/personalRankingEntries';
 import toast from 'react-hot-toast';
 
 const QBRankingsPage = () => {
@@ -30,19 +37,27 @@ const QBRankingsPage = () => {
   const [isCleanView, setIsCleanView] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [showMovement, setShowMovement] = useState(false);
-  const [movementData, setMovementData] = useState({});
-
-  // Use useRef for ID counter to persist across renders and avoid timing issues
-  const idCounterRef = useRef(0);
+  // The version of the live board this page loaded. Sent back on save so a
+  // change made in another tab is refused rather than overwritten.
+  const [loadedVersion, setLoadedVersion] = useState(null);
 
   // Determine if this is personal rankings (no rankingId) or other rankings (with rankingId)
   const isPersonalRankings = !rankingId;
 
-  // Generate truly unique ID for new QBs
-  const generateUniqueId = () => {
-    idCounterRef.current += 1;
-    return `qb-${Date.now()}-${idCounterRef.current}-${Math.random().toString(36).substr(2, 9)}`;
-  };
+  const { roster } = useQBRoster();
+
+  // A board carries a copy of each quarterback so that snapshots stay truthful,
+  // but the live board should not keep showing last season's team. Resolve it
+  // for display and for what gets saved; archives are never passed through here.
+  const displayedRankings = useMemo(
+    () =>
+      isPersonalRankings ? resolveRankingEntries(rankings, roster) : rankings,
+    [rankings, roster, isPersonalRankings]
+  );
+
+  const movementData = usePersonalRankingMovement(displayedRankings, {
+    enabled: isPersonalRankings,
+  });
 
   // Load ranking data when component mounts
   useEffect(() => {
@@ -51,11 +66,12 @@ const QBRankingsPage = () => {
         // Load current personal rankings
         try {
           const currentRanking = await getCurrentPersonalRanking();
-          if (currentRanking?.rankings?.length > 0) {
-            console.log('Loaded personal rankings:', currentRanking.rankings);
-            console.log('First QB structure:', currentRanking.rankings[0]);
-            setRankings(currentRanking.rankings);
-          }
+          // Set unconditionally: leaving stale state in place meant navigating
+          // here from another ranking left that ranking's quarterbacks on
+          // screen, and saving wrote them into the personal board.
+          setRankings(currentRanking?.rankings || []);
+          setLoadedVersion(currentRanking?.version ?? null);
+          setHasChanges(false);
           setRankingName('My Personal QB Rankings');
         } catch (error) {
           console.error('Error loading current rankings:', error);
@@ -85,6 +101,7 @@ const QBRankingsPage = () => {
           const ranking = await fetchQBRanking(rankingId);
           setRankings(ranking.rankings || []);
           setRankingName(ranking.name || 'QB Ranking');
+          setHasChanges(false);
         } catch (error) {
           console.error('Error loading ranking:', error);
           try {
@@ -104,33 +121,6 @@ const QBRankingsPage = () => {
     loadRanking();
   }, [rankingId, navigate, isPersonalRankings]);
 
-  // Load previous rankings for movement comparison
-  const loadPreviousRankings = useCallback(async () => {
-    if (!isPersonalRankings) return null;
-
-    try {
-      const archives = await getArchivedPersonalRankings();
-      // Get the second most recent archive (index 1) to compare against,
-      // since the most recent (index 0) is likely the same as current rankings
-      return archives.length > 1 ? archives[1].rankings : null;
-    } catch (error) {
-      console.error('Error loading previous rankings:', error);
-      return null;
-    }
-  }, [isPersonalRankings]);
-
-  // Calculate movement data when rankings change
-  useEffect(() => {
-    if (isPersonalRankings && rankings.length > 0) {
-      loadPreviousRankings().then((previousRankings) => {
-        if (previousRankings) {
-          const movement = calculateRankingMovement(rankings, previousRankings);
-          setMovementData(movement);
-        }
-      });
-    }
-  }, [rankings, isPersonalRankings, loadPreviousRankings]);
-
   const handleToggleMovement = () => {
     setShowMovement(!showMovement);
   };
@@ -147,14 +137,23 @@ const QBRankingsPage = () => {
 
       setIsSaving(true);
       try {
-        await saveCurrentPersonalRankings(rankings, '');
+        const { version } = await saveCurrentPersonalRankings(
+          displayedRankings,
+          { expectedVersion: loadedVersion }
+        );
+        setRankings(displayedRankings);
+        setLoadedVersion(version);
         setHasChanges(false);
         if (showToast) {
           toast.success('Rankings saved and archived!');
         }
       } catch (error) {
         console.error('Error saving rankings:', error);
-        toast.error('Failed to save rankings');
+        toast.error(
+          error instanceof PersonalRankingConflictError
+            ? error.message
+            : 'Failed to save rankings'
+        );
       } finally {
         setIsSaving(false);
       }
@@ -183,113 +182,63 @@ const QBRankingsPage = () => {
   // Reordering inside the export modal previously updated only that modal's
   // local state and was discarded on close.
   const handleRankingAdjusted = (adjustedRanking) => {
-    setRankings(adjustedRanking.map((qb, idx) => ({ ...qb, rank: idx + 1 })));
+    setRankings(withRanks(adjustedRanking));
     setHasChanges(true);
   };
 
-  const handleAddQB = (qbData) => {
-    const newQB = {
-      ...qbData,
-      id: generateUniqueId(),
-      rank: rankings.length + 1,
-    };
-    setRankings((prev) => [...prev, newQB]);
+  // Takes an array: adding thirty quarterbacks is one update, so the ranks
+  // cannot come out of a length that never advanced.
+  const handleAddQBs = (additions) => {
+    setRankings((prev) => appendToRanking(prev, additions));
     setHasChanges(true);
   };
 
-  const handleMoveUp = (id) => {
-    console.log('handleMoveUp called with id:', id);
-    console.log('Current rankings:', rankings);
-
+  const swap = (id, offset) => {
     setRankings((prev) => {
       const index = prev.findIndex((qb) => qb.id === id);
-      console.log('Found QB at index:', index);
+      const target = index + offset;
+      if (index < 0 || target < 0 || target >= prev.length) return prev;
 
-      if (index <= 0) {
-        console.log('Cannot move up - already at top or not found');
-        return prev;
-      }
-
-      const newRankings = [...prev];
-      [newRankings[index - 1], newRankings[index]] = [
-        newRankings[index],
-        newRankings[index - 1],
-      ];
-
-      // Update rank numbers
-      const updatedRankings = newRankings.map((qb, idx) => ({
-        ...qb,
-        rank: idx + 1,
-      }));
-      console.log('Updated rankings after move up:', updatedRankings);
-      return updatedRankings;
+      const next = [...prev];
+      [next[target], next[index]] = [next[index], next[target]];
+      return withRanks(next);
     });
-
     setHasChanges(true);
   };
 
-  const handleMoveDown = (id) => {
-    console.log('handleMoveDown called with id:', id);
-    console.log('Current rankings:', rankings);
-
-    setRankings((prev) => {
-      const index = prev.findIndex((qb) => qb.id === id);
-      console.log('Found QB at index:', index);
-
-      if (index >= prev.length - 1) {
-        console.log('Cannot move down - already at bottom or not found');
-        return prev;
-      }
-
-      const newRankings = [...prev];
-      [newRankings[index + 1], newRankings[index]] = [
-        newRankings[index],
-        newRankings[index + 1],
-      ];
-
-      // Update rank numbers
-      const updatedRankings = newRankings.map((qb, idx) => ({
-        ...qb,
-        rank: idx + 1,
-      }));
-      console.log('Updated rankings after move down:', updatedRankings);
-      return updatedRankings;
-    });
-
-    setHasChanges(true);
-  };
+  const handleMoveUp = (id) => swap(id, -1);
+  const handleMoveDown = (id) => swap(id, 1);
 
   const handleRemove = (id) => {
-    setRankings((prev) => {
-      return prev
-        .filter((qb) => qb.id !== id)
-        .map((qb, idx) => ({ ...qb, rank: idx + 1 }));
-    });
-
+    setRankings((prev) => withRanks(prev.filter((qb) => qb.id !== id)));
     setHasChanges(true);
   };
 
   const handleEditNotes = async (id, notes) => {
     // Update the state immediately for UI responsiveness
-    setRankings((prev) => {
-      return prev.map((qb) => (qb.id === id ? { ...qb, notes } : qb));
-    });
+    setRankings((prev) =>
+      prev.map((qb) => (qb.id === id ? { ...qb, notes } : qb))
+    );
 
-    // For personal rankings, save notes immediately without archiving
-    if (isPersonalRankings) {
-      try {
-        const updatedRankings = rankings.map((qb) =>
-          qb.id === id ? { ...qb, notes } : qb
-        );
-        await updateCurrentPersonalRankings(updatedRankings);
-        // Don't set hasChanges to true for notes-only updates
+    if (!isPersonalRankings) {
+      setHasChanges(true);
+      return;
+    }
+
+    // Notes save on their own rather than waiting for Save -- but only the
+    // note. Sending the whole board used to carry any unsaved reordering with
+    // it, permanently and without an archive.
+    try {
+      const result = await savePersonalRankingNotes(id, notes);
+      if (result === 'saved') {
         toast.success('Notes saved!', { duration: 2000 });
-      } catch (error) {
-        console.error('Error saving notes:', error);
-        toast.error('Failed to save notes');
+      } else {
+        // Not in the saved board yet -- it rides along with the next save.
+        setHasChanges(true);
       }
-    } else {
-      // For other rankings, still trigger the change flag
+    } catch (error) {
+      console.error('Error saving notes:', error);
+      toast.error('Failed to save notes');
       setHasChanges(true);
     }
   };
@@ -333,6 +282,7 @@ const QBRankingsPage = () => {
           showViewArchives={isPersonalRankings}
           onClearAll={handleClearAll}
           showClearAll={rankings.length > 0}
+          isPersonal={isPersonalRankings}
           isCleanView={isCleanView}
           onToggleView={() => setIsCleanView(!isCleanView)}
           showMovement={showMovement}
@@ -345,7 +295,7 @@ const QBRankingsPage = () => {
         />
 
         <div className="space-y-1.5 sm:space-y-2">
-          {rankings.map((qb, index) => (
+          {displayedRankings.map((qb, index) => (
             <QBRankingCard
               key={qb.id}
               qb={qb}
@@ -354,7 +304,7 @@ const QBRankingsPage = () => {
               onRemove={() => handleRemove(qb.id)}
               onEditNotes={(notes) => handleEditNotes(qb.id, notes)}
               canMoveUp={index > 0}
-              canMoveDown={index < rankings.length - 1}
+              canMoveDown={index < displayedRankings.length - 1}
               readOnly={isCleanView}
               movement={movementData[qb.id]}
               showMovement={showMovement}
@@ -391,14 +341,14 @@ const QBRankingsPage = () => {
       {showAddModal && (
         <AddQBModal
           onClose={() => setShowAddModal(false)}
-          onAdd={handleAddQB}
-          existingQBNames={rankings.map((qb) => qb.name)}
+          onAdd={handleAddQBs}
+          existingIds={rankingEntryIds(rankings)}
         />
       )}
 
       {showExportModal && (
         <QBRankingsExport
-          rankings={rankings}
+          rankings={displayedRankings}
           rankingName={rankingName}
           movementData={movementData}
           onClose={() => setShowExportModal(false)}

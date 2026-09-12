@@ -10,9 +10,14 @@ import {
 } from 'lucide-react';
 import useQBRoster from '@/hooks/useQBRoster';
 import { TEAM_LOGO_MAP as teamLogoMap } from '@/utils/formatting/teamLogos';
+import { isActive } from '@/constants/playerStatus';
+import { toRosterEntry } from '@/utils/rankings/personalRankingEntries';
 
-const AddQBModal = ({ onClose, onAdd, existingQBNames = [] }) => {
-  const { roster } = useQBRoster();
+// `onAdd` takes an array, always. It used to take one quarterback and be called
+// in a loop for "Add All", which meant every call in that loop read the same
+// stale board length and gave every quarterback the same rank.
+const AddQBModal = ({ onClose, onAdd, existingIds = new Set() }) => {
+  const { roster, loading } = useQBRoster();
   const fieldId = useId();
   const [showQBPool, setShowQBPool] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -26,14 +31,25 @@ const AddQBModal = ({ onClose, onAdd, existingQBNames = [] }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!formData.name.trim()) return;
+    const name = formData.name.trim();
+    if (!name) return;
 
-    onAdd({
-      ...formData,
-      imageUrl:
-        formData.imageUrl ||
-        `/assets/headshots/${formData.name.toLowerCase().replace(/\s+/g, '-').replace(/[.']/g, '')}.png`,
-    });
+    // A typed name may well be someone already on the roster -- match it before
+    // falling back to guessing a headshot path from the name, which is how a
+    // manual entry used to end up with a broken image and no link to a record.
+    const match = roster.find(
+      (qb) => qb.name.toLowerCase() === name.toLowerCase()
+    );
+
+    onAdd([
+      match
+        ? { ...toRosterEntry(match), notes: formData.notes }
+        : {
+            ...formData,
+            name,
+            imageUrl: formData.imageUrl || '/assets/headshots/default.png',
+          },
+    ]);
 
     // Reset form but keep modal open
     setFormData({
@@ -50,48 +66,25 @@ const AddQBModal = ({ onClose, onAdd, existingQBNames = [] }) => {
   };
 
   const handleQBSelect = (qb) => {
-    onAdd({
-      name: qb.name,
-      team: qb.team || '',
-      imageUrl: `/assets/headshots/${qb.id}.png`,
-      notes: '',
-    });
+    onAdd([toRosterEntry(qb)]);
     setAddedCount((prev) => prev + 1);
   };
 
+  // Retired quarterbacks stay addable -- a past-season board needs them -- but
+  // they are not what "add everyone" means, so Add All takes the active ones.
   const handleAddAll = () => {
-    availableQBs.forEach((qb) => {
-      onAdd({
-        name: qb.name,
-        team: qb.team || '',
-        imageUrl: `/assets/headshots/${qb.id}.png`,
-        notes: '',
-      });
-    });
-    setAddedCount((prev) => prev + availableQBs.length);
+    onAdd(addAllQBs.map(toRosterEntry));
+    setAddedCount((prev) => prev + addAllQBs.length);
   };
 
-  // Filter out QBs that are already added to rankings
-  const availableQBs = roster.filter(
-    (qb) => !existingQBNames.includes(qb.name)
-  );
+  // Matched by id, so a manual entry with the same name no longer hides a
+  // roster quarterback from the pool.
+  const availableQBs = roster.filter((qb) => !existingIds.has(qb.id));
+  const addAllQBs = availableQBs.filter((qb) => isActive(qb.status));
 
-  // Filter available QBs based on search
   const filteredQBs = availableQBs.filter((qb) =>
     qb.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  // Some popular QB suggestions for quick add
-  const qbSuggestions = [
-    'Joe Burrow',
-    'Tua Tagovailoa',
-    'Dak Prescott',
-    'Jalen Hurts',
-    'Justin Herbert',
-    'Trevor Lawrence',
-    'Kyler Murray',
-    'Russell Wilson',
-  ].filter((name) => !existingQBNames.includes(name));
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -111,6 +104,8 @@ const AddQBModal = ({ onClose, onAdd, existingQBNames = [] }) => {
           </div>
           <button
             onClick={onClose}
+            title="Close"
+            aria-label="Close"
             className="p-2 hover:bg-white/10 rounded-lg transition-all"
           >
             <X className="text-white/60" size={20} />
@@ -128,7 +123,7 @@ const AddQBModal = ({ onClose, onAdd, existingQBNames = [] }) => {
             }`}
           >
             <Users size={16} className="inline mr-2" />
-            QB Pool ({availableQBs.length})
+            QB Pool ({loading ? '…' : availableQBs.length})
           </button>
           <button
             onClick={() => setShowQBPool(false)}
@@ -164,25 +159,10 @@ const AddQBModal = ({ onClose, onAdd, existingQBNames = [] }) => {
                   className="w-full p-3 bg-neutral-700 border border-white/20 rounded-lg text-white placeholder-white/40 focus:border-blue-500 focus:outline-none transition-all"
                   required
                 />
-
-                {/* Quick suggestions */}
-                {qbSuggestions.length > 0 && (
-                  <div className="mt-2">
-                    <div className="text-xs text-white/50 mb-2">Quick add:</div>
-                    <div className="flex flex-wrap gap-1">
-                      {qbSuggestions.slice(0, 6).map((name) => (
-                        <button
-                          key={name}
-                          type="button"
-                          onClick={() => handleInputChange('name', name)}
-                          className="text-xs px-2 py-1 bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 rounded transition-all"
-                        >
-                          {name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                <div className="text-xs text-white/50 mt-1">
+                  A name already on the roster is matched automatically, keeping
+                  its headshot and record.
+                </div>
               </div>
 
               {/* Team */}
@@ -287,15 +267,20 @@ const AddQBModal = ({ onClose, onAdd, existingQBNames = [] }) => {
                 </div>
                 <button
                   onClick={handleAddAll}
-                  disabled={availableQBs.length === 0}
+                  disabled={addAllQBs.length === 0}
+                  title="Add every active quarterback not already on the board"
                   className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-neutral-600 to-neutral-700 hover:from-neutral-700 hover:to-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-white font-medium transition-all whitespace-nowrap"
                 >
                   <UserPlus size={16} />
-                  Add All ({availableQBs.length})
+                  Add All ({addAllQBs.length})
                 </button>
               </div>
 
-              {availableQBs.length === 0 ? (
+              {loading ? (
+                <div className="text-center py-8 text-white/60 text-sm">
+                  Loading the quarterback pool…
+                </div>
+              ) : availableQBs.length === 0 ? (
                 <div className="text-center py-8 text-white/60">
                   <div className="text-lg mb-2">🎉 All QBs Added!</div>
                   <div className="text-sm">
@@ -328,6 +313,11 @@ const AddQBModal = ({ onClose, onAdd, existingQBNames = [] }) => {
                             {qb.name}
                           </div>
                           <div className="flex items-center gap-2 mt-1">
+                            {!isActive(qb.status) && (
+                              <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded bg-white/10 text-white/50 flex-shrink-0">
+                                Retired
+                              </span>
+                            )}
                             {qb.team && qb.team !== 'N/A' ? (
                               <>
                                 <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">

@@ -1,49 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import QBRankingCard from '@/features/rankings/QBRankingCard';
-import {
-  getCurrentPersonalRanking,
-  getArchivedPersonalRankings,
-} from '@/firebase/personalRankingHelpers';
-import { calculateRankingMovement } from '@/utils/rankingMovement';
+import { getCurrentPersonalRanking } from '@/firebase/personalRankingHelpers';
+import usePersonalRankingMovement from '@/hooks/usePersonalRankingMovement';
+import { formatRankingDate } from '@/utils/formatting/rankingDates';
 import { Calendar, TrendingUp } from 'lucide-react';
 
 const PublicQBRankingsPage = () => {
   const [rankings, setRankings] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [showMovement, setShowMovement] = useState(false);
-  const [movementData, setMovementData] = useState({});
+
+  const movementData = usePersonalRankingMovement(rankings);
 
   useEffect(() => {
     const loadRankings = async () => {
       try {
         const currentRanking = await getCurrentPersonalRanking();
-        if (currentRanking?.rankings?.length > 0) {
-          setRankings(currentRanking.rankings);
-          setLastUpdated(currentRanking.updatedAt || currentRanking.createdAt);
-
-          // Load previous rankings for movement comparison
-          try {
-            const archives = await getArchivedPersonalRankings();
-            // Get the second most recent archive (index 1) to compare against,
-            // since the most recent (index 0) is likely the same as current rankings
-            if (archives.length > 1) {
-              const previousRankings = archives[1].rankings;
-              const movement = calculateRankingMovement(
-                currentRanking.rankings,
-                previousRankings
-              );
-              setMovementData(movement);
-            }
-          } catch (error) {
-            console.error(
-              'Error loading previous rankings for movement:',
-              error
-            );
-          }
-        }
+        setRankings(currentRanking?.rankings || []);
+        setLastUpdated(currentRanking || null);
       } catch (error) {
         console.error('Error loading rankings:', error);
+        setLoadError(true);
       } finally {
         setIsLoading(false);
       }
@@ -54,20 +33,6 @@ const PublicQBRankingsPage = () => {
 
   const handleToggleMovement = () => {
     setShowMovement(!showMovement);
-  };
-
-  const formatDate = (timestamp) => {
-    if (!timestamp) return 'Unknown date';
-    try {
-      const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-      return date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-      });
-    } catch {
-      return 'Unknown date';
-    }
   };
 
   if (isLoading) {
@@ -92,7 +57,7 @@ const PublicQBRankingsPage = () => {
           {lastUpdated && (
             <div className="flex items-center justify-center gap-2 text-white/40 text-xs italic">
               <Calendar size={14} />
-              <span>Last updated: {formatDate(lastUpdated)}</span>
+              <span>Last updated: {formatRankingDate(lastUpdated)}</span>
             </div>
           )}
         </div>
@@ -135,16 +100,27 @@ const PublicQBRankingsPage = () => {
             />
           ))}
 
-          {rankings.length === 0 && (
-            <div className="text-center py-12">
-              <div className="text-white/40 text-lg mb-4">
-                No rankings available at this time.
+          {rankings.length === 0 &&
+            (loadError ? (
+              <div className="text-center py-12">
+                <div className="text-white/60 text-lg mb-4">
+                  The rankings could not be loaded right now.
+                </div>
+                <div className="text-white/30 text-sm">
+                  This is a connection problem, not an empty ranking — try
+                  refreshing in a moment.
+                </div>
               </div>
-              <div className="text-white/30 text-sm">
-                Check back later for updated rankings.
+            ) : (
+              <div className="text-center py-12">
+                <div className="text-white/40 text-lg mb-4">
+                  No rankings available at this time.
+                </div>
+                <div className="text-white/30 text-sm">
+                  Check back later for updated rankings.
+                </div>
               </div>
-            </div>
-          )}
+            ))}
         </div>
 
         {/* Footer */}
