@@ -119,7 +119,5 @@ export const quarterbacks = [
 //   russell-wilson    retired during/after 2025; NYG is his last team.
 //                     Mark him retired on his profile.
 //   taylor-heinicke   cut by the Chargers in camp; LAC is his last team.
-//   jacoby-brissett   ARI is from 2025; 2026 reports are contradictory.
-//   tyrod-taylor      GB unconfirmed.
 //   jake-haener       signed by NYG 17 Aug 2026 to the practice squad; one
 //                     report has him released since.
