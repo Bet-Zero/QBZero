@@ -84,7 +84,7 @@ const PlayerProfileView = () => {
     setHasChanges(false);
   }, [selectedPlayer, playersData]);
 
-  useAutoSavePlayer({
+  const { saveState, saveError, saveNow } = useAutoSavePlayer({
     playerId: selectedPlayer,
     player,
     traits,
@@ -228,6 +228,9 @@ const PlayerProfileView = () => {
               setStatus(val);
               setHasChanges(true);
             }}
+            saveState={saveState}
+            saveError={saveError}
+            onRetrySave={saveNow}
             setOpenModal={setOpenModal}
           />
         )}

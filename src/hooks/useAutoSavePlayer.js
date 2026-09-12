@@ -1,16 +1,41 @@
-import { useEffect } from 'react';
-import { toast } from 'react-hot-toast';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { savePlayerData } from '@/firebaseHelpers';
 
-// What a player edit is actually allowed to change, plus the identity fields a
-// record needs to be found again.
+const AUTOSAVE_DEBOUNCE_MS = 1000;
+
+// Firestore rejects a whole document if any field is `undefined`, so an
+// optional value that never got filled in takes the entire save down with it.
+// Borrowed from ScoutZero, where this is what makes profile autosave reliable.
+const stripUndefinedDeep = (value) => {
+  if (value === undefined) return undefined;
+  if (value === null) return null;
+  if (value instanceof Date) return value;
+
+  if (Array.isArray(value)) {
+    return value.map(stripUndefinedDeep).filter((item) => item !== undefined);
+  }
+
+  if (typeof value === 'object') {
+    const cleaned = {};
+    for (const [key, val] of Object.entries(value)) {
+      const cleanedVal = stripUndefinedDeep(val);
+      if (cleanedVal !== undefined) cleaned[key] = cleanedVal;
+    }
+    return cleaned;
+  }
+
+  return value;
+};
+
+// What a player edit is allowed to change, plus the identity fields a record
+// needs to be found again.
 //
-// This used to write the whole normalized player back, which round-tripped
-// derived values -- formattedPosition, heightInInches, salaryByYear, the
-// lifted stat columns, headshotUrl -- into the stored document, where the next
-// normalize pass would recompute them anyway. bio is kept deliberately:
-// usePlayerData only merges a document whose bio.Position is 'QB', so a record
-// saved without it is silently dropped on reload and the edit looks lost.
+// This used to write the whole normalized player back, round-tripping derived
+// values (formattedPosition, heightInInches, salaryByYear, the lifted stat
+// columns) into storage where the next normalize pass recomputes them anyway.
+// bio is kept deliberately: usePlayerData only merges a document whose nested
+// bio.Position is 'QB', so a record saved without it is dropped on reload and
+// the edit looks like it never saved.
 const buildPlayerUpdate = ({
   player,
   traits,
@@ -21,20 +46,28 @@ const buildPlayerUpdate = ({
   overallGrade,
   status,
   blurbs,
-}) => ({
-  player_id: player.player_id ?? player.id,
-  display_name: player.display_name ?? player.name ?? '',
-  bio: player.bio ?? {},
-  traits,
-  roles,
-  subRoles,
-  badges,
-  runningProfile,
-  overall_grade: overallGrade,
-  status,
-  blurbs,
-});
+}) =>
+  stripUndefinedDeep({
+    player_id: player.player_id ?? player.id,
+    display_name: player.display_name ?? player.name ?? '',
+    bio: player.bio ?? {},
+    traits,
+    roles,
+    subRoles,
+    badges,
+    runningProfile,
+    overall_grade: overallGrade ?? null,
+    status,
+    blurbs,
+  });
 
+/**
+ * Debounced autosave for the player profile editor.
+ *
+ * Returns the save state so the page can show it. A silent autosave is
+ * indistinguishable from one that never ran, which is exactly how this went
+ * unnoticed: the previous version reported nothing at all.
+ */
 const useAutoSavePlayer = ({
   playerId,
   player,
@@ -49,41 +82,61 @@ const useAutoSavePlayer = ({
   hasChanges,
   setHasChanges,
 }) => {
+  const [saveState, setSaveState] = useState('idle');
+  const [saveError, setSaveError] = useState(null);
+
+  // The debounce fires later, so read the values from a ref rather than
+  // closing over whatever they were when the timer was set.
+  const snapshotRef = useRef(null);
+  snapshotRef.current = {
+    playerId,
+    player,
+    traits,
+    roles,
+    subRoles,
+    badges,
+    runningProfile,
+    overallGrade,
+    status,
+    blurbs,
+  };
+
+  const timerRef = useRef(null);
+  const savingRef = useRef(false);
+
+  const save = useCallback(async () => {
+    const snapshot = snapshotRef.current;
+    if (!snapshot?.playerId || !snapshot.player || savingRef.current) return;
+
+    savingRef.current = true;
+    setSaveState('saving');
+    setSaveError(null);
+
+    try {
+      await savePlayerData(snapshot.playerId, buildPlayerUpdate(snapshot));
+      setSaveState('saved');
+      setSaveError(null);
+      setHasChanges(false);
+    } catch (error) {
+      // Leave hasChanges set: the edit is unsaved, and saying so beats
+      // clearing the flag and letting it disappear on the next reload.
+      console.error('Error auto-saving player:', error);
+      setSaveState('error');
+      setSaveError(error?.message || 'Unknown error');
+    } finally {
+      savingRef.current = false;
+    }
+  }, [setHasChanges]);
+
   useEffect(() => {
-    if (!hasChanges || !playerId || !player) return;
+    if (!hasChanges || !playerId || !player) return undefined;
 
-    let cancelled = false;
-
-    const timer = setTimeout(async () => {
-      try {
-        await savePlayerData(
-          playerId,
-          buildPlayerUpdate({
-            player,
-            traits,
-            roles,
-            subRoles,
-            badges,
-            runningProfile,
-            overallGrade,
-            status,
-            blurbs,
-          })
-        );
-        if (!cancelled) setHasChanges(false);
-      } catch (error) {
-        // Leave hasChanges set: the edit is unsaved, and saying so beats
-        // clearing the flag and letting it disappear on the next reload.
-        console.error('Error auto-saving player:', error);
-        toast.error(`Could not save: ${error?.message || 'unknown error'}`, {
-          id: 'player-autosave-error',
-        });
-      }
-    }, 1500);
+    setSaveState('pending');
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(save, AUTOSAVE_DEBOUNCE_MS);
 
     return () => {
-      cancelled = true;
-      clearTimeout(timer);
+      if (timerRef.current) clearTimeout(timerRef.current);
     };
   }, [
     playerId,
@@ -97,8 +150,10 @@ const useAutoSavePlayer = ({
     status,
     blurbs,
     hasChanges,
-    setHasChanges,
+    save,
   ]);
+
+  return { saveState, saveError, saveNow: save };
 };
 
 export default useAutoSavePlayer;

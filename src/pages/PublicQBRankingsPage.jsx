@@ -5,8 +5,7 @@ import {
   getArchivedPersonalRankings,
 } from '@/firebase/personalRankingHelpers';
 import { calculateRankingMovement } from '@/utils/rankingMovement';
-import { Calendar, TrendingUp, Download } from 'lucide-react';
-import QBRankingsExport from '@/features/rankings/QBRankingsExport';
+import { Calendar, TrendingUp } from 'lucide-react';
 
 const PublicQBRankingsPage = () => {
   const [rankings, setRankings] = useState([]);
@@ -14,7 +13,6 @@ const PublicQBRankingsPage = () => {
   const [lastUpdated, setLastUpdated] = useState(null);
   const [showMovement, setShowMovement] = useState(false);
   const [movementData, setMovementData] = useState({});
-  const [showExportModal, setShowExportModal] = useState(false);
 
   useEffect(() => {
     const loadRankings = async () => {
@@ -100,8 +98,8 @@ const PublicQBRankingsPage = () => {
         </div>
 
         {/* Movement Toggle Button */}
-        <div className="flex flex-wrap justify-center gap-2 mb-6">
-          {Object.keys(movementData).length > 0 && (
+        {Object.keys(movementData).length > 0 && (
+          <div className="flex justify-center mb-6">
             <button
               onClick={handleToggleMovement}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-white text-sm transition-all ${
@@ -116,19 +114,8 @@ const PublicQBRankingsPage = () => {
               <TrendingUp size={16} />
               {showMovement ? 'Hide Movement' : 'Show Movement'}
             </button>
-          )}
-
-          {rankings.length > 0 && (
-            <button
-              onClick={() => setShowExportModal(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-white text-sm transition-all bg-white/10 hover:bg-white/20"
-              title="Download these rankings as an image"
-            >
-              <Download size={16} />
-              Export
-            </button>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Rankings List */}
         <div className="space-y-1.5 sm:space-y-2">
@@ -167,17 +154,6 @@ const PublicQBRankingsPage = () => {
           </div>
         </div>
       </div>
-
-      {/* Exporting is a read-only action on rankings that are already public,
-          so it does not belong behind the admin gate. */}
-      {showExportModal && (
-        <QBRankingsExport
-          rankings={rankings}
-          rankingName="QB Rankings"
-          movementData={movementData}
-          onClose={() => setShowExportModal(false)}
-        />
-      )}
     </div>
   );
 };
