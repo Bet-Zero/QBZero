@@ -1,6 +1,21 @@
 // populateQBs.js - Script to populate Firestore with QB data
+//
+//   node scripts/checkRoster.js      validate the list first (no credentials)
+//   node populateQBs.js --dry-run    report what would change, write nothing
+//   node populateQBs.js              apply it
+//
+// Existing saved data always wins over the defaults here, so re-running is
+// safe: grades, roles and blurbs survive. Only the curated fields -- name,
+// team, position -- are refreshed from the list.
 import { initializeApp } from 'firebase/app';
-import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore';
+import {
+  getFirestore,
+  doc,
+  setDoc,
+  getDoc,
+  collection,
+  getDocs,
+} from 'firebase/firestore';
 import { quarterbacks } from './src/features/ranker/quarterbacks.js';
 import { emptyTraits } from './src/constants/traits.js';
 
@@ -17,8 +32,17 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+const DRY_RUN = process.argv.includes('--dry-run');
+
 async function populateQBs() {
-  console.log(`Starting to populate ${quarterbacks.length} quarterbacks...`);
+  console.log(
+    `${DRY_RUN ? '[dry run] ' : ''}Processing ${quarterbacks.length} quarterbacks...`
+  );
+
+  const created = [];
+  const movedTeam = [];
+  const renamed = [];
+  const unchanged = [];
 
   for (const qb of quarterbacks) {
     try {
@@ -78,16 +102,74 @@ async function populateQBs() {
         },
       };
 
-      await setDoc(docRef, qbData, { merge: true });
-      console.log(
-        `✓ ${qb.name} (${qb.team}) ${docSnap.exists() ? 'updated' : 'created'}`
-      );
+      // Classify before writing so a dry run can report the same thing.
+      if (!docSnap.exists()) {
+        created.push(`${qb.name} (${qb.team})`);
+      } else {
+        const wasTeam = existing.bio?.Team;
+        const wasName = existing.display_name;
+        if (wasTeam && wasTeam !== qb.team) {
+          movedTeam.push(`${qb.name}: ${wasTeam} -> ${qb.team}`);
+        }
+        if (wasName && wasName !== qb.name) {
+          renamed.push(`${wasName} -> ${qb.name}`);
+        }
+        if (
+          (!wasTeam || wasTeam === qb.team) &&
+          (!wasName || wasName === qb.name)
+        ) {
+          unchanged.push(qb.name);
+        }
+      }
+
+      if (!DRY_RUN) {
+        await setDoc(docRef, qbData, { merge: true });
+      }
     } catch (error) {
       console.error(`✗ Error processing ${qb.name}:`, error);
     }
   }
 
-  console.log('Finished populating quarterbacks!');
+  const report = (label, items) => {
+    if (items.length === 0) return;
+    console.log(`\n${label} (${items.length}):`);
+    items.forEach((item) => console.log(`  ${item}`));
+  };
+
+  report('Created', created);
+  report('Changed team', movedTeam);
+  report('Renamed', renamed);
+  console.log(`\nUnchanged: ${unchanged.length}`);
+
+  // Anyone saved but no longer on the list. They are not deleted -- grades and
+  // past rankings depend on them -- but they are worth knowing about: a
+  // quarterback who left the league belongs on the list marked retired, not
+  // removed from it.
+  try {
+    const saved = await getDocs(collection(db, 'players'));
+    const listed = new Set(quarterbacks.map((qb) => qb.id));
+    const orphans = saved.docs.map((d) => d.id).filter((id) => !listed.has(id));
+    if (orphans.length > 0) {
+      console.log(
+        `\nSaved but not on the list (${orphans.length}): ${orphans.join(', ')}`
+      );
+      console.log(
+        '  Left untouched. Put them back on the list and mark them retired on ' +
+          'their profile if they should still be rankable for past seasons.'
+      );
+    }
+  } catch (error) {
+    console.warn(
+      '\nCould not check for saved players not on the list:',
+      error.message
+    );
+  }
+
+  console.log(
+    DRY_RUN
+      ? '\n[dry run] Nothing was written. Re-run without --dry-run to apply.'
+      : '\nDone.'
+  );
 }
 
 // Run the script if called directly
