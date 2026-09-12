@@ -9,10 +9,10 @@ export const BACKUP_QBS = [
   'sam-howell',
   'jacoby-brissett',
   'cooper-rush',
-  'mitch-trubisky',
+  'mitchell-trubisky',
   'case-keenum',
   'jake-browning',
-  'gardner-minshew',
+  'gardner-minshew-ii',
   'taylor-heinicke',
   'jimmy-garoppolo',
   'joshua-dobbs',
@@ -99,7 +99,7 @@ export const BACKUP_QB_HALL_OF_FAME = [
   {
     id: 'joe-flacco',
     name: 'Joe Flacco',
-    team: 'CLE',
+    team: 'CIN',
     accomplishments: [
       'Super Bowl XLVII Champion & MVP',
       'Master of the backup QB role',
@@ -125,7 +125,7 @@ export const BACKUP_QB_HALL_OF_FAME = [
   {
     id: 'tyrod-taylor',
     name: 'Tyrod Taylor',
-    team: 'NYJ',
+    team: 'GB',
     accomplishments: [
       'Mobile backup specialist',
       'Playoff experience',
