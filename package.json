@@ -14,7 +14,9 @@
     "prepare": "echo skipped",
     "check-roster": "node scripts/checkRoster.js",
     "populate-qbs": "node populateQBs.js",
-    "populate-qbs:dry": "node populateQBs.js --dry-run"
+    "populate-qbs:dry": "node populateQBs.js --dry-run",
+    "refresh-headshots": "node scripts/refreshHeadshots.js",
+    "refresh-headshots:dry": "node scripts/refreshHeadshots.js --dry-run"
   },
   "dependencies": {
     "@g-loot/react-tournament-brackets": "^1.0.31-rc",
@@ -41,6 +43,7 @@
     "react-router-dom": "^7.6.0",
     "react-tournament-bracket": "^0.2.4",
     "react-window": "^1.8.11",
+    "sharp": "^0.35.4",
     "styled-components": "^4.4.1"
   },
   "devDependencies": {

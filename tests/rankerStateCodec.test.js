@@ -43,9 +43,47 @@ describe('ranker state codec', () => {
     expect(decoded.setupData).toEqual(session.setupData);
   });
 
-  it('keeps a full 42-QB session inside the shareable URL budget', () => {
+  it('keeps a session over the whole roster inside the shareable URL budget', () => {
     const encoded = encodeRankerState(buildSession());
     expect(encoded.length).toBeLessThan(MAX_ENCODED_LENGTH);
+  });
+
+  // The pool scales with the roster, and the roster only grows. Asserting real
+  // headroom rather than a bare pass means the next batch of quarterbacks does
+  // not quietly make full sessions unshareable.
+  it('leaves room for the roster to keep growing', () => {
+    const encoded = encodeRankerState(buildSession());
+    const perPlayer = encoded.length / quarterbacks.length;
+    const remaining = (MAX_ENCODED_LENGTH - encoded.length) / perPlayer;
+    expect(remaining).toBeGreaterThan(20);
+  });
+
+  // Links shared before the pool encoding changed have to keep working.
+  it('still decodes a v1 payload', () => {
+    const v1 = {
+      v: 1,
+      p: [
+        ['c-j-stroud', 'C.J. Stroud', 'HOU'],
+        ['josh-allen', 'Josh Allen', 'BUF'],
+      ],
+      c: [0, 1],
+      r: [1, 0],
+      s: { t: [1], b: [0], a: 0, f: 1, l: -1 },
+    };
+    const encoded = btoa(JSON.stringify(v1))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
+
+    const decoded = decodeRankerState(encoded);
+    expect(decoded.playerPool.map((p) => p.id)).toEqual([
+      'c-j-stroud',
+      'josh-allen',
+    ]);
+    expect(decoded.comparisonResults).toEqual([
+      { winner: 'c-j-stroud', loser: 'josh-allen' },
+    ]);
+    expect(decoded.setupData.anchor).toBe('c-j-stroud');
   });
 
   it('survives a URLSearchParams round trip', () => {

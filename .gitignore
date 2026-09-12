@@ -33,6 +33,7 @@ src/__pycache__/
 # instead of ignoring the directory outright.
 scripts/*
 !scripts/checkRoster.js
+!scripts/refreshHeadshots.js
 tools/
 
 # docs/ is tracked markdown (npm run docs regenerates the hierarchies).

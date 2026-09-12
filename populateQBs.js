@@ -7,30 +7,35 @@
 // Existing saved data always wins over the defaults here, so re-running is
 // safe: grades, roles and blurbs survive. Only the curated fields -- name,
 // team, position -- are refreshed from the list.
-import { initializeApp } from 'firebase/app';
-import {
-  getFirestore,
-  doc,
-  setDoc,
-  getDoc,
-  collection,
-  getDocs,
-} from 'firebase/firestore';
+//
+// Uses firebase-admin with serviceAccountKey.json (gitignored, one per
+// developer from the Firebase console), not the public client SDK. The
+// `players` collection is admin-write-only (see firestore.rules), so writing
+// through the client SDK -- as this script used to -- authenticates as
+// nobody and every write comes back PERMISSION_DENIED; only the admin SDK,
+// which carries its own service-account credential, can get past that.
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import admin from 'firebase-admin';
 import { quarterbacks } from './src/features/ranker/quarterbacks.js';
 import { emptyTraits } from './src/constants/traits.js';
 
-// Firebase config (using environment variables)
-const firebaseConfig = {
-  apiKey: process.env.VITE_FIREBASE_API_KEY,
-  authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.VITE_FIREBASE_APP_ID,
-};
+const here = path.dirname(fileURLToPath(import.meta.url));
+const keyPath = path.join(here, 'serviceAccountKey.json');
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+if (!fs.existsSync(keyPath)) {
+  console.error(
+    `Missing ${keyPath}.\n` +
+      'Generate one from Firebase console > Project settings > Service accounts ' +
+      '> Generate new private key, and save it there (it is gitignored).'
+  );
+  process.exit(1);
+}
+
+const serviceAccount = JSON.parse(fs.readFileSync(keyPath, 'utf8'));
+admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+const db = admin.firestore();
 
 const DRY_RUN = process.argv.includes('--dry-run');
 
@@ -46,12 +51,12 @@ async function populateQBs() {
 
   for (const qb of quarterbacks) {
     try {
-      const docRef = doc(db, 'players', qb.id);
+      const docRef = db.collection('players').doc(qb.id);
 
       // Check if document already exists
-      const docSnap = await getDoc(docRef);
+      const docSnap = await docRef.get();
 
-      const existing = docSnap.exists() ? docSnap.data() : {};
+      const existing = docSnap.exists ? docSnap.data() : {};
 
       // Basic QB data structure matching what the components expect
       const qbData = {
@@ -103,7 +108,7 @@ async function populateQBs() {
       };
 
       // Classify before writing so a dry run can report the same thing.
-      if (!docSnap.exists()) {
+      if (!docSnap.exists) {
         created.push(`${qb.name} (${qb.team})`);
       } else {
         const wasTeam = existing.bio?.Team;
@@ -123,7 +128,7 @@ async function populateQBs() {
       }
 
       if (!DRY_RUN) {
-        await setDoc(docRef, qbData, { merge: true });
+        await docRef.set(qbData, { merge: true });
       }
     } catch (error) {
       console.error(`✗ Error processing ${qb.name}:`, error);
@@ -146,7 +151,7 @@ async function populateQBs() {
   // quarterback who left the league belongs on the list marked retired, not
   // removed from it.
   try {
-    const saved = await getDocs(collection(db, 'players'));
+    const saved = await db.collection('players').get();
     const listed = new Set(quarterbacks.map((qb) => qb.id));
     const orphans = saved.docs.map((d) => d.id).filter((id) => !listed.has(id));
     if (orphans.length > 0) {
@@ -172,8 +177,11 @@ async function populateQBs() {
   );
 }
 
-// Run the script if called directly
-if (import.meta.url === `file://${process.argv[1]}`) {
+// Run the script if called directly. Compared as filesystem paths, not
+// strings -- a path containing spaces (or other characters the URL encodes)
+// never matched `file://${process.argv[1]}`, so this guard silently skipped
+// populateQBs() on any checkout not sitting at an unencoded path.
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   populateQBs().catch(console.error);
 }
 

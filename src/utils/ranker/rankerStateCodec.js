@@ -4,11 +4,20 @@
 //
 // The naive encoding (base64 of the raw state object) produced ~14.8 KB of
 // query string for a finished 42-QB session, which exceeds the ~8 KB request
-// line most servers and CDNs accept. This encodes the player pool once as
-// [id, name, team] tuples and refers to players by index everywhere else,
-// which brings a full session under ~4 KB.
+// line most servers and CDNs accept. This encodes the player pool once and
+// refers to players by index everywhere else.
+//
+// The pool is ~75% of the payload, and an entry's id is nearly always the slug
+// of its name -- storing both spent a third of the budget on the same
+// characters twice. v2 stores [name, team] and derives the id, carrying it as a
+// third element only for the handful of quarterbacks whose id predates the slug
+// convention. That took a full 92-QB session from ~6.1 KB back to ~4.3 KB.
+//
+// v1 links are still decoded: someone may have shared one.
 
-const VERSION = 1;
+import { slugifyPlayerName } from '@/utils/formatting/playerSlug.js';
+
+const VERSION = 2;
 
 // Rough ceiling for the encoded payload. Well under the ~8 KB request-line
 // limit once the origin and path are added.
@@ -49,11 +58,13 @@ export const encodeRankerState = ({
 
     const payload = {
       v: VERSION,
-      p: playerPool.map((p) => [
-        p.id,
-        p.display_name || p.name || '',
-        p.team || '',
-      ]),
+      p: playerPool.map((p) => {
+        const name = p.display_name || p.name || '';
+        const entry = [name, p.team || ''];
+        // Only pay for the id when it cannot be derived from the name.
+        if (p.id !== slugifyPlayerName(name)) entry.push(p.id);
+        return entry;
+      }),
       // Flat [winnerIdx, loserIdx, ...] pairs.
       c: comparisonResults.flatMap((c) => [idx(c.winner), idx(c.loser)]),
       r: finalRanking.map((p) => idx(p.id)),
@@ -89,13 +100,23 @@ export const decodeRankerState = (encoded) => {
     return null;
   }
 
-  if (!payload || payload.v !== VERSION || !Array.isArray(payload.p)) {
-    return null;
-  }
+  if (!payload || !Array.isArray(payload.p)) return null;
+  if (payload.v !== VERSION && payload.v !== 1) return null;
+
+  // v1 stored [id, name, team]; v2 stores [name, team] with the id appended
+  // only when it is not the slug of the name.
+  const readEntry =
+    payload.v === 1
+      ? ([id, name, team]) => ({ id, name, team })
+      : ([name, team, id]) => ({
+          id: id || slugifyPlayerName(name),
+          name,
+          team,
+        });
 
   const playerPool = payload.p
     .filter((entry) => Array.isArray(entry) && entry[0])
-    .map(([id, name, team]) => ({ id, name, team }));
+    .map(readEntry);
 
   const at = (i) =>
     Number.isInteger(i) && i >= 0 && i < playerPool.length
