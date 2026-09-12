@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import QBRankingCard from '@/features/rankings/QBRankingCard';
 import AddQBModal from '@/features/rankings/AddQBModal';
@@ -46,6 +46,14 @@ const QBRankingsPage = () => {
 
   const { roster } = useQBRoster();
 
+  // Which ranking this page has already fetched. The effect below lists
+  // `navigate` among its dependencies, and its body replaces in-memory state
+  // with what is in Firestore -- so a change to that identity would quietly
+  // discard whatever was on the board. React Router keeps it stable today,
+  // which is the only reason this was not losing edits; the guard means it
+  // cannot start.
+  const loadedKeyRef = useRef(null);
+
   // A board carries a copy of each quarterback so that snapshots stay truthful,
   // but the live board should not keep showing last season's team. Resolve it
   // for display and for what gets saved; archives are never passed through here.
@@ -75,6 +83,10 @@ const QBRankingsPage = () => {
 
   // Load ranking data when component mounts
   useEffect(() => {
+    const loadKey = rankingId || 'personal';
+    if (loadedKeyRef.current === loadKey) return;
+    loadedKeyRef.current = loadKey;
+
     const loadRanking = async () => {
       if (isPersonalRankings) {
         // Load current personal rankings
