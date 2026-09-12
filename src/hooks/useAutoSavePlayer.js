@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { savePlayerData } from '@/firebaseHelpers';
+import useAuth from '@/hooks/useAuth';
 
 const AUTOSAVE_DEBOUNCE_MS = 1000;
 
@@ -83,6 +84,7 @@ const useAutoSavePlayer = ({
   hasChanges,
   setHasChanges,
 }) => {
+  const { user, isAdmin } = useAuth();
   const [saveState, setSaveState] = useState('idle');
   const [saveError, setSaveError] = useState(null);
 
@@ -123,14 +125,30 @@ const useAutoSavePlayer = ({
       // clearing the flag and letting it disappear on the next reload.
       console.error('Error auto-saving player:', error);
 
-      // A rules rejection means the account writing this is not an admin --
-      // usually not signed in at all. Say that, rather than quoting Firebase.
+      // A rules rejection has two quite different causes, and saying the wrong
+      // one sends you hunting in the wrong place.
+      //
+      // If this app already believes you are an admin, it read admins/<uid>
+      // successfully -- so the account is fine and the rules refusing the write
+      // are not the ones in firestore.rules. That file lives in the repo and
+      // does nothing until it is published to Firebase.
       const denied =
         error?.code === 'permission-denied' ||
         /insufficient permissions/i.test(error?.message || '');
-      const message = denied
-        ? 'Not saved: you are not signed in as an admin.'
-        : `Not saved: ${error?.message || 'unknown error'}`;
+
+      let message;
+      if (!denied) {
+        message = `Not saved: ${error?.message || 'unknown error'}`;
+      } else if (isAdmin) {
+        message =
+          'Not saved: your account is an admin here, so the rules in Firebase ' +
+          'are probably not the ones in firestore.rules. Publish that file in ' +
+          'the Firebase console under Firestore \u2192 Rules.';
+      } else if (user) {
+        message = `Not saved: ${user.email} is not an admin account.`;
+      } else {
+        message = 'Not saved: you are not signed in.';
+      }
 
       setSaveState('error');
       setSaveError(message);
@@ -140,7 +158,7 @@ const useAutoSavePlayer = ({
     } finally {
       savingRef.current = false;
     }
-  }, [setHasChanges]);
+  }, [setHasChanges, isAdmin, user]);
 
   useEffect(() => {
     if (!hasChanges || !playerId || !player) return undefined;
