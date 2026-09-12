@@ -88,15 +88,19 @@ const RankingsExportModal = ({
 
   const ActionButtons = () => (
     <div className="flex gap-2 justify-center sm:justify-start">
-      <button
-        onClick={handleAdjustRankings}
-        className="px-3 py-2 text-sm text-white bg-orange-600/80 hover:bg-orange-700 rounded flex items-center transition-colors"
-        title="Adjust Rankings"
-      >
-        <Edit3 size={16} className="mr-1" />
-        <span className="hidden sm:inline">Adjust Rankings</span>
-        <span className="sm:hidden">Adjust</span>
-      </button>
+      {/* Only offered where the caller can persist the result; on the public
+          rankings page there is nothing to save a reorder to. */}
+      {onRankingAdjusted && (
+        <button
+          onClick={handleAdjustRankings}
+          className="px-3 py-2 text-sm text-white bg-orange-600/80 hover:bg-orange-700 rounded flex items-center transition-colors"
+          title="Adjust Rankings"
+        >
+          <Edit3 size={16} className="mr-1" />
+          <span className="hidden sm:inline">Adjust Rankings</span>
+          <span className="sm:hidden">Adjust</span>
+        </button>
+      )}
       {viewType === 'grid' && (
         <button
           onClick={() => setShowLogoBg(!showLogoBg)}
