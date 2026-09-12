@@ -61,14 +61,14 @@ New code is grouped by feature. Reusable UI or logic goes in `shared/`,
 
 | Collection                | Contents                                      | Writable by      |
 | ------------------------- | --------------------------------------------- | ---------------- |
-| `players`                 | QB bios, traits, roles, stats, badges, blurbs  | admin            |
-| `qbRankings`              | Saved ranking sets                             | admin            |
-| `personalRankingArchives` | Archived personal rankings                     | admin            |
-| `lists`                   | User-built lists                               | admin            |
-| `tierLists`               | Tier maker boards                              | admin            |
-| `rosterProjects`          | Roster tool projects                           | admin            |
-| `takes` / `takeAuthors`   | QB Weekly takes board                          | any visitor      |
-| `admins`                  | One document per admin UID                     | nobody (console) |
+| `players`                 | QB bios, traits, roles, stats, badges, blurbs | admin            |
+| `qbRankings`              | Saved ranking sets                            | admin            |
+| `personalRankingArchives` | Archived personal rankings                    | admin            |
+| `lists`                   | User-built lists                              | admin            |
+| `tierLists`               | Tier maker boards                             | admin            |
+| `rosterProjects`          | Roster tool projects                          | admin            |
+| `takes` / `takeAuthors`   | QB Weekly takes board                         | any visitor      |
+| `admins`                  | One document per admin UID                    | nobody (console) |
 
 `firestore.rules` in the repo is the source of truth for the policy above.
 Editing it does not deploy it — that needs the Firebase console or CLI.
@@ -92,6 +92,38 @@ along with `capSheet` and `contract_clean` fields; none of that exists here.
 - ❌ Never amend, squash or force-push shared history
 - ❌ Never widen a change beyond what was asked without saying so
 
+## The annual roster update
+
+The curated list in `src/features/ranker/quarterbacks.js` decides which
+quarterbacks the app carries. Updating it for a new season:
+
+```
+1. Edit quarterbacks.js — add new quarterbacks, fix teams for anyone who moved
+2. npm run check-roster        validates the list, needs no credentials
+3. npm run populate-qbs:dry    reports what would change, writes nothing
+4. npm run populate-qbs        applies it
+```
+
+Saved data always wins over the script's defaults, so re-running preserves
+grades, roles and blurbs. Only name, team and position are refreshed.
+
+**Never remove a quarterback from the list.** Their grades and any past
+ranking that includes them depend on the entry existing. Mark them retired on
+their profile instead — the status icon in the header — which keeps them
+rankable for past seasons while dropping them from the ranker's default pool.
+
+Ids are Firestore document ids. Once a quarterback has been graded, changing
+their id orphans everything saved against it.
+
+### What has no ingestion path
+
+`bio` (age, height, weight, years pro), `system.stats` (CMP/ATT/YDS/TD/INT/
+CMP%/RTG/QBR) and `contract` are displayed by the app but nothing fills them:
+`populateQBs.js` writes empty values and there is no editor for them. The
+profile page only edits evaluation — traits, roles, subroles, badges, running
+profile, blurbs, overall grade, status. A `package.json` script once pointed at
+an `updateStats.js` that has never existed in this repository.
+
 ## Verification
 
 ```
@@ -100,8 +132,9 @@ npm run build      # vite build
 npm run lint       # eslint
 ```
 
-Lint carries a standing backlog, mostly `jsx-a11y` in older features. Compare
-the count before and after a change rather than expecting zero.
+Lint is clean — zero problems. Keep it that way: if a rule fires, fix the
+cause or explain in the commit why the rule is wrong here, rather than
+disabling it.
 
 Before claiming a fix works, confirm the test fails against the previous
 behavior — several bugs here were silent, and a test that only passes
@@ -116,8 +149,7 @@ afterwards proves nothing about them.
 
 ## Other Notes
 
-- `docs/` holds per-feature component hierarchies, `FILE_MAP.md`,
-  `DATA_SOURCE_MAP.md` and `FIRESTORE_SCHEMA.md`. Some predate the QB
-  conversion — check against the code before trusting them.
+- `docs/` holds `FILE_MAP.md`, `FIRESTORE_SCHEMA.md` and the per-feature
+  component hierarchies, which `npm run docs` regenerates.
 - `DEVELOPER_GUIDE.md` covers file structure and component logic
 - `README.md` covers running and setting up the project

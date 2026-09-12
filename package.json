@@ -6,12 +6,14 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "update-stats": "node updateStats.js",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
     "docs": "node generateDocs.cjs",
     "test": "vitest",
     "zen": "node toggleView.cjs",
-    "prepare": "echo skipped"
+    "prepare": "echo skipped",
+    "check-roster": "node scripts/checkRoster.js",
+    "populate-qbs": "node populateQBs.js",
+    "populate-qbs:dry": "node populateQBs.js --dry-run"
   },
   "dependencies": {
     "@g-loot/react-tournament-brackets": "^1.0.31-rc",
