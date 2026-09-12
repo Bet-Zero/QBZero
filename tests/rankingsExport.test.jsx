@@ -26,8 +26,9 @@ describe('Personal QB Rankings export path', () => {
       />
     );
 
-    // The modal renders a visible view plus a hidden export view, so each
-    // player legitimately appears more than once.
+    // The fixed-width export tree mounts only for a capture, so each player
+    // appears once here -- but the assertion stays loose because the hidden
+    // tree is legitimately present while a download is in flight.
     personalRankings.forEach((qb) => {
       expect(screen.getAllByText(qb.name).length).toBeGreaterThan(0);
     });
@@ -44,12 +45,18 @@ describe('Personal QB Rankings export path', () => {
 
     // Ranks are derived from array position, so the caller's order must survive.
     const text = document.body.textContent;
-    expect(text.indexOf('Josh Allen')).toBeLessThan(text.indexOf('Lamar Jackson'));
-    expect(text.indexOf('Lamar Jackson')).toBeLessThan(text.indexOf('Geno Smith'));
+    expect(text.indexOf('Josh Allen')).toBeLessThan(
+      text.indexOf('Lamar Jackson')
+    );
+    expect(text.indexOf('Lamar Jackson')).toBeLessThan(
+      text.indexOf('Geno Smith')
+    );
 
     // Rank badges 1..3 are rendered for a 3-QB ranking.
     ['1', '2', '3'].forEach((rank) => {
-      expect(within(document.body).getAllByText(rank).length).toBeGreaterThan(0);
+      expect(within(document.body).getAllByText(rank).length).toBeGreaterThan(
+        0
+      );
     });
   });
 
@@ -63,6 +70,31 @@ describe('Personal QB Rankings export path', () => {
     expect(getHeadshotSrc({ headshotUrl: 'https://cdn/x.png' })).toBe(
       'https://cdn/x.png'
     );
+  });
+
+  it('warns when the poster grid cannot fit the whole ranking', () => {
+    const long = Array.from({ length: 45 }, (_, i) => ({
+      id: `qb-${i}`,
+      name: `QB ${i}`,
+      team: 'BUF',
+    }));
+    render(<QBRankingsExport rankings={long} onClose={vi.fn()} />);
+    // The grid stops at 42, so say so rather than dropping three quarterbacks
+    // without a word.
+    expect(screen.getByText(/stops at\s+number 42/)).toBeTruthy();
+    expect(screen.queryByText('QB 44')).toBeNull();
+    cleanup();
+  });
+
+  it('balances list columns instead of leaving a trailing one empty', () => {
+    const four = ['a', 'b', 'c', 'd'].map((id) => ({ id, name: id }));
+    expect(createColumns(four, 3).map((col) => col.length)).toEqual([2, 1, 1]);
+    // Ranks still read straight down the columns, 1..n.
+    expect(
+      createColumns(four, 3)
+        .flat()
+        .map((c) => c.rank)
+    ).toEqual([1, 2, 3, 4]);
   });
 
   it('columnises both flat players and { qb } wrappers identically', () => {

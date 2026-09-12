@@ -38,7 +38,9 @@ const RankingsHeader = ({
   showExport = false,
 }) => {
   const handleSharePublicLink = () => {
-    const publicUrl = `${window.location.origin}/rankings/public`;
+    // /rankings/public has never been a route; this landed on NotFound while
+    // the toast said the link was copied.
+    const publicUrl = `${window.location.origin}/rankings`;
     navigator.clipboard
       .writeText(publicUrl)
       .then(() => {

@@ -40,7 +40,19 @@ const App = () => {
 
         {/* Personal Rankings - Read-only public access */}
         <Route path="/rankings" element={<PublicQBRankingsPage />} />
-        <Route path="/rankings/browse" element={<BrowseRankingsPage />} />
+
+        {/* The history behind the public rankings: every past snapshot, plus
+            the standalone ranking lists by name. Every other surface that
+            shows those is admin-gated and the nav has always drawn this one
+            with a padlock, so the route now matches. */}
+        <Route
+          path="/rankings/browse"
+          element={
+            <AdminProtectedRoute>
+              <BrowseRankingsPage />
+            </AdminProtectedRoute>
+          }
+        />
 
         {/* Private Edit Access - Protected by admin system */}
         <Route

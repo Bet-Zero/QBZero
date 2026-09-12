@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
   LayoutGrid,
   ListOrdered,
@@ -8,12 +8,14 @@ import {
   Edit3,
 } from 'lucide-react';
 import useImageDownload from '@/hooks/useImageDownload';
+import toast from 'react-hot-toast';
 import AdjustableRankings from '@/features/ranker/AdjustableRankings';
 import PropTypes from 'prop-types';
 import {
   RankingGridCard,
   RankingListColumns,
   unwrapPlayer,
+  POSTER_LIMIT,
 } from '@/components/shared/rankings/RankingViews';
 
 const RankingsExportModal = ({
@@ -31,8 +33,14 @@ const RankingsExportModal = ({
     Object.keys(movementData).length > 0
   );
   const [isDownloading, setIsDownloading] = useState(false);
+  // The fixed-width export tree is a second copy of every card. Mounting it
+  // only for the capture halves the images the browser fetches while the modal
+  // is open, and the DOM it has to keep in step.
+  const [isCapturing, setIsCapturing] = useState(false);
   const [isAdjustMode, setIsAdjustMode] = useState(false);
   const [currentRanking, setCurrentRanking] = useState(rankings);
+  const isTruncated =
+    viewType === 'grid' && currentRanking.length > POSTER_LIMIT;
   const shareViewRef = useRef(null);
   const exportViewRef = useRef(null);
   const downloadImageHook = useImageDownload(exportViewRef);
@@ -41,6 +49,16 @@ const RankingsExportModal = ({
   React.useEffect(() => {
     setCurrentRanking(rankings);
   }, [rankings]);
+
+  // The export tree mounts on demand, so give React a frame to commit it
+  // before the capture reads the ref.
+  const waitForExportTree = useCallback(
+    () =>
+      new Promise((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(resolve));
+      }),
+    []
+  );
 
   const handleAdjustRankings = () => {
     setIsAdjustMode(true);
@@ -58,18 +76,29 @@ const RankingsExportModal = ({
     setIsAdjustMode(false);
   };
 
-  const handleCopy = () => {
+  const handleCopy = async () => {
     const text = currentRanking
       .map((item, idx) => {
-        const player = item.qb || item.player || item;
-        return `#${idx + 1} ${player.name || player.display_name}`;
+        const player = unwrapPlayer(item);
+        const name = player.name || player.display_name;
+        const team = player.team ? ` (${player.team.toUpperCase()})` : '';
+        return `#${idx + 1} ${name}${team}`;
       })
       .join('\n');
-    navigator.clipboard.writeText(text).catch(() => {});
+
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success('Rankings copied to the clipboard.');
+    } catch {
+      // A silently swallowed failure here is indistinguishable from a copy that
+      // worked, which is the same trap the image download was pulled out of.
+      toast.error('Could not copy -- your browser blocked clipboard access.');
+    }
   };
 
   const handleDownloadImage = async () => {
     setIsDownloading(true);
+    setIsCapturing(true);
     const date = new Date()
       .toLocaleDateString('en-US', {
         year: 'numeric',
@@ -77,16 +106,22 @@ const RankingsExportModal = ({
         day: 'numeric',
       })
       .replace(/,/g, '');
+    // Slashes and colons in a ranking's name make a filename browsers handle
+    // inconsistently.
+    const safeName =
+      (rankingName || 'qb-rankings').replace(/[^\w\s-]/g, '').trim() ||
+      'qb-rankings';
 
     try {
-      // Use the hook-based download function
-      await downloadImageHook(`${rankingName || 'qb-rankings'}-${date}.png`);
+      await waitForExportTree();
+      await downloadImageHook(`${safeName}-${date}.png`);
     } finally {
       setIsDownloading(false);
+      setIsCapturing(false);
     }
   };
 
-  const ActionButtons = () => (
+  const actionButtons = (
     <div className="flex gap-2 justify-center sm:justify-start">
       <button
         onClick={handleAdjustRankings}
@@ -220,6 +255,12 @@ const RankingsExportModal = ({
         {/* Subline */}
         <div className="mt-4 text-sm sm:text-base md:text-[16px] lg:text-[18px] text-white/70">
           Updated {updatedDate}
+          {isTruncated && (
+            <>
+              {' '}
+              · Top {POSTER_LIMIT} of {currentRanking.length}
+            </>
+          )}
         </div>
       </div>
     );
@@ -260,7 +301,7 @@ const RankingsExportModal = ({
                 : 'mt-6 mb-12 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-2 sm:gap-x-3 md:gap-x-4 gap-y-4 sm:gap-y-5 md:gap-y-6 justify-items-center'
             }
           >
-            {currentRanking.slice(0, 42).map((item, idx) => {
+            {currentRanking.slice(0, POSTER_LIMIT).map((item, idx) => {
               const player = unwrapPlayer(item);
               return (
                 <RankingGridCard
@@ -334,49 +375,52 @@ const RankingsExportModal = ({
 
   return (
     <>
-      {/* Hidden export container - always renders desktop layout for consistent screenshots */}
-      {/* Position off-screen but keep fully rendered for proper image export */}
-      <div
-        className="fixed pointer-events-none"
-        style={{
-          top: '-9999px',
-          left: '0',
-          width: '1400px',
-          height: 'auto',
-          visibility: 'hidden',
-        }}
-      >
-        {viewType === 'grid' ? (
-          renderGridLayout(true)
-        ) : (
-          <div
-            ref={exportViewRef}
-            className="bg-neutral-900 p-6 rounded-lg border border-white/10"
-          >
-            <div className="text-center mb-6">
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 bg-clip-text text-transparent mb-2">
-                NFL QB Rankings
-              </h1>
-              <div className="text-sm text-white/60 italic">
-                {new Date().toLocaleDateString(undefined, {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                })}
+      {/* Off-screen export container: always the desktop layout, so the image
+          does not change with the window the modal happens to be open in.
+          Mounted only for the capture -- it is a second copy of every card. */}
+      {isCapturing && (
+        <div
+          className="fixed pointer-events-none"
+          style={{
+            top: '-9999px',
+            left: '0',
+            width: '1400px',
+            height: 'auto',
+            visibility: 'hidden',
+          }}
+        >
+          {viewType === 'grid' ? (
+            renderGridLayout(true)
+          ) : (
+            <div
+              ref={exportViewRef}
+              className="bg-neutral-900 p-6 rounded-lg border border-white/10"
+            >
+              <div className="text-center mb-6">
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 bg-clip-text text-transparent mb-2">
+                  NFL QB Rankings
+                </h1>
+                <div className="text-sm text-white/60 italic">
+                  {new Date().toLocaleDateString(undefined, {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  })}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-4 gap-x-2 gap-y-1">
+                {/* Always render desktop 4-column layout for export */}
+                <RankingListColumns
+                  rankings={currentRanking}
+                  cols={numCols.md}
+                  className="flex flex-col gap-1"
+                />
               </div>
             </div>
-
-            <div className="grid grid-cols-4 gap-x-2 gap-y-1">
-              {/* Always render desktop 4-column layout for export */}
-              <RankingListColumns
-                rankings={currentRanking}
-                cols={numCols.md}
-                className="flex flex-col gap-1"
-              />
-            </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
       {/* Visible modal */}
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -400,8 +444,15 @@ const RankingsExportModal = ({
 
           {/* Action Buttons - Only show if not in adjust mode */}
           {!isAdjustMode && (
-            <div className="p-6 border-b border-white/10">
-              <ActionButtons />
+            <div className="p-6 border-b border-white/10 space-y-3">
+              {actionButtons}
+              {isTruncated && (
+                <p className="text-amber-300/90 text-xs">
+                  The poster grid fits {POSTER_LIMIT} quarterbacks — this
+                  ranking has {currentRanking.length}, so the image stops at
+                  number {POSTER_LIMIT}. List view exports all of them.
+                </p>
+              )}
             </div>
           )}
 
