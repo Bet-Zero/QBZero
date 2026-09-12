@@ -59,6 +59,20 @@ const QBRankingsPage = () => {
     enabled: isPersonalRankings,
   });
 
+  // Reordering a board is twenty minutes of work that lived only in this tab:
+  // closing it threw the lot away without a word. The in-app banner covers
+  // navigation within the site; this covers closing and reloading.
+  useEffect(() => {
+    if (!hasChanges) return undefined;
+
+    const warn = (event) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [hasChanges]);
+
   // Load ranking data when component mounts
   useEffect(() => {
     const loadRanking = async () => {
@@ -167,6 +181,7 @@ const QBRankingsPage = () => {
           rankings,
           name: rankingName,
         });
+        setHasChanges(false);
         if (showToast) {
           toast.success('Ranking saved!');
         }
@@ -244,11 +259,13 @@ const QBRankingsPage = () => {
   };
 
   const handleClearAll = () => {
-    if (
-      window.confirm(
-        'Are you sure you want to clear all QBs from your rankings? This cannot be undone.'
-      )
-    ) {
+    // The personal board archives the version it replaces on the next save,
+    // so clearing it is recoverable. A standalone ranking has no history.
+    const warning = isPersonalRankings
+      ? 'Clear every QB from this board? The version you have now is archived when you save, so it can be restored from the history page.'
+      : 'Clear every QB from this ranking? This cannot be undone.';
+
+    if (window.confirm(warning)) {
       setRankings([]);
       setHasChanges(true);
       toast.success('All QBs cleared from rankings');
@@ -274,7 +291,7 @@ const QBRankingsPage = () => {
           onAddQB={() => setShowAddModal(true)}
           rankingName={rankingName}
           isSaving={isSaving}
-          canSave={isPersonalRankings ? hasChanges : !!rankingId}
+          canSave={hasChanges && (isPersonalRankings || !!rankingId)}
           onSave={() => saveRankings(true)}
           onViewArchives={
             isPersonalRankings ? () => navigate('/rankings/browse') : undefined
@@ -330,10 +347,11 @@ const QBRankingsPage = () => {
           )}
         </div>
 
-        {/* Status indicator for personal rankings */}
-        {isPersonalRankings && hasChanges && !isSaving && (
+        {hasChanges && !isSaving && (
           <div className="fixed bottom-4 right-4 bg-orange-600/90 text-white px-4 py-2 rounded-lg text-sm backdrop-blur-sm">
-            You have unsaved changes - click Save to archive current version
+            {isPersonalRankings
+              ? 'You have unsaved changes — Save also archives the current version'
+              : 'You have unsaved changes — click Save'}
           </div>
         )}
       </div>

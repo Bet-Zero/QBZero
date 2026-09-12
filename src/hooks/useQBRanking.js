@@ -1,11 +1,20 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { getCurrentPersonalRanking } from '@/firebase/personalRankingHelpers';
 
 /**
- * Custom hook to get a QB's ranking position from personal rankings
- * @param {string} playerId - The player ID to look up
- * @param {string} playerName - The player name to match against
- * @returns {Object} - { rank: number|null, isLoading: boolean, error: string|null }
+ * Where a quarterback sits on the personal rankings board, for the badge on his
+ * profile.
+ *
+ * Matching used to try the id, then the name, then the id again with
+ * punctuation stripped -- because board entries carried a generated id that
+ * could never match a player document, so only the name lookup ever fired and
+ * the rest was dead weight. Entries keep their roster id now, which is the
+ * player document id, so the id is the match and the name is the fallback for
+ * boards saved before that change.
+ *
+ * @param {string} playerId
+ * @param {string} playerName
+ * @returns {{ rank: number|null, isLoading: boolean, error: string|null }}
  */
 export const useQBRanking = (playerId, playerName) => {
   const [rank, setRank] = useState(null);
@@ -13,55 +22,47 @@ export const useQBRanking = (playerId, playerName) => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchRanking = async () => {
-      if (!playerId && !playerName) {
-        setRank(null);
-        setIsLoading(false);
-        return;
-      }
+    if (!playerId && !playerName) {
+      setRank(null);
+      setIsLoading(false);
+      return undefined;
+    }
 
-      try {
-        setIsLoading(true);
-        const currentRanking = await getCurrentPersonalRanking();
+    let cancelled = false;
+    setIsLoading(true);
 
-        if (currentRanking?.rankings?.length > 0) {
-          // Try to find by player ID first, then by name
-          const qbRanking = currentRanking.rankings.find((qb) => {
-            if (playerId && qb.id === playerId) return true;
-            if (playerName && qb.name === playerName) return true;
-            if (playerName && qb.display_name === playerName) return true;
+    getCurrentPersonalRanking()
+      .then((currentRanking) => {
+        if (cancelled) return;
 
-            // Also try matching the player_id format used in quarterbacks.js
-            const normalizedPlayerId = playerId
-              ?.replace(/[^a-z0-9-]/gi, '')
-              .toLowerCase();
-            const normalizedQBId = qb.id
-              ?.replace(/[^a-z0-9-]/gi, '')
-              .toLowerCase();
-            if (normalizedPlayerId && normalizedQBId === normalizedPlayerId)
-              return true;
+        const entries = currentRanking?.rankings || [];
+        const match =
+          entries.find((qb) => playerId && qb.id === playerId) ||
+          entries.find(
+            (qb) =>
+              playerName &&
+              (qb.name === playerName || qb.display_name === playerName)
+          );
 
-            return false;
-          });
-
-          if (qbRanking) {
-            setRank(qbRanking.rank);
-          } else {
-            setRank(null);
-          }
-        } else {
-          setRank(null);
-        }
-      } catch (err) {
+        // Position in the board is the rank; the stored `rank` field is only a
+        // copy of it, and the two used to drift.
+        const index = match ? entries.indexOf(match) : -1;
+        setRank(index >= 0 ? index + 1 : null);
+        setError(null);
+      })
+      .catch((err) => {
+        if (cancelled) return;
         console.error('Error fetching QB ranking:', err);
         setError('Failed to load ranking');
         setRank(null);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
 
-    fetchRanking();
+    return () => {
+      cancelled = true;
+    };
   }, [playerId, playerName]);
 
   return { rank, isLoading, error };

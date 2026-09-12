@@ -1,4 +1,10 @@
-import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  cleanup,
+  waitFor,
+} from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   withRanks,
@@ -35,7 +41,10 @@ describe('personal ranking entries', () => {
   it('keeps the roster id and invents one only for a manual entry', () => {
     const [rosterPick, manual] = appendToRanking(
       [],
-      [{ id: 'josh-allen', name: 'Josh Allen' }, { name: 'Some Practice Squad QB' }]
+      [
+        { id: 'josh-allen', name: 'Josh Allen' },
+        { name: 'Some Practice Squad QB' },
+      ]
     );
     expect(rosterPick.id).toBe('josh-allen');
     expect(isManualEntryId(rosterPick.id)).toBe(false);
@@ -44,7 +53,12 @@ describe('personal ranking entries', () => {
 
   it('resolves a stale team from the roster without touching the rest', () => {
     const entries = [
-      { id: 'aaron-rodgers', name: 'Aaron Rodgers', team: 'NYJ', notes: 'keep me' },
+      {
+        id: 'aaron-rodgers',
+        name: 'Aaron Rodgers',
+        team: 'NYJ',
+        notes: 'keep me',
+      },
       { id: 'manual-1', name: 'Nobody', team: 'FA' },
     ];
     const resolved = resolveRankingEntries(entries, [
@@ -67,7 +81,10 @@ describe('personal ranking entries', () => {
 
 const helpers = vi.hoisted(() => ({
   getCurrentPersonalRanking: vi.fn(),
-  saveCurrentPersonalRankings: vi.fn(async () => ({ currentId: 'c', archiveId: 'a' })),
+  saveCurrentPersonalRankings: vi.fn(async () => ({
+    currentId: 'c',
+    archiveId: 'a',
+  })),
   savePersonalRankingNotes: vi.fn(async () => 'saved'),
   getPreviousPersonalRanking: vi.fn(async () => null),
 }));
@@ -82,7 +99,12 @@ vi.mock('@/firebase/listHelpers', () => ({
 const roster = [
   { id: 'josh-allen', name: 'Josh Allen', team: 'BUF', status: 'active' },
   { id: 'lamar-jackson', name: 'Lamar Jackson', team: 'BAL', status: 'active' },
-  { id: 'aaron-rodgers', name: 'Aaron Rodgers', team: 'PIT', status: 'retired' },
+  {
+    id: 'aaron-rodgers',
+    name: 'Aaron Rodgers',
+    team: 'PIT',
+    status: 'retired',
+  },
 ];
 
 vi.mock('@/hooks/useQBRoster', () => ({
@@ -111,12 +133,17 @@ const renderEditor = () =>
 
 const renderedRanks = () =>
   Array.from(document.querySelectorAll('div'))
-    .filter((d) => /^\d+$/.test(d.textContent) && d.className.includes('font-black'))
+    .filter(
+      (d) => /^\d+$/.test(d.textContent) && d.className.includes('font-black')
+    )
     .map((d) => d.textContent);
 
 beforeEach(() => {
   vi.clearAllMocks();
-  helpers.getCurrentPersonalRanking.mockResolvedValue({ id: 'current', rankings: [] });
+  helpers.getCurrentPersonalRanking.mockResolvedValue({
+    id: 'current',
+    rankings: [],
+  });
   helpers.savePersonalRankingNotes.mockResolvedValue('saved');
   helpers.getPreviousPersonalRanking.mockResolvedValue(null);
 });
@@ -155,7 +182,9 @@ describe('Personal rankings editor', () => {
     fireEvent.click(document.querySelector('button[title="Close"]'));
     fireEvent.click(await screen.findByText('Save'));
 
-    await waitFor(() => expect(helpers.saveCurrentPersonalRankings).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(helpers.saveCurrentPersonalRankings).toHaveBeenCalled()
+    );
     const [written] = helpers.saveCurrentPersonalRankings.mock.calls[0];
     expect(written[0].id).toBe('josh-allen');
   });
@@ -164,8 +193,20 @@ describe('Personal rankings editor', () => {
     helpers.getCurrentPersonalRanking.mockResolvedValue({
       id: 'current',
       rankings: [
-        { id: 'josh-allen', name: 'Josh Allen', team: 'BUF', rank: 1, notes: '' },
-        { id: 'lamar-jackson', name: 'Lamar Jackson', team: 'BAL', rank: 2, notes: '' },
+        {
+          id: 'josh-allen',
+          name: 'Josh Allen',
+          team: 'BUF',
+          rank: 1,
+          notes: '',
+        },
+        {
+          id: 'lamar-jackson',
+          name: 'Lamar Jackson',
+          team: 'BAL',
+          rank: 2,
+          notes: '',
+        },
       ],
     });
     renderEditor();

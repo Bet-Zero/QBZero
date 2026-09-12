@@ -63,7 +63,7 @@ New code is grouped by feature. Reusable UI or logic goes in `shared/`,
 | ------------------------- | --------------------------------------------- | ---------------- |
 | `players`                 | QB bios, traits, roles, stats, badges, blurbs | admin            |
 | `qbRankings`              | Saved ranking sets                            | admin            |
-| `personalRankingArchives` | Archived personal rankings                    | admin            |
+| `personalRankingArchives` | The personal board and its snapshots           | admin            |
 | `lists`                   | User-built lists                              | admin            |
 | `tierLists`               | Tier maker boards                             | admin            |
 | `rosterProjects`          | Roster tool projects                          | admin            |

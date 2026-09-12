@@ -2,8 +2,9 @@
 
 ```
 AddQBModal.jsx
+ArchiveSidebar.jsx
 CreateRankingModal.jsx
-PersonalRankingArchives.jsx
+PersonalRankingPanel.jsx
 QBRankingCard.jsx
 QBRankingsExport.jsx
 RankingsHeader.jsx

@@ -11,6 +11,7 @@ import {
   TrendingUp,
   Download,
 } from 'lucide-react';
+import PropTypes from 'prop-types';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
@@ -20,11 +21,6 @@ const RankingsHeader = ({
   isSaving,
   canSave,
   onSave,
-  onCreateNew,
-  showCreateNew,
-  onSaveSnapshot,
-  isSavingSnapshot,
-  showSaveSnapshot,
   onViewArchives,
   showViewArchives,
   onClearAll,
@@ -36,6 +32,7 @@ const RankingsHeader = ({
   showMovementToggle = false,
   onExport,
   showExport = false,
+  isPersonal = false,
 }) => {
   const handleSharePublicLink = () => {
     // /rankings/public has never been a route; this landed on NotFound while
@@ -66,11 +63,12 @@ const RankingsHeader = ({
       {/* Main Header */}
       <div className="text-center mb-6">
         <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 bg-clip-text text-transparent mb-3">
-          {rankingName || 'QB Rankings 2025'}
+          {rankingName || 'QB Rankings'}
         </h1>
         <p className="text-white/60 text-lg">
-          Your personal quarterback rankings. Build your board, add notes, and
-          rank the QBs how you see them.
+          {isPersonal
+            ? 'Your personal quarterback rankings. Build your board, add notes, and rank the QBs how you see them.'
+            : 'Build this list, add notes, and rank the QBs how you see them.'}
         </p>
       </div>
 
@@ -82,7 +80,7 @@ const RankingsHeader = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-white/80">
             <span className="text-sm font-medium">
-              🔥 Personal Rankings Board
+              {isPersonal ? '🔥 Personal Rankings Board' : `📋 ${rankingName}`}
             </span>
             {isSaving && (
               <span className="text-xs text-yellow-400 flex items-center gap-1">
@@ -150,15 +148,17 @@ const RankingsHeader = ({
               </button>
             )}
 
-            <button
-              onClick={handleSharePublicLink}
-              className="flex items-center gap-1.5 px-3 py-2 bg-purple-600/80 hover:bg-purple-700 rounded-lg font-medium text-white text-xs transition-all backdrop-blur-sm"
-              title="Copy public read-only link"
-            >
-              <Share size={14} />
-              <span className="hidden sm:inline">Share Public Link</span>
-              <span className="sm:hidden">Share</span>
-            </button>
+            {isPersonal && (
+              <button
+                onClick={handleSharePublicLink}
+                className="flex items-center gap-1.5 px-3 py-2 bg-purple-600/80 hover:bg-purple-700 rounded-lg font-medium text-white text-xs transition-all backdrop-blur-sm"
+                title="Copy public read-only link"
+              >
+                <Share size={14} />
+                <span className="hidden sm:inline">Share Public Link</span>
+                <span className="sm:hidden">Share</span>
+              </button>
+            )}
 
             {showClearAll && (
               <button
@@ -179,39 +179,6 @@ const RankingsHeader = ({
                 <Clock size={14} />
                 <span className="hidden sm:inline">View Archives</span>
                 <span className="sm:hidden">Archives</span>
-              </button>
-            )}
-
-            {showSaveSnapshot && (
-              <button
-                onClick={onSaveSnapshot}
-                disabled={isSavingSnapshot}
-                className="flex items-center gap-1.5 px-3 py-2 bg-purple-600/80 hover:bg-purple-700 disabled:bg-purple-800 disabled:opacity-50 rounded-lg font-medium text-white text-xs transition-all backdrop-blur-sm"
-              >
-                {isSavingSnapshot ? (
-                  <>
-                    <Save size={14} className="animate-pulse" />
-                    <span className="hidden sm:inline">Saving Snapshot...</span>
-                    <span className="sm:hidden">Saving...</span>
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle size={14} />
-                    <span className="hidden sm:inline">Save Snapshot</span>
-                    <span className="sm:hidden">Snapshot</span>
-                  </>
-                )}
-              </button>
-            )}
-
-            {showCreateNew && (
-              <button
-                onClick={onCreateNew}
-                className="flex items-center gap-1.5 px-3 py-2 bg-green-600/80 hover:bg-green-700 rounded-lg font-medium text-white text-xs transition-all backdrop-blur-sm"
-              >
-                <Plus size={14} />
-                <span className="hidden sm:inline">Create New List</span>
-                <span className="sm:hidden">New</span>
               </button>
             )}
 
@@ -249,6 +216,26 @@ const RankingsHeader = ({
       </div>
     </div>
   );
+};
+
+RankingsHeader.propTypes = {
+  onAddQB: PropTypes.func.isRequired,
+  rankingName: PropTypes.string,
+  isSaving: PropTypes.bool,
+  canSave: PropTypes.bool,
+  onSave: PropTypes.func,
+  onViewArchives: PropTypes.func,
+  showViewArchives: PropTypes.bool,
+  onClearAll: PropTypes.func,
+  showClearAll: PropTypes.bool,
+  isCleanView: PropTypes.bool,
+  onToggleView: PropTypes.func,
+  showMovement: PropTypes.bool,
+  onToggleMovement: PropTypes.func,
+  showMovementToggle: PropTypes.bool,
+  onExport: PropTypes.func,
+  showExport: PropTypes.bool,
+  isPersonal: PropTypes.bool,
 };
 
 export default RankingsHeader;
