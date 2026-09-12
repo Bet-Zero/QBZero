@@ -8,6 +8,7 @@
     "preview": "vite preview",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
     "docs": "node generateDocs.cjs",
+    "update-stats": "node updateStats.js",
     "test": "vitest",
     "zen": "node toggleView.cjs",
     "prepare": "echo skipped",
