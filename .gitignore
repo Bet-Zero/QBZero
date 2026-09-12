@@ -34,6 +34,7 @@ src/__pycache__/
 scripts/*
 !scripts/checkRoster.js
 !scripts/refreshHeadshots.js
+!scripts/saveHeadshot.js
 tools/
 
 # docs/ is tracked markdown (npm run docs regenerates the hierarchies).

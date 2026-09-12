@@ -16,7 +16,8 @@
     "populate-qbs": "node populateQBs.js",
     "populate-qbs:dry": "node populateQBs.js --dry-run",
     "refresh-headshots": "node scripts/refreshHeadshots.js",
-    "refresh-headshots:dry": "node scripts/refreshHeadshots.js --dry-run"
+    "refresh-headshots:dry": "node scripts/refreshHeadshots.js --dry-run",
+    "save-headshot": "node scripts/saveHeadshot.js"
   },
   "dependencies": {
     "@g-loot/react-tournament-brackets": "^1.0.31-rc",
