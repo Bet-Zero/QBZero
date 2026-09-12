@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { toast } from 'react-hot-toast';
 import { savePlayerData } from '@/firebaseHelpers';
 
 const AUTOSAVE_DEBOUNCE_MS = 1000;
@@ -121,8 +122,21 @@ const useAutoSavePlayer = ({
       // Leave hasChanges set: the edit is unsaved, and saying so beats
       // clearing the flag and letting it disappear on the next reload.
       console.error('Error auto-saving player:', error);
+
+      // A rules rejection means the account writing this is not an admin --
+      // usually not signed in at all. Say that, rather than quoting Firebase.
+      const denied =
+        error?.code === 'permission-denied' ||
+        /insufficient permissions/i.test(error?.message || '');
+      const message = denied
+        ? 'Not saved: you are not signed in as an admin.'
+        : `Not saved: ${error?.message || 'unknown error'}`;
+
       setSaveState('error');
-      setSaveError(error?.message || 'Unknown error');
+      setSaveError(message);
+      // Both an inline indicator and a toast: this is the one failure that
+      // must not be missable, and the inline badge alone was.
+      toast.error(message, { id: 'player-autosave-error' });
     } finally {
       savingRef.current = false;
     }

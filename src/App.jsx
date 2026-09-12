@@ -29,7 +29,14 @@ const App = () => {
       <Route element={<SiteLayout />}>
         <Route path="/" element={<Home />} />
         <Route path="/players" element={<PlayerTableView />} />
-        <Route path="/profiles" element={<PlayerProfileView />} />
+        <Route
+          path="/profiles"
+          element={
+            <AdminProtectedRoute>
+              <PlayerProfileView />
+            </AdminProtectedRoute>
+          }
+        />
 
         {/* Personal Rankings - Read-only public access */}
         <Route path="/rankings" element={<PublicQBRankingsPage />} />
@@ -57,14 +64,35 @@ const App = () => {
 
         {/* Other Rankings Management */}
         <Route path="/rankings/all" element={<QBRankingsHome />} />
-        <Route path="/rankings/other/:rankingId" element={<QBRankingsPage />} />
+        <Route
+          path="/rankings/other/:rankingId"
+          element={
+            <AdminProtectedRoute>
+              <QBRankingsPage />
+            </AdminProtectedRoute>
+          }
+        />
 
         <Route path="/qbw" element={<QBWPage />} />
         <Route path="/lists" element={<ListsHome />} />
-        <Route path="/lists/:listId" element={<ListManager />} />
+        <Route
+          path="/lists/:listId"
+          element={
+            <AdminProtectedRoute>
+              <ListManager />
+            </AdminProtectedRoute>
+          }
+        />
         <Route path="/list-presentation" element={<ListPresentationView />} />
         <Route path="/tier-lists" element={<TierListsHome />} />
-        <Route path="/tier-maker/:tierListId?" element={<TierMakerView />} />
+        <Route
+          path="/tier-maker/:tierListId?"
+          element={
+            <AdminProtectedRoute>
+              <TierMakerView />
+            </AdminProtectedRoute>
+          }
+        />
 
         {/* Backup QBs Routes */}
         <Route path="/backup-qbs" element={<BackupQBsHome />} />

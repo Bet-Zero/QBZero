@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const savePlayerData = vi.fn().mockResolvedValue(undefined);
 vi.mock('@/firebaseHelpers', () => ({ savePlayerData }));
+vi.mock('react-hot-toast', () => ({ toast: { error: vi.fn() } }));
 
 const useAutoSavePlayer = (await import('@/hooks/useAutoSavePlayer')).default;
 
@@ -120,16 +121,12 @@ describe('useAutoSavePlayer — reporting', () => {
   });
 
   it('reports the error when the write is rejected', async () => {
-    savePlayerData.mockRejectedValueOnce(
-      new Error('Missing or insufficient permissions.')
-    );
+    savePlayerData.mockRejectedValueOnce(new Error('backend unavailable'));
     const { result } = renderAutosave();
     await flush();
 
     expect(result.current.saveState).toBe('error');
-    expect(result.current.saveError).toBe(
-      'Missing or insufficient permissions.'
-    );
+    expect(result.current.saveError).toBe('Not saved: backend unavailable');
   });
 
   it('stays idle when there is nothing to save', () => {
@@ -150,5 +147,36 @@ describe('useAutoSavePlayer — reporting', () => {
     expect('runningProfile' in payload).toBe(false);
     expect('offense2' in payload.roles).toBe(false);
     expect(payload.overall_grade).toBeNull();
+  });
+});
+
+describe('useAutoSavePlayer — permission errors', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    savePlayerData.mockClear();
+    setHasChanges.mockClear();
+  });
+
+  it('says you are not signed in rather than quoting Firebase', async () => {
+    const denied = new Error('Missing or insufficient permissions.');
+    denied.code = 'permission-denied';
+    savePlayerData.mockRejectedValueOnce(denied);
+
+    const { result } = renderAutosave();
+    await flush();
+
+    expect(result.current.saveState).toBe('error');
+    expect(result.current.saveError).toBe(
+      'Not saved: you are not signed in as an admin.'
+    );
+  });
+
+  it('reports other failures verbatim', async () => {
+    savePlayerData.mockRejectedValueOnce(new Error('network unreachable'));
+
+    const { result } = renderAutosave();
+    await flush();
+
+    expect(result.current.saveError).toBe('Not saved: network unreachable');
   });
 });

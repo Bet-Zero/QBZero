@@ -15,7 +15,7 @@ const SaveStatus = ({ saveState, saveError, onRetry }) => {
     return (
       <div className="flex items-center gap-2 text-red-300 text-xs">
         <AlertTriangle size={14} />
-        <span>Not saved: {saveError || 'unknown error'}</span>
+        <span>{saveError || 'Not saved'}</span>
         {onRetry && (
           <button
             type="button"
