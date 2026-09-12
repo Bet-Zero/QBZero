@@ -78,7 +78,7 @@ const AddPlayerDrawer = ({ onClose, allPlayers, onSelect }) => {
           if (p.freeAgentType === freeAgentType) return true;
           if (p.extension?.free_agent_type?.toLowerCase() === freeAgentType)
             return true;
-          if (freeAgentType === 'to' || freeAgentType === 'po') {
+          if (freeAgentType === 'to') {
             return p.options.some(
               (opt) => opt.type?.toLowerCase() === freeAgentType
             );

@@ -120,6 +120,8 @@ const useAutoSavePlayer = ({
       setSaveState('saved');
       setSaveError(null);
       setHasChanges(false);
+      // A shared id so rapid edits replace the toast instead of stacking.
+      toast.success('Saved', { id: 'player-autosave', duration: 1500 });
     } catch (error) {
       // Leave hasChanges set: the edit is unsaved, and saying so beats
       // clearing the flag and letting it disappear on the next reload.
@@ -154,7 +156,7 @@ const useAutoSavePlayer = ({
       setSaveError(message);
       // Both an inline indicator and a toast: this is the one failure that
       // must not be missable, and the inline badge alone was.
-      toast.error(message, { id: 'player-autosave-error' });
+      toast.error(message, { id: 'player-autosave' });
     } finally {
       savingRef.current = false;
     }

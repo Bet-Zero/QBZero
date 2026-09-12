@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import QBRankingCard from '@/features/rankings/QBRankingCard';
 import AddQBModal from '@/features/rankings/AddQBModal';
@@ -105,7 +105,7 @@ const QBRankingsPage = () => {
   }, [rankingId, navigate, isPersonalRankings]);
 
   // Load previous rankings for movement comparison
-  const loadPreviousRankings = async () => {
+  const loadPreviousRankings = useCallback(async () => {
     if (!isPersonalRankings) return null;
 
     try {
@@ -117,7 +117,7 @@ const QBRankingsPage = () => {
       console.error('Error loading previous rankings:', error);
       return null;
     }
-  };
+  }, [isPersonalRankings]);
 
   // Calculate movement data when rankings change
   useEffect(() => {
@@ -129,7 +129,7 @@ const QBRankingsPage = () => {
         }
       });
     }
-  }, [rankings, isPersonalRankings]);
+  }, [rankings, isPersonalRankings, loadPreviousRankings]);
 
   const handleToggleMovement = () => {
     setShowMovement(!showMovement);

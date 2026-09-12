@@ -1,6 +1,6 @@
 // src/features/tierMaker/TierMakerBoard.jsx
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import TierRow from '@/features/tierMaker/TierRow';
 import usePlayerData from '@/hooks/usePlayerData.js';
 import useFirebaseQuery from '@/hooks/useFirebaseQuery';
@@ -214,28 +214,31 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
     setSelectedList('');
   };
 
-  const handleLoadTierList = async (id) => {
-    if (!id) return;
-    try {
-      const data = await fetchTierList(id);
-      if (data?.tiers) {
-        const newTiers = {};
-        Object.entries(data.tiers).forEach(([tier, ids]) => {
-          newTiers[tier] = ids
-            .map((pid) => playersMap[pid])
-            .filter(Boolean)
-            .map((p) => ({ ...p, player_id: p.id }));
-        });
-        setTiers(newTiers);
-        setTierOrder(data.tierOrder || Object.keys(newTiers));
-        setSelectedTierList(id);
-        toast.success('Tier list loaded!');
+  const handleLoadTierList = useCallback(
+    async (id) => {
+      if (!id) return;
+      try {
+        const data = await fetchTierList(id);
+        if (data?.tiers) {
+          const newTiers = {};
+          Object.entries(data.tiers).forEach(([tier, ids]) => {
+            newTiers[tier] = ids
+              .map((pid) => playersMap[pid])
+              .filter(Boolean)
+              .map((p) => ({ ...p, player_id: p.id }));
+          });
+          setTiers(newTiers);
+          setTierOrder(data.tierOrder || Object.keys(newTiers));
+          setSelectedTierList(id);
+          toast.success('Tier list loaded!');
+        }
+      } catch (err) {
+        console.error('Failed to load tier list', err);
+        toast.error('Failed to load tier list');
       }
-    } catch (err) {
-      console.error('Failed to load tier list', err);
-      toast.error('Failed to load tier list');
-    }
-  };
+    },
+    [playersMap]
+  );
 
   const handleSaveTierList = async (idOverride) => {
     const listId = idOverride || selectedTierList;
@@ -279,7 +282,13 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
       handleLoadTierList(initialTierListId);
       setInitialLoaded(true);
     }
-  }, [initialLoaded, initialTierListId, tierListsData, allPlayers.length]);
+  }, [
+    initialLoaded,
+    initialTierListId,
+    tierListsData,
+    allPlayers.length,
+    handleLoadTierList,
+  ]);
 
   // Get current tier list name for export
   const getCurrentTierListName = () => {

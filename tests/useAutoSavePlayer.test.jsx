@@ -3,7 +3,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const savePlayerData = vi.fn().mockResolvedValue(undefined);
 vi.mock('@/firebaseHelpers', () => ({ savePlayerData }));
-vi.mock('react-hot-toast', () => ({ toast: { error: vi.fn() } }));
+vi.mock('react-hot-toast', () => ({
+  toast: { error: vi.fn(), success: vi.fn() },
+}));
 
 const authState = { user: null, isAdmin: false };
 vi.mock('@/hooks/useAuth', () => ({ default: () => authState }));
