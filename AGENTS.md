@@ -115,14 +115,17 @@ rankable for past seasons while dropping them from the ranker's default pool.
 Ids are Firestore document ids. Once a quarterback has been graded, changing
 their id orphans everything saved against it.
 
-### What has no ingestion path
+### What fills bio, stats and contract
 
-`bio` (age, height, weight, years pro), `system.stats` (CMP/ATT/YDS/TD/INT/
-CMP%/RTG/QBR) and `contract` are displayed by the app but nothing fills them:
-`populateQBs.js` writes empty values and there is no editor for them. The
-profile page only edits evaluation — traits, roles, subroles, badges, running
-profile, blurbs, overall grade, status. A `package.json` script once pointed at
-an `updateStats.js` that has never existed in this repository.
+Nothing in this repository. `populateQBs.js` writes them empty and the profile
+page edits only evaluation — traits, roles, subroles, badges, running profile,
+blurbs, overall grade, status.
+
+But `.gitignore` excludes several local-only scripts by name — `updateStats.js`,
+`uploadPlayersToFirebase.js`, `validatePlayersJson.js` — so the owner may have
+working tooling for exactly this that simply is not tracked. Ask before
+concluding a pipeline is missing; a file's absence here does not mean it does
+not exist. `npm run update-stats` points at one of them.
 
 ## Verification
 

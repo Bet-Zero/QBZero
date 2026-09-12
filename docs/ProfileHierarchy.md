@@ -15,6 +15,7 @@ PlayerDetails/
     SubRoleSelector.jsx
     index.jsx
   PlayerStatsTable.jsx
+  PlayerStatusToggle.jsx
   PlayerTraitsGrid.jsx
   index.jsx
 PlayerNavigation.jsx
