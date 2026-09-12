@@ -6,7 +6,10 @@
 //
 // Existing saved data always wins over the defaults here, so re-running is
 // safe: grades, roles and blurbs survive. Only the curated fields -- name,
-// team, position -- are refreshed from the list.
+// team, position -- are refreshed from the list. `status` is curated too, but
+// one-directional: a `status: RETIRED` entry always pushes RETIRED, while an
+// entry with no status leaves whatever is already saved alone (so the manual
+// toggle on the profile page still works for anyone not yet marked here).
 //
 // Uses firebase-admin with serviceAccountKey.json (gitignored, one per
 // developer from the Firebase console), not the public client SDK. The
@@ -20,6 +23,7 @@ import { fileURLToPath } from 'url';
 import admin from 'firebase-admin';
 import { quarterbacks } from './src/features/ranker/quarterbacks.js';
 import { emptyTraits } from './src/constants/traits.js';
+import { ACTIVE, RETIRED } from './src/constants/playerStatus.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const keyPath = path.join(here, 'serviceAccountKey.json');
@@ -86,7 +90,7 @@ async function populateQBs() {
         contract: {},
         contract_summary: {},
         overall_grade: null,
-        status: 'active',
+        status: ACTIVE,
         // Anything already saved wins over the defaults above.
         ...existing,
         // Always refreshed from the curated list. bio is merged by hand: these
@@ -96,6 +100,11 @@ async function populateQBs() {
         // updated -- leaving a moved quarterback on last year's team forever.
         player_id: qb.id,
         display_name: qb.name,
+        // One-directional: a retired entry always pushes RETIRED, but an
+        // entry with no status never forces ACTIVE back onto someone put on
+        // RETIRED by hand on the profile page for a reason not yet in this
+        // list.
+        ...(qb.status === RETIRED ? { status: RETIRED } : {}),
         bio: {
           AGE: null,
           HT: null,
@@ -159,8 +168,8 @@ async function populateQBs() {
         `\nSaved but not on the list (${orphans.length}): ${orphans.join(', ')}`
       );
       console.log(
-        '  Left untouched. Put them back on the list and mark them retired on ' +
-          'their profile if they should still be rankable for past seasons.'
+        '  Left untouched. Put them back on the list with status: RETIRED ' +
+          'if they should still be rankable for past seasons.'
       );
     }
   } catch (error) {

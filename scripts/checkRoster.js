@@ -87,8 +87,8 @@ if (fs.existsSync(headshotDir)) {
   if (orphans.length > 0) {
     warnings.push(
       `headshots with no list entry: ${orphans.join(', ')}. ` +
-        'If one of these retired, put them back on the list and mark them ' +
-        'retired on their profile — removing them loses their grades.'
+        'If one of these retired, put them back on the list with ' +
+        'status: RETIRED — removing them loses their grades.'
     );
   }
 }

@@ -5,10 +5,14 @@
 // and re-running populateQBs is what actually moves someone.
 //
 // Never remove an entry. Grades and any past ranking containing a quarterback
-// depend on it existing — mark them retired on their profile instead, which
-// keeps them rankable for past seasons while dropping them from the ranker's
-// default pool. Ids are Firestore document ids and must never change once a
-// quarterback has been graded.
+// depend on it existing — set `status: RETIRED` instead, which keeps them
+// rankable for past seasons while dropping them from the ranker's default
+// pool. Re-run populateQBs after adding it; that's what actually applies it,
+// same as a team correction. It only ever pushes RETIRED — leaving `status`
+// off an entry never overwrites a status set by hand on the profile page, so
+// the manual toggle there still works for anything not yet reflected here.
+// Ids are Firestore document ids and must never change once a quarterback has
+// been graded.
 //
 // Scope: every quarterback on a 53-man roster or practice squad, including the
 // 2025 and 2026 draft classes. Entries are sorted by id.
@@ -16,6 +20,10 @@
 // See VERIFY below for the entries whose team is stale or unconfirmed.
 //
 // Run `npm run check-roster` after editing.
+// Relative, not the `@/` alias -- this file is also imported directly by
+// plain Node scripts (populateQBs.js, checkRoster.js), which don't resolve it.
+import { RETIRED } from '../../constants/playerStatus.js';
+
 export const quarterbacks = [
   { id: 'aaron-rodgers', name: 'Aaron Rodgers', team: 'PIT' },
   { id: 'aidan-oconnell', name: "Aidan O'Connell", team: 'LV' },
@@ -88,7 +96,7 @@ export const quarterbacks = [
   { id: 'patrick-mahomes', name: 'Patrick Mahomes', team: 'KC' },
   { id: 'quinn-ewers', name: 'Quinn Ewers', team: 'JAX' },
   { id: 'riley-leonard', name: 'Riley Leonard', team: 'IND' },
-  { id: 'russell-wilson', name: 'Russell Wilson', team: 'NYG' },
+  { id: 'russell-wilson', name: 'Russell Wilson', team: 'NYG', status: RETIRED },
   { id: 'sam-darnold', name: 'Sam Darnold', team: 'SEA' },
   { id: 'sam-ehlinger', name: 'Sam Ehlinger', team: 'DEN' },
   { id: 'sam-howell', name: 'Sam Howell', team: 'DAL' },
@@ -97,7 +105,7 @@ export const quarterbacks = [
   { id: 'stetson-bennett-iv', name: 'Stetson Bennett IV', team: 'LAR' },
   { id: 'tanner-mckee', name: 'Tanner McKee', team: 'PHI' },
   { id: 'taylen-green', name: 'Taylen Green', team: 'CLE' },
-  { id: 'taylor-heinicke', name: 'Taylor Heinicke', team: 'LAC' },
+  { id: 'taylor-heinicke', name: 'Taylor Heinicke', team: 'LAC', status: RETIRED },
   { id: 'tommy-devito', name: 'Tommy DeVito', team: 'NE' },
   { id: 'trevor-lawrence', name: 'Trevor Lawrence', team: 'JAX' },
   { id: 'trey-lance', name: 'Trey Lance', team: 'LAC' },
@@ -116,8 +124,9 @@ export const quarterbacks = [
 // until someone corrects it on the profile, but these are the ones to look at
 // first next season:
 //
-//   russell-wilson    retired during/after 2025; NYG is his last team.
-//                     Mark him retired on his profile.
-//   taylor-heinicke   cut by the Chargers in camp; LAC is his last team.
+//   russell-wilson    retired during/after 2025; NYG is his last team. Now
+//                     marked status: RETIRED above.
+//   taylor-heinicke   cut by the Chargers in camp and since retired; LAC is
+//                     his last team. Now marked status: RETIRED above.
 //   jake-haener       signed by NYG 17 Aug 2026 to the practice squad; one
 //                     report has him released since.
