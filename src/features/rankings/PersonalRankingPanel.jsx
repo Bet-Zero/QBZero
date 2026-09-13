@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import { Clock, Users } from 'lucide-react';
 import QBRankingCard from '@/features/rankings/QBRankingCard';
+import RankingsExportModal from '@/components/shared/RankingsExportModal';
 import { formatRankingDate } from '@/utils/formatting/rankingDates';
+import { describeRankingChange } from '@/utils/rankings/rankingSummary';
 
 /**
  * The main panel on the two history pages: either the live board's top ten, or
@@ -19,6 +21,10 @@ const PersonalRankingPanel = ({
   onRestore,
   isRestoring,
 }) => {
+  // A snapshot could be viewed but not exported, which is most of what a
+  // snapshot is for -- showing what the board looked like at the time.
+  const [exportingArchive, setExportingArchive] = useState(false);
+
   if (selectedArchive) {
     return (
       <div className="bg-gradient-to-r from-blue-900/20 to-blue-800/10 border border-blue-500/30 rounded-xl p-6 mb-8">
@@ -35,8 +41,19 @@ const PersonalRankingPanel = ({
               {selectedArchive.rankings?.length || 0} QBs ranked
               {selectedArchive.notes && <> • {selectedArchive.notes}</>}
             </p>
+            {describeRankingChange(selectedArchive.summary) && (
+              <p className="text-blue-300/60 text-xs mt-0.5">
+                {describeRankingChange(selectedArchive.summary)}
+              </p>
+            )}
           </div>
           <div className="ml-auto flex items-center gap-2">
+            <button
+              onClick={() => setExportingArchive(true)}
+              className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg text-sm font-medium transition-colors"
+            >
+              Export
+            </button>
             {onRestore && (
               <button
                 onClick={() => onRestore(selectedArchive)}
@@ -54,6 +71,16 @@ const PersonalRankingPanel = ({
             </button>
           </div>
         </div>
+
+        {exportingArchive && (
+          <RankingsExportModal
+            rankings={selectedArchive.rankings || []}
+            rankingName={`QB Rankings ${formatRankingDate(selectedArchive)}`}
+            title="Export Snapshot"
+            subtitle={`The board as it stood on ${formatRankingDate(selectedArchive)}`}
+            onClose={() => setExportingArchive(false)}
+          />
+        )}
 
         <div className="space-y-2 max-h-[600px] overflow-y-auto">
           {selectedArchive.rankings?.length ? (

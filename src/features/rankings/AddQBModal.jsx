@@ -11,6 +11,7 @@ import {
 import useQBRoster from '@/hooks/useQBRoster';
 import { TEAM_LOGO_MAP as teamLogoMap } from '@/utils/formatting/teamLogos';
 import { isActive } from '@/constants/playerStatus';
+import useModalBehavior from '@/hooks/useModalBehavior';
 import { toRosterEntry } from '@/utils/rankings/personalRankingEntries';
 
 // `onAdd` takes an array, always. It used to take one quarterback and be called
@@ -19,6 +20,9 @@ import { toRosterEntry } from '@/utils/rankings/personalRankingEntries';
 const AddQBModal = ({ onClose, onAdd, existingIds = new Set() }) => {
   const { roster, loading } = useQBRoster();
   const fieldId = useId();
+  // Off for the backdrop: this dialog holds a part-typed manual entry often
+  // enough that a stray click discarding it would be its own bug report.
+  const { panelRef } = useModalBehavior(onClose, { closeOnBackdrop: false });
   const [showQBPool, setShowQBPool] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [formData, setFormData] = useState({
@@ -88,13 +92,25 @@ const AddQBModal = ({ onClose, onAdd, existingIds = new Set() }) => {
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-[#1a1a1a] rounded-xl border border-white/20 w-full max-w-2xl shadow-2xl max-h-[90vh] overflow-hidden">
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={`${fieldId}-title`}
+        tabIndex={-1}
+        className="bg-[#1a1a1a] rounded-xl border border-white/20 w-full max-w-2xl shadow-2xl max-h-[90vh] overflow-hidden"
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-white/10">
           <div className="flex items-center gap-3">
             <User className="text-blue-500" size={24} />
             <div>
-              <h2 className="text-xl font-bold text-white">Add New QB</h2>
+              <h2
+                id={`${fieldId}-title`}
+                className="text-xl font-bold text-white"
+              >
+                Add New QB
+              </h2>
               {addedCount > 0 && (
                 <div className="text-sm text-green-400">
                   {addedCount} QB{addedCount > 1 ? 's' : ''} added this session

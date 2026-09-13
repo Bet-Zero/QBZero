@@ -6,8 +6,10 @@ import {
   X,
   TrendingUp,
   Edit3,
+  FileSpreadsheet,
 } from 'lucide-react';
 import useImageDownload from '@/hooks/useImageDownload';
+import useModalBehavior from '@/hooks/useModalBehavior';
 import toast from 'react-hot-toast';
 import AdjustableRankings from '@/features/ranker/AdjustableRankings';
 import PropTypes from 'prop-types';
@@ -17,6 +19,12 @@ import {
   unwrapPlayer,
   POSTER_LIMIT,
 } from '@/components/shared/rankings/RankingViews';
+import {
+  toCsv,
+  toPlainText,
+  exportFilename,
+  downloadTextFile,
+} from '@/utils/rankings/rankingExportFormats';
 
 const RankingsExportModal = ({
   rankings = [],
@@ -41,6 +49,7 @@ const RankingsExportModal = ({
   const [currentRanking, setCurrentRanking] = useState(rankings);
   const isTruncated =
     viewType === 'grid' && currentRanking.length > POSTER_LIMIT;
+  const { panelRef, onBackdropMouseDown } = useModalBehavior(onClose);
   const shareViewRef = useRef(null);
   const exportViewRef = useRef(null);
   const downloadImageHook = useImageDownload(exportViewRef);
@@ -77,23 +86,24 @@ const RankingsExportModal = ({
   };
 
   const handleCopy = async () => {
-    const text = currentRanking
-      .map((item, idx) => {
-        const player = unwrapPlayer(item);
-        const name = player.name || player.display_name;
-        const team = player.team ? ` (${player.team.toUpperCase()})` : '';
-        return `#${idx + 1} ${name}${team}`;
-      })
-      .join('\n');
-
     try {
-      await navigator.clipboard.writeText(text);
+      await navigator.clipboard.writeText(toPlainText(currentRanking));
       toast.success('Rankings copied to the clipboard.');
     } catch {
       // A silently swallowed failure here is indistinguishable from a copy that
       // worked, which is the same trap the image download was pulled out of.
       toast.error('Could not copy -- your browser blocked clipboard access.');
     }
+  };
+
+  // An image is no use in a spreadsheet, and notes do not survive one at all.
+  const handleDownloadCsv = () => {
+    downloadTextFile(
+      exportFilename(rankingName, 'csv'),
+      toCsv(currentRanking),
+      'text/csv;charset=utf-8'
+    );
+    toast.success('CSV downloaded.');
   };
 
   const handleDownloadImage = async () => {
@@ -122,16 +132,20 @@ const RankingsExportModal = ({
   };
 
   const actionButtons = (
-    <div className="flex gap-2 justify-center sm:justify-start">
-      <button
-        onClick={handleAdjustRankings}
-        className="px-3 py-2 text-sm text-white bg-orange-600/80 hover:bg-orange-700 rounded flex items-center transition-colors"
-        title="Adjust Rankings"
-      >
-        <Edit3 size={16} className="mr-1" />
-        <span className="hidden sm:inline">Adjust Rankings</span>
-        <span className="sm:hidden">Adjust</span>
-      </button>
+    <div className="flex gap-2 justify-center sm:justify-start flex-wrap">
+      {/* Reordering needs somewhere to go. A read-only caller -- an archived
+          snapshot, say -- passes no handler, so it is not offered one. */}
+      {onRankingAdjusted && (
+        <button
+          onClick={handleAdjustRankings}
+          className="px-3 py-2 text-sm text-white bg-orange-600/80 hover:bg-orange-700 rounded flex items-center transition-colors"
+          title="Adjust Rankings"
+        >
+          <Edit3 size={16} className="mr-1" />
+          <span className="hidden sm:inline">Adjust Rankings</span>
+          <span className="sm:hidden">Adjust</span>
+        </button>
+      )}
       {viewType === 'grid' && (
         <button
           onClick={() => setShowLogoBg(!showLogoBg)}
@@ -201,8 +215,16 @@ const RankingsExportModal = ({
       >
         <Download size={16} className="mr-1" />
         <span className="hidden sm:inline">
-          {isDownloading ? 'Downloading...' : 'Download'}
+          {isDownloading ? 'Downloading...' : 'Image'}
         </span>
+      </button>
+      <button
+        onClick={handleDownloadCsv}
+        className="px-3 py-2 text-sm text-white bg-white/10 rounded hover:bg-white/20 flex items-center transition-colors"
+        title="Download as CSV, including notes"
+      >
+        <FileSpreadsheet size={16} className="mr-1" />
+        <span className="hidden sm:inline">CSV</span>
       </button>
       <button
         onClick={handleCopy}
@@ -423,8 +445,19 @@ const RankingsExportModal = ({
       )}
 
       {/* Visible modal */}
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div className="bg-neutral-900 rounded-xl border border-white/20 w-full max-w-7xl max-h-[90vh] overflow-hidden">
+      <div
+        role="presentation"
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        onMouseDown={onBackdropMouseDown}
+      >
+        <div
+          ref={panelRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label={title}
+          tabIndex={-1}
+          className="bg-neutral-900 rounded-xl border border-white/20 w-full max-w-7xl max-h-[90vh] overflow-hidden"
+        >
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-white/10">
             <div className="flex items-center gap-3">
@@ -436,6 +469,8 @@ const RankingsExportModal = ({
             </div>
             <button
               onClick={onClose}
+              title="Close"
+              aria-label="Close"
               className="p-2 hover:bg-white/10 rounded-lg transition-all"
             >
               <X className="text-white/60" size={20} />

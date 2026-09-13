@@ -2,6 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { Clock, Eye, RotateCcw, Trash2 } from 'lucide-react';
 import { formatRankingDate } from '@/utils/formatting/rankingDates';
+import { describeRankingChange } from '@/utils/rankings/rankingSummary';
 
 /**
  * The list of saved snapshots.
@@ -61,6 +62,11 @@ const ArchiveSidebar = ({
                     <div className="text-white/60 text-xs">
                       {archive.rankings?.length || 0} QBs ranked
                     </div>
+                    {describeRankingChange(archive.summary) && (
+                      <div className="text-white/50 text-[11px] mt-0.5">
+                        {describeRankingChange(archive.summary)}
+                      </div>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     {isSelected && (

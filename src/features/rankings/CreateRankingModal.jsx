@@ -1,10 +1,12 @@
 // CreateRankingModal.jsx
 import React, { useId, useState } from 'react';
 import { createQBRanking } from '@/firebase/listHelpers';
+import useModalBehavior from '@/hooks/useModalBehavior';
 
-const CreateRankingModal = ({ isOpen, onClose, onCreated }) => {
+const ModalBody = ({ onClose, onCreated }) => {
   const [name, setName] = useState('');
   const fieldId = useId();
+  const { panelRef } = useModalBehavior(onClose, { closeOnBackdrop: false });
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState('');
 
@@ -33,12 +35,20 @@ const CreateRankingModal = ({ isOpen, onClose, onCreated }) => {
     onClose();
   };
 
-  if (!isOpen) return null;
-
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-[#111] p-6 rounded border border-white/10 w-full max-w-md">
-        <h2 className="text-white font-bold text-xl mb-4">
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={`${fieldId}-title`}
+        tabIndex={-1}
+        className="bg-[#111] p-6 rounded border border-white/10 w-full max-w-md"
+      >
+        <h2
+          id={`${fieldId}-title`}
+          className="text-white font-bold text-xl mb-4"
+        >
           Create New QB Ranking
         </h2>
 
@@ -85,5 +95,11 @@ const CreateRankingModal = ({ isOpen, onClose, onCreated }) => {
     </div>
   );
 };
+
+// Mounted only while open, so the hook's focus handling runs per opening
+// rather than once for the life of the page. It also resets the typed name,
+// which used to survive a cancel and reappear next time.
+const CreateRankingModal = ({ isOpen, onClose, onCreated }) =>
+  isOpen ? <ModalBody onClose={onClose} onCreated={onCreated} /> : null;
 
 export default CreateRankingModal;

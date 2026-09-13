@@ -6,6 +6,7 @@ import {
   saveCurrentPersonalRankings,
   deletePersonalRankingArchive,
 } from '@/firebase/personalRankingHelpers';
+import { summariseRankingChange } from '@/utils/rankings/rankingSummary';
 
 /**
  * The live board plus its snapshots, and the two things you can do to a
@@ -29,7 +30,18 @@ const usePersonalRankingHistory = () => {
         getPersonalRankingArchives(),
       ]);
       setCurrent(liveBoard);
-      setArchives(history);
+      // Each snapshot is described by what changed between it and the one
+      // before it, so two updates a week apart are told apart without opening
+      // both. The boards are already loaded; this is the comparison, not a read.
+      setArchives(
+        history.map((archive, index) => ({
+          ...archive,
+          summary: summariseRankingChange(
+            archive.rankings,
+            history[index + 1]?.rankings
+          ),
+        }))
+      );
       setError(null);
     } catch (loadError) {
       // Falling through to the empty state made an outage look like an empty
