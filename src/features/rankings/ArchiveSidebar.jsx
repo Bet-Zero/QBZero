@@ -19,6 +19,9 @@ const ArchiveSidebar = ({
   onRestore,
   onDelete,
   busyId,
+  hasMore = false,
+  onLoadMore,
+  loadingMore = false,
 }) => (
   <div className="bg-neutral-800/50 rounded-xl p-6 border border-white/10 mb-6">
     <div className="flex items-center gap-3 mb-4">
@@ -118,11 +121,22 @@ const ArchiveSidebar = ({
             </div>
           );
         })}
+
+        {hasMore && onLoadMore && (
+          <button
+            type="button"
+            onClick={onLoadMore}
+            disabled={loadingMore}
+            className="w-full py-2 text-sm text-blue-400 hover:text-blue-300 disabled:opacity-50 transition-colors"
+          >
+            {loadingMore ? 'Loading…' : 'Load older archives'}
+          </button>
+        )}
       </div>
     ) : (
       <div className="text-center py-4 text-white/60 text-sm">
-        No archives yet. Your rankings are saved to the history each time you
-        save a change.
+        No archives yet. Every save keeps the version it replaces, and they are
+        kept for good.
       </div>
     )}
   </div>
@@ -135,6 +149,9 @@ ArchiveSidebar.propTypes = {
   onRestore: PropTypes.func,
   onDelete: PropTypes.func,
   busyId: PropTypes.string,
+  hasMore: PropTypes.bool,
+  onLoadMore: PropTypes.func,
+  loadingMore: PropTypes.bool,
 };
 
 export default ArchiveSidebar;

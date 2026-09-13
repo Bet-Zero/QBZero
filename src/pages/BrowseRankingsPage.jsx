@@ -19,6 +19,9 @@ const BrowseRankingsPage = () => {
     busyId,
     restore,
     remove,
+    hasMore,
+    loadMore,
+    loadingMore,
   } = usePersonalRankingHistory();
   const [otherRankings, setOtherRankings] = React.useState([]);
 
@@ -116,6 +119,9 @@ const BrowseRankingsPage = () => {
               onRestore={restore}
               onDelete={remove}
               busyId={busyId}
+              hasMore={hasMore}
+              onLoadMore={loadMore}
+              loadingMore={loadingMore}
             />
           </div>
         </div>

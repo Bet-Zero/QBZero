@@ -32,6 +32,9 @@ const QBRankingsHome = () => {
     busyId,
     restore,
     remove,
+    hasMore,
+    loadMore,
+    loadingMore,
   } = usePersonalRankingHistory();
 
   const playersMap = useMemo(() => {
@@ -201,6 +204,9 @@ const QBRankingsHome = () => {
                 onRestore={restore}
                 onDelete={remove}
                 busyId={busyId}
+                hasMore={hasMore}
+                onLoadMore={loadMore}
+                loadingMore={loadingMore}
               />
             </div>
           </div>

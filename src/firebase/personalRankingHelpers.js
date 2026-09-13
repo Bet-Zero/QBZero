@@ -158,34 +158,41 @@ export const savePersonalRankingNotes = async (qbId, notes) => {
 };
 
 /**
- * Archives, newest first.
+ * Archives, newest first, with whether there are older ones still to fetch.
  *
- * The live board sits in the same collection, so one extra document is
- * requested and the filter drops it if it lands in the window. Its `createdAt`
- * is from when the board was first created, so in practice it sorts last.
+ * Nothing prunes: every save keeps the board it replaced, deliberately. So the
+ * read is bounded instead -- a page asks for what it will show rather than for
+ * the whole collection, and a history that has been running for years costs the
+ * same to open as one that started last week.
+ *
+ * The live board sits in the same collection, so two extra documents are
+ * requested: one to absorb the live board if it lands in the window, one to
+ * answer `hasMore`. Its `createdAt` is from when the board was first created,
+ * so in practice it sorts last.
  */
 export const getPersonalRankingArchives = async (max = ARCHIVE_PAGE_SIZE) => {
   const snapshot = await getDocs(
     query(
       personalRankingArchivesRef,
       orderBy('createdAt', 'desc'),
-      limit(max + 1)
+      limit(max + 2)
     )
   );
-  return snapshot.docs
+  const archives = snapshot.docs
     .map(withId)
-    .filter((archive) => !archive.isCurrent)
-    .slice(0, max);
+    .filter((archive) => !archive.isCurrent);
+
+  return { archives: archives.slice(0, max), hasMore: archives.length > max };
 };
 
 /**
  * The archive the live board replaced -- what movement indicators compare
- * against. Reads three documents rather than the whole collection, which the
- * public rankings page was doing on every visit to use one of them.
+ * against. Reads a handful of documents rather than the whole collection,
+ * which the public rankings page was doing on every visit to use one of them.
  */
 export const getPreviousPersonalRanking = async () => {
-  const [previous] = await getPersonalRankingArchives(2);
-  return previous || null;
+  const { archives } = await getPersonalRankingArchives(1);
+  return archives[0] || null;
 };
 
 /** One archive by id. */
