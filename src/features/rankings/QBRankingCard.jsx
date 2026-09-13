@@ -183,12 +183,14 @@ const QBRankingCard = ({
 
               {qb.team && (
                 <div className="flex items-center gap-1 sm:gap-2 px-1.5 sm:px-2 py-0.5 sm:py-1 bg-[#111]/80 backdrop-blur-sm rounded text-white/80 flex-shrink-0">
-                  <div
-                    className="w-2.5 h-2.5 sm:w-4 sm:h-4 bg-center bg-no-repeat bg-contain"
-                    style={{
-                      backgroundImage: `url(${teamLogo})`,
-                    }}
-                  />
+                  {teamLogo && (
+                    <div
+                      className="w-2.5 h-2.5 sm:w-4 sm:h-4 bg-center bg-no-repeat bg-contain"
+                      style={{
+                        backgroundImage: `url(${teamLogo})`,
+                      }}
+                    />
+                  )}
                   <span className="text-[9px] sm:text-xs font-medium">
                     {qb.team}
                   </span>
@@ -225,7 +227,7 @@ const QBRankingCard = ({
               </div>
             ) : (
               <div
-                className={`text-white/70 drop-shadow-lg ${getNotesTextClasses(qb.notes)}`}
+                className={`text-white/70 drop-shadow-lg ${getNotesTextClasses()}`}
                 title={isArchiveMode && qb.notes ? qb.notes : undefined} // Show full notes on hover in archive mode
               >
                 {qb.notes || (

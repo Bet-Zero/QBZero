@@ -2,29 +2,44 @@ import { toPng } from 'html-to-image';
 import { toast } from 'react-hot-toast';
 import { antonBase64CSS } from '@/fonts/antonBase64';
 
-const waitForImages = async (root) => {
+// An image that has already failed is `complete` with a `naturalWidth` of 0 and
+// will never fire `load` or `error` again -- waiting on those events for it hung
+// the download forever, with the button stuck on "Downloading..." and nothing
+// said. Treat any settled image as done, and cap the wait for the rest.
+const IMAGE_WAIT_MS = 8000;
+
+const waitForImages = async (root, timeoutMs = IMAGE_WAIT_MS) => {
   if (!root) return;
 
-  const images = Array.from(root.querySelectorAll('img'));
-
-  await Promise.all(
-    images.map((img) => {
-      if (img.complete && img.naturalWidth !== 0) {
-        return Promise.resolve();
-      }
-
-      return new Promise((resolve) => {
-        const handleDone = () => {
-          img.removeEventListener('load', handleDone);
-          img.removeEventListener('error', handleDone);
-          resolve();
-        };
-
-        img.addEventListener('load', handleDone, { once: true });
-        img.addEventListener('error', handleDone, { once: true });
-      });
-    })
+  const pending = Array.from(root.querySelectorAll('img')).filter(
+    (img) => !img.complete
   );
+  if (!pending.length) return;
+
+  let timer;
+  const settled = Promise.all(
+    pending.map(
+      (img) =>
+        new Promise((resolve) => {
+          const handleDone = () => {
+            img.removeEventListener('load', handleDone);
+            img.removeEventListener('error', handleDone);
+            resolve();
+          };
+          img.addEventListener('load', handleDone, { once: true });
+          img.addEventListener('error', handleDone, { once: true });
+        })
+    )
+  );
+
+  // A slow headshot should delay the export, not cancel it: fall through and
+  // render whatever has arrived.
+  await Promise.race([
+    settled.finally(() => clearTimeout(timer)),
+    new Promise((resolve) => {
+      timer = setTimeout(resolve, timeoutMs);
+    }),
+  ]);
 };
 
 const useImageDownload = (ref) => {

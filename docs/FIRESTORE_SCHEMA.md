@@ -35,11 +35,43 @@ Those derived fields are not stored — do not write them back.
 
 ## `qbRankings/{rankingId}`
 
-Saved ranking sets, plus the current personal ranking.
+The standalone ranking lists — the ones made from "Create Rankings" and edited
+at `/rankings/other/{id}`. Each holds `name`, `rankings`, `createdAt` and
+`updatedAt`. The personal board is **not** here, despite what earlier revisions
+of this file said.
 
 ## `personalRankingArchives/{archiveId}`
 
-Point-in-time snapshots of a personal ranking, used for movement indicators.
+The personal board and its history, in one collection. Two shapes, told apart
+by a single field:
+
+| Field       | The live board        | A snapshot |
+| ----------- | --------------------- | ---------- |
+| `isCurrent` | `true`                | absent     |
+| `rankings`  | the board             | the board as it stood |
+| `notes`     | note for this version | the note the archived version carried |
+| `version`   | bumped on every save  | — |
+| `createdAt` | when first created    | when archived |
+| `updatedAt` | last save             | — |
+
+Exactly one document carries `isCurrent: true`; every query here filters on it
+explicitly. Saving is a transaction: the outgoing board is written as a new
+snapshot and the live document replaced in one commit, so two tabs cannot
+produce two snapshots of the same state or lose a board between them. A save
+may pass the `version` it loaded, and is refused if the document has moved on.
+
+Each entry in `rankings` is `{ id, name, team, imageUrl, notes, rank }`. `id` is
+the roster id from `quarterbacks.js`, which is also the player document id and
+the headshot filename — entries used to carry a generated id instead, which is
+why movement treated a re-added quarterback as new. A manual entry, for someone
+not on the roster, gets an id prefixed `manual-`.
+
+A snapshot is frozen on purpose: the live board resolves `team` from the player
+record on render, an archive never does.
+
+Older documents may also carry `timestamp` (a client-clock ISO string) and
+`snapshotNumber` / `previousArchiveId` from a chain nothing read. Nothing writes
+them now; `timestamp` is still read as a fallback so old snapshots show a date.
 
 ## `lists/{listId}`
 

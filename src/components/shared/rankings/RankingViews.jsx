@@ -22,6 +22,14 @@ import {
 /** Ranking entries may be bare players or { qb } / { player } wrappers. */
 export const unwrapPlayer = (item) => item?.qb || item?.player || item;
 
+/**
+ * The poster grid is six columns by seven rows. A longer ranking is truncated
+ * rather than spilling, so anywhere that draws the grid says so -- it used to
+ * drop everyone past 42 in silence, while the list view of the same ranking
+ * exported complete.
+ */
+export const POSTER_LIMIT = 42;
+
 const TeamLine = ({ player, className, logoBoxClass, spanClassName }) => {
   const logoPath = getLogoPath(player.team);
   return (
@@ -223,7 +231,7 @@ export const RankingBoard = ({
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-2 sm:gap-x-3 md:gap-x-4 gap-y-4 sm:gap-y-5 md:gap-y-6 justify-items-center">
-      {rankings.slice(0, 42).map((item, idx) => {
+      {rankings.slice(0, POSTER_LIMIT).map((item, idx) => {
         const player = unwrapPlayer(item);
         return (
           <RankingGridCard

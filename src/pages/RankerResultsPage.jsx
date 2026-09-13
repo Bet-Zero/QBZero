@@ -7,16 +7,26 @@ import RankingsExportModal from '@/components/shared/RankingsExportModal';
 import { detectComparisonCycles } from '@/utils/ranker/rankingEngine';
 import { RankingBoard } from '@/components/shared/rankings/RankingViews';
 import AdjustableRankings from '@/features/ranker/AdjustableRankings';
+import useAuth from '@/hooks/useAuth';
+import {
+  getCurrentPersonalRanking,
+  saveCurrentPersonalRankings,
+} from '@/firebase/personalRankingHelpers';
+import {
+  toRosterEntry,
+  withRanks,
+} from '@/utils/rankings/personalRankingEntries';
+import toast from 'react-hot-toast';
 import PropTypes from 'prop-types';
 
-const ActionButton = ({ onClick, to, className, children }) => {
+const ActionButton = ({ onClick, to, className, children, disabled }) => {
   const shared = `px-4 py-2 rounded-lg text-white font-semibold transition-colors ${className}`;
   return to ? (
     <Link to={to} className={`${shared} inline-block`}>
       {children}
     </Link>
   ) : (
-    <button onClick={onClick} className={shared}>
+    <button onClick={onClick} className={shared} disabled={disabled}>
       {children}
     </button>
   );
@@ -27,6 +37,7 @@ ActionButton.propTypes = {
   to: PropTypes.string,
   className: PropTypes.string,
   children: PropTypes.node,
+  disabled: PropTypes.bool,
 };
 
 const RankerResultsPage = () => {
@@ -41,6 +52,8 @@ const RankerResultsPage = () => {
     canNavigateToStep,
   } = useRankerContext();
 
+  const { isAdmin } = useAuth();
+  const [isSavingToBoard, setIsSavingToBoard] = useState(false);
   const [showRecoveryOptions, setShowRecoveryOptions] = useState(false);
   // The rankings render on the page now; the modal is for exporting.
   const [showExportModal, setShowExportModal] = useState(false);
@@ -75,6 +88,60 @@ const RankerResultsPage = () => {
 
   const handleRankingAdjusted = (adjustedRanking) => {
     setFinalRanking(adjustedRanking);
+  };
+
+  /**
+   * Put this ordering on the personal rankings board.
+   *
+   * The ranker works out an order by asking about pairs, and until now that
+   * order died here -- exportable as an image, but only reproducible on the
+   * board by dragging thirty quarterbacks into place by hand. The pool is the
+   * curated roster, so each entry keeps its roster id.
+   *
+   * This goes through the ordinary save: the board being replaced is archived
+   * first, so it is recoverable from the history page, and the notes already
+   * written against a quarterback follow him into the new order rather than
+   * being thrown away with it.
+   */
+  const handleSaveToPersonalRankings = async () => {
+    if (
+      !window.confirm(
+        `Replace your personal rankings with these ${finalRanking.length} quarterbacks? Your current board is archived first, so this can be undone.`
+      )
+    ) {
+      return;
+    }
+
+    setIsSavingToBoard(true);
+    try {
+      const existing = await getCurrentPersonalRanking();
+      const notesById = new Map(
+        (existing?.rankings || []).map((entry) => [entry.id, entry.notes])
+      );
+
+      const entries = withRanks(
+        finalRanking.map((item) => {
+          const player = item?.qb || item?.player || item;
+          const entry = toRosterEntry({
+            id: player.id,
+            name: player.display_name || player.name,
+            team: player.team || player.bio?.Team || '',
+          });
+          return { ...entry, notes: notesById.get(entry.id) || '' };
+        })
+      );
+
+      await saveCurrentPersonalRankings(entries, {
+        notes: 'Set from a QB Ranker session',
+      });
+      toast.success('Saved to your personal rankings.');
+      navigate('/rankings/edit');
+    } catch (error) {
+      console.error('Could not save the ranker results:', error);
+      toast.error('Could not save these to your rankings.');
+    } finally {
+      setIsSavingToBoard(false);
+    }
   };
 
   const handleShareResults = async () => {
@@ -231,6 +298,15 @@ const RankerResultsPage = () => {
             >
               {showLogoBg ? 'Hide Logo BG' : 'Show Logo BG'}
             </button>
+          )}
+          {isAdmin && finalRanking.length > 0 && (
+            <ActionButton
+              onClick={handleSaveToPersonalRankings}
+              disabled={isSavingToBoard}
+              className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+            >
+              {isSavingToBoard ? 'Saving…' : '⭐ Save to My Rankings'}
+            </ActionButton>
           )}
           <div className="sm:ml-auto">
             <ActionButton

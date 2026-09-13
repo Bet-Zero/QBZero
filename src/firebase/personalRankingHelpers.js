@@ -1,4 +1,16 @@
 // src/firebase/personalRankingHelpers.js
+//
+// The personal ranking board and its history.
+//
+// Both live in `personalRankingArchives`. One document carries `isCurrent: true`
+// and is the live board every page reads; the rest are snapshots, written when
+// the live board is replaced. That is the only thing telling the two apart, so
+// every query here filters on it explicitly.
+//
+// Saving is a transaction: the outgoing board is archived and the live document
+// replaced in one commit. It used to be a read, then a write, then another
+// write, so two tabs -- or one slow save -- produced two snapshots of the same
+// state and silently lost one of the two boards.
 import { db } from '../firebaseConfig';
 import {
   collection,
@@ -10,376 +22,184 @@ import {
   orderBy,
   limit,
   serverTimestamp,
-  updateDoc,
   where,
   deleteDoc,
+  runTransaction,
 } from 'firebase/firestore';
 
-const personalRankingArchivesRef = collection(db, 'personalRankingArchives');
+const COLLECTION = 'personalRankingArchives';
+const personalRankingArchivesRef = collection(db, COLLECTION);
+
+/** How many snapshots the history views ask for at once. */
+export const ARCHIVE_PAGE_SIZE = 50;
 
 /**
- * Save a new personal ranking archive snapshot
- * @param {Array} rankings - The current ranking data
- * @param {string} notes - Optional notes for this snapshot
- * @returns {string} The ID of the created archive entry
+ * Thrown when the live board changed since the caller last read it. The save is
+ * abandoned rather than overwriting whatever the other writer put there.
  */
-export const savePersonalRankingArchive = async (rankings, notes = '') => {
-  try {
-    // Get the latest archive to link to it
-    const latestArchive = await getLatestPersonalRankingArchive();
-
-    const now = new Date();
-    const archiveData = {
-      rankings: rankings || [],
-      notes,
-      createdAt: serverTimestamp(),
-      timestamp: now.toISOString(),
-      previousArchiveId: latestArchive?.id || null,
-      snapshotNumber: (latestArchive?.snapshotNumber || 0) + 1,
-    };
-
-    const archiveRef = await addDoc(personalRankingArchivesRef, archiveData);
-    return archiveRef.id;
-  } catch (error) {
-    console.error('Error saving personal ranking archive:', error);
-    throw error;
-  }
-};
-
-/**
- * Fetch all personal ranking archives, ordered by creation date (newest first)
- * @returns {Array} Array of archive documents
- */
-export const fetchAllPersonalRankingArchives = async () => {
-  try {
-    const q = query(personalRankingArchivesRef, orderBy('createdAt', 'desc'));
-    const archivesSnapshot = await getDocs(q);
-    return archivesSnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-  } catch (error) {
-    console.error('Error fetching personal ranking archives:', error);
-    throw error;
-  }
-};
-
-/**
- * Fetch a specific personal ranking archive by ID
- * @param {string} archiveId - The ID of the archive to fetch
- * @returns {Object|null} The archive document or null if not found
- */
-export const fetchPersonalRankingArchive = async (archiveId) => {
-  try {
-    const archiveRef = doc(db, 'personalRankingArchives', archiveId);
-    const archiveSnap = await getDoc(archiveRef);
-
-    if (archiveSnap.exists()) {
-      return {
-        id: archiveSnap.id,
-        ...archiveSnap.data(),
-      };
-    } else {
-      return null;
-    }
-  } catch (error) {
-    console.error('Error fetching personal ranking archive:', error);
-    throw error;
-  }
-};
-
-/**
- * Get the latest personal ranking archive
- * @returns {Object|null} The latest archive document or null if none exist
- */
-export const getLatestPersonalRankingArchive = async () => {
-  try {
-    const q = query(
-      personalRankingArchivesRef,
-      orderBy('createdAt', 'desc'),
-      limit(1)
+export class PersonalRankingConflictError extends Error {
+  constructor(currentVersion) {
+    super(
+      'These rankings were changed somewhere else since you loaded them. Reload before saving.'
     );
-    const archivesSnapshot = await getDocs(q);
-
-    if (!archivesSnapshot.empty) {
-      const doc = archivesSnapshot.docs[0];
-      return {
-        id: doc.id,
-        ...doc.data(),
-      };
-    }
-    return null;
-  } catch (error) {
-    console.error('Error fetching latest personal ranking archive:', error);
-    throw error;
+    this.name = 'PersonalRankingConflictError';
+    this.currentVersion = currentVersion;
   }
+}
+
+const withId = (snapshot) => ({ id: snapshot.id, ...snapshot.data() });
+
+/** The live board's document reference, or null if it has never been saved. */
+const findCurrentRankingRef = async () => {
+  const snapshot = await getDocs(
+    query(personalRankingArchivesRef, where('isCurrent', '==', true), limit(1))
+  );
+  return snapshot.empty ? null : snapshot.docs[0].ref;
+};
+
+/** The live board. */
+export const getCurrentPersonalRanking = async () => {
+  const snapshot = await getDocs(
+    query(personalRankingArchivesRef, where('isCurrent', '==', true), limit(1))
+  );
+  return snapshot.empty ? null : withId(snapshot.docs[0]);
 };
 
 /**
- * Get the archive history chain from a specific archive backwards
- * @param {string} archiveId - The archive ID to start from
- * @returns {Array} Array of archives in chronological order (oldest first)
+ * Save the board, archiving the version it replaces, in one commit.
+ *
+ * Pass `expectedVersion` -- the `version` that came back with the board you
+ * loaded -- to have a concurrent save rejected instead of silently overwritten.
  */
-export const getArchiveHistoryChain = async (archiveId) => {
-  try {
-    const archives = [];
-    let currentArchiveId = archiveId;
+export const saveCurrentPersonalRankings = async (
+  rankings,
+  { notes = '', expectedVersion } = {}
+) => {
+  const entries = rankings || [];
+  const currentRef = await findCurrentRankingRef();
 
-    // Traverse backwards through the chain
-    while (currentArchiveId) {
-      const archive = await fetchPersonalRankingArchive(currentArchiveId);
-      if (!archive) break;
-
-      archives.unshift(archive); // Add to beginning to maintain chronological order
-      currentArchiveId = archive.previousArchiveId;
-    }
-
-    return archives;
-  } catch (error) {
-    console.error('Error fetching archive history chain:', error);
-    throw error;
-  }
-};
-
-/**
- * Publish a QB ranking as the official personal ranking
- * @param {Array} rankings - The ranking data to publish
- * @param {string} sourceName - The name of the source ranking
- * @returns {string} The ID of the published ranking
- */
-export const publishAsPersonalRanking = async (rankings, sourceName = '') => {
-  try {
-    const now = new Date();
-    const publishedData = {
-      rankings: rankings || [],
-      sourceName: sourceName,
-      publishedAt: serverTimestamp(),
-      timestamp: now.toISOString(),
-      isPublished: true,
-    };
-
-    // Check if there's already a published ranking
-    const existingPublished = await getPublishedPersonalRanking();
-
-    if (existingPublished) {
-      // Update existing published ranking
-      const publishedRef = doc(
-        db,
-        'personalRankingArchives',
-        existingPublished.id
-      );
-      await updateDoc(publishedRef, publishedData);
-      return existingPublished.id;
-    } else {
-      // Create new published ranking
-      const publishedRef = await addDoc(
-        personalRankingArchivesRef,
-        publishedData
-      );
-      return publishedRef.id;
-    }
-  } catch (error) {
-    console.error('Error publishing personal ranking:', error);
-    throw error;
-  }
-};
-
-/**
- * Get the currently published personal ranking
- * @returns {Object|null} The published ranking or null if none exists
- */
-export const getPublishedPersonalRanking = async () => {
-  try {
-    const q = query(
-      personalRankingArchivesRef,
-      where('isPublished', '==', true),
-      limit(1)
-    );
-    const snapshot = await getDocs(q);
-
-    if (!snapshot.empty) {
-      const doc = snapshot.docs[0];
-      return {
-        id: doc.id,
-        ...doc.data(),
-      };
-    }
-    return null;
-  } catch (error) {
-    console.error('Error fetching published personal ranking:', error);
-    throw error;
-  }
-};
-
-/**
- * Save current personal rankings and auto-archive the previous version
- * This is the main function for the unified personal ranking system
- * @param {Array} rankings - The current ranking data
- * @param {string} notes - Optional notes for this update
- * @returns {Object} Object with current ranking ID and archive ID
- */
-export const saveCurrentPersonalRankings = async (rankings, notes = '') => {
-  try {
-    // Get the current rankings to archive them first
-    const currentRanking = await getCurrentPersonalRanking();
-    let archiveId = null;
-
-    // If there are existing rankings, archive them
-    if (currentRanking && currentRanking.rankings?.length > 0) {
-      archiveId = await savePersonalRankingArchive(
-        currentRanking.rankings,
-        `Auto-archived on ${new Date().toLocaleString()}`
-      );
-    }
-
-    // Update or create the current ranking
-    const now = new Date();
-    const rankingData = {
-      rankings: rankings || [],
+  if (!currentRef) {
+    const created = await addDoc(personalRankingArchivesRef, {
+      rankings: entries,
       notes,
-      updatedAt: serverTimestamp(),
-      timestamp: now.toISOString(),
       isCurrent: true,
-    };
+      version: 1,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+    return { currentId: created.id, archiveId: null, version: 1 };
+  }
 
-    let currentId;
-    if (currentRanking) {
-      // Update existing current ranking
-      const currentRef = doc(db, 'personalRankingArchives', currentRanking.id);
-      await updateDoc(currentRef, rankingData);
-      currentId = currentRanking.id;
-    } else {
-      // Create new current ranking
-      const currentRef = await addDoc(personalRankingArchivesRef, {
-        ...rankingData,
+  return runTransaction(db, async (transaction) => {
+    const snapshot = await transaction.get(currentRef);
+    const data = snapshot.exists() ? snapshot.data() : null;
+    const version = data?.version || 0;
+
+    if (expectedVersion != null && version !== expectedVersion) {
+      throw new PersonalRankingConflictError(version);
+    }
+
+    // Archive what is being replaced, keeping whatever note that version
+    // carried. This used to overwrite it with an "Auto-archived on ..." string
+    // that both history views then detected and hid again.
+    let archiveId = null;
+    if (data?.rankings?.length) {
+      const archiveRef = doc(personalRankingArchivesRef);
+      transaction.set(archiveRef, {
+        rankings: data.rankings,
+        notes: data.notes || '',
         createdAt: serverTimestamp(),
       });
-      currentId = currentRef.id;
+      archiveId = archiveRef.id;
     }
 
-    return { currentId, archiveId };
-  } catch (error) {
-    console.error('Error saving current personal rankings:', error);
-    throw error;
-  }
-};
-
-/**
- * Update current personal rankings without creating an archive
- * Use this for lightweight updates like notes changes
- * @param {Array} rankings - The updated ranking data
- * @returns {string} The ID of the updated current ranking
- */
-export const updateCurrentPersonalRankings = async (rankings) => {
-  try {
-    const currentRanking = await getCurrentPersonalRanking();
-
-    if (!currentRanking) {
-      // If no current ranking exists, create one
-      return await saveCurrentPersonalRankings(rankings, '');
-    }
-
-    // Update the existing current ranking without archiving
-    const now = new Date();
-    const rankingData = {
-      rankings: rankings || [],
-      notes: currentRanking.notes || '', // Preserve existing notes
-      updatedAt: serverTimestamp(),
-      timestamp: now.toISOString(),
+    transaction.update(currentRef, {
+      rankings: entries,
+      notes,
       isCurrent: true,
-    };
+      version: version + 1,
+      updatedAt: serverTimestamp(),
+    });
 
-    const currentRef = doc(db, 'personalRankingArchives', currentRanking.id);
-    await updateDoc(currentRef, rankingData);
-
-    return currentRanking.id;
-  } catch (error) {
-    console.error('Error updating current personal rankings:', error);
-    throw error;
-  }
+    return { currentId: currentRef.id, archiveId, version: version + 1 };
+  });
 };
 
 /**
- * Get the current (most recent) personal ranking
- * @returns {Object|null} The current ranking or null if none exists
+ * Write one quarterback's note and nothing else.
+ *
+ * Notes save as you type them rather than waiting for Save, which is
+ * deliberate -- but this used to send the whole in-memory board to do it, so an
+ * unsaved reorder went with it, permanently and without an archive, while the
+ * page still showed "unsaved changes". Address the entry by id and leave the
+ * order alone.
+ *
+ * Returns 'saved', or 'not-found' when the quarterback is not in the saved
+ * board yet -- an addition that has not been saved. The caller keeps the note
+ * in local state so it rides along with the next save.
  */
-export const getCurrentPersonalRanking = async () => {
-  try {
-    const q = query(
+export const savePersonalRankingNotes = async (qbId, notes) => {
+  const currentRef = await findCurrentRankingRef();
+  if (!currentRef) return 'not-found';
+
+  return runTransaction(db, async (transaction) => {
+    const snapshot = await transaction.get(currentRef);
+    const entries = snapshot.data()?.rankings || [];
+    if (!entries.some((entry) => entry.id === qbId)) return 'not-found';
+
+    transaction.update(currentRef, {
+      rankings: entries.map((entry) =>
+        entry.id === qbId ? { ...entry, notes } : entry
+      ),
+      updatedAt: serverTimestamp(),
+    });
+    return 'saved';
+  });
+};
+
+/**
+ * Snapshots, newest first.
+ *
+ * The live board sits in the same collection, so one extra document is
+ * requested and the filter drops it if it lands in the window. Its `createdAt`
+ * is from when the board was first created, so in practice it sorts last.
+ */
+export const getPersonalRankingArchives = async (max = ARCHIVE_PAGE_SIZE) => {
+  const snapshot = await getDocs(
+    query(
       personalRankingArchivesRef,
-      where('isCurrent', '==', true),
-      limit(1)
-    );
-    const snapshot = await getDocs(q);
-
-    if (!snapshot.empty) {
-      const doc = snapshot.docs[0];
-      return {
-        id: doc.id,
-        ...doc.data(),
-      };
-    }
-    return null;
-  } catch (error) {
-    console.error('Error fetching current personal ranking:', error);
-    throw error;
-  }
+      orderBy('createdAt', 'desc'),
+      limit(max + 1)
+    )
+  );
+  return snapshot.docs
+    .map(withId)
+    .filter((archive) => !archive.isCurrent)
+    .slice(0, max);
 };
 
 /**
- * Get all archived personal rankings (excluding the current one)
- * @returns {Array} Array of archived rankings ordered by date (newest first)
+ * The snapshot the live board replaced -- what movement indicators compare
+ * against. Reads three documents rather than the whole collection, which the
+ * public rankings page was doing on every visit to use one of them.
  */
-export const getArchivedPersonalRankings = async () => {
-  try {
-    // Get all archives, then filter out the current one in JavaScript
-    const q = query(personalRankingArchivesRef, orderBy('createdAt', 'desc'));
-    const snapshot = await getDocs(q);
-
-    return snapshot.docs
-      .map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }))
-      .filter((archive) => !archive.isCurrent); // Filter out current rankings in JavaScript
-  } catch (error) {
-    console.error('Error fetching archived personal rankings:', error);
-    throw error;
-  }
+export const getPreviousPersonalRanking = async () => {
+  const [previous] = await getPersonalRankingArchives(2);
+  return previous || null;
 };
 
-/**
- * Delete a personal ranking archive by ID
- * @param {string} archiveId - The ID of the archive to delete
- * @returns {boolean} Success status
- */
+/** One snapshot by id. */
+export const fetchPersonalRankingArchive = async (archiveId) => {
+  const snapshot = await getDoc(doc(db, COLLECTION, archiveId));
+  return snapshot.exists() ? withId(snapshot) : null;
+};
+
+/** Delete one snapshot. The live board is never a valid target. */
 export const deletePersonalRankingArchive = async (archiveId) => {
-  try {
-    const archiveRef = doc(db, 'personalRankingArchives', archiveId);
-    await deleteDoc(archiveRef);
-    return true;
-  } catch (error) {
-    console.error('Error deleting personal ranking archive:', error);
-    throw error;
+  const archive = await fetchPersonalRankingArchive(archiveId);
+  if (archive?.isCurrent) {
+    throw new Error('That is the live ranking, not a snapshot.');
   }
-};
-
-/**
- * Delete all personal ranking archives (keeping current ranking)
- * WARNING: This will delete all archive history!
- * @returns {number} Number of archives deleted
- */
-export const deleteAllPersonalRankingArchives = async () => {
-  try {
-    const archives = await getArchivedPersonalRankings();
-
-    for (const archive of archives) {
-      await deletePersonalRankingArchive(archive.id);
-    }
-
-    return archives.length;
-  } catch (error) {
-    console.error('Error deleting all personal ranking archives:', error);
-    throw error;
-  }
+  await deleteDoc(doc(db, COLLECTION, archiveId));
+  return true;
 };

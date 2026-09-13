@@ -63,7 +63,7 @@ New code is grouped by feature. Reusable UI or logic goes in `shared/`,
 | ------------------------- | --------------------------------------------- | ---------------- |
 | `players`                 | QB bios, traits, roles, stats, badges, blurbs | admin            |
 | `qbRankings`              | Saved ranking sets                            | admin            |
-| `personalRankingArchives` | Archived personal rankings                    | admin            |
+| `personalRankingArchives` | The personal board and its snapshots           | admin            |
 | `lists`                   | User-built lists                              | admin            |
 | `tierLists`               | Tier maker boards                             | admin            |
 | `rosterProjects`          | Roster tool projects                          | admin            |
@@ -88,9 +88,39 @@ along with `capSheet` and `contract_clean` fields; none of that exists here.
 - ✅ Keep logic and layout separated where appropriate
 - ✅ Use readable file naming (`TraitGradesBlock.jsx`, `AddPlayerDrawer.jsx`)
 - ✅ Preserve modals, filters and blurbs
-- ✅ Work on a branch and open a PR; the owner merges
+- ✅ Work on a branch and open a PR
+- ✅ Merge your own PR once the checks below pass — see "Merging" for the few
+  cases that still need the owner
 - ❌ Never amend, squash or force-push shared history
 - ❌ Never widen a change beyond what was asked without saying so
+
+## Merging
+
+The owner used to merge everything, which meant finished work sat waiting on
+someone who was not going to review the diff line by line anyway. Merge your own
+PRs instead, once all of these hold:
+
+- `npx vitest run` passes
+- `npm run build` succeeds
+- `npm run lint` is clean
+- the Vercel preview deployed, and you have said in the PR what to look at
+
+`main` deploys to the live site automatically, so merging publishes. That is the
+point of the rule, and the reason for the exceptions.
+
+**Ask first, and leave the PR open, for:**
+
+- anything that changes the shape of saved data, or a migration over existing
+  documents — a bad one is not undone by a revert
+- deleting or rewriting documents in Firestore
+- changes to `firestore.rules`, which decide who can write
+- removing an entry from `quarterbacks.js` (see the roster section — don't)
+- anything the owner asked to see before it went out
+
+When in doubt it is one question, not a policy debate: say what you would merge
+and why you paused, and carry on with something else meanwhile.
+
+Say in your summary that you merged, and what is now live.
 
 ## The annual roster update
 

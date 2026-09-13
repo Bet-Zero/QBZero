@@ -35,6 +35,8 @@ scripts/*
 !scripts/checkRoster.js
 !scripts/refreshHeadshots.js
 !scripts/saveHeadshot.js
+!scripts/firebaseAdmin.js
+!scripts/checkFirestore.js
 tools/
 
 # docs/ is tracked markdown (npm run docs regenerates the hierarchies).

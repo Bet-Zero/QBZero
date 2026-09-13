@@ -10,20 +10,6 @@ import { TEAM_LOGO_MAP } from '@/utils/formatting/teamLogos';
 // appears nowhere in the data (the Raiders are `LV`).
 export const teamLogoMap = TEAM_LOGO_MAP;
 
-// Custom positioning for specific team logos in grid view background
-export const teamLogoPositioning = {
-  DAL: { x: 55, y: 0 },
-  NO: { x: 125, y: 0 },
-  DET: { x: 0, y: 75 },
-  PHI: { x: 120, y: 0 },
-  MIN: { x: 80, y: 140 },
-  MIA: { x: 60, y: 60 },
-  NE: { x: 0, y: 20 },
-  BUF: { x: 80, y: 30 },
-  CAR: { x: 20, y: 50 },
-  TB: { x: 110, y: 60 },
-};
-
 // Teams whose logos occupy the top-left area and interfere with rank numbers
 export const teamsWithTopLeftLogos = [
   'LV', // Raiders
@@ -96,22 +82,31 @@ export const getHeadshotSrc = (player) =>
   `/assets/headshots/${player?.player_id || player?.id}.png`;
 
 /**
- * Create column arrays for list view
+ * Split a ranking into `cols` balanced columns, reading down each in turn.
+ *
+ * Every column used to take `ceil(n / cols)` entries, so the remainder piled
+ * up at the front and the last column could come out empty -- four players
+ * across three columns filled two, two and none.
  */
 export const createColumns = (rankings, cols) => {
-  const itemsPerCol = Math.ceil(rankings.length / cols);
   const columns = Array(cols)
     .fill()
     .map(() => []);
+  if (!cols) return columns;
 
-  rankings.forEach((item, idx) => {
-    const colIndex = Math.floor(idx / itemsPerCol);
-    if (colIndex < cols) {
+  const base = Math.floor(rankings.length / cols);
+  const remainder = rankings.length % cols;
+
+  let index = 0;
+  for (let col = 0; col < cols; col += 1) {
+    const size = base + (col < remainder ? 1 : 0);
+    for (let n = 0; n < size; n += 1, index += 1) {
+      const item = rankings[index];
       // Support both player objects directly and wrapped objects like { qb, rank }
       const player = item.qb || item.player || item;
-      columns[colIndex].push({ player, rank: idx + 1 });
+      columns[col].push({ player, rank: index + 1 });
     }
-  });
+  }
 
   return columns;
 };

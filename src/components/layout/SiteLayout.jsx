@@ -3,6 +3,42 @@ import React, { useEffect, useState } from 'react';
 import { Link, Outlet } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { ChevronDown, Menu, X, Lock } from 'lucide-react';
+import useAuth from '@/hooks/useAuth';
+
+/**
+ * A destination only the owner can open.
+ *
+ * These were static padlocked <div>s, so the padlock stayed on after signing
+ * in -- the person who can edit saw the same locked shell as a visitor and had
+ * to navigate by typing URLs. The padlock now reflects whether this browser can
+ * actually get in. It is a label, not a gate: AdminProtectedRoute and
+ * firestore.rules are what enforce access.
+ */
+const AdminLink = ({
+  to,
+  label,
+  className,
+  lockClassName,
+  iconSize = 14,
+  onClick,
+}) => {
+  const { isAdmin } = useAuth();
+
+  if (!isAdmin) {
+    return (
+      <div className={lockClassName}>
+        <Lock size={iconSize} />
+        <span>{label}</span>
+      </div>
+    );
+  }
+
+  return (
+    <Link to={to} className={className} onClick={onClick}>
+      {label}
+    </Link>
+  );
+};
 
 const NavGroup = ({ label, children, align = 'left', isMobile = false }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -105,10 +141,20 @@ const MobileMenu = ({ isOpen, onClose }) => {
           >
             QB Rankings
           </Link>
-          <div className="flex items-center gap-2 py-2 text-white/40 cursor-not-allowed">
-            <Lock size={14} />
-            <span>Browse Rankings</span>
-          </div>
+          <AdminLink
+            to="/rankings/edit"
+            label="Edit Rankings"
+            onClick={onClose}
+            className="block py-2 text-white/60 hover:text-white"
+            lockClassName="flex items-center gap-2 py-2 text-white/40 cursor-not-allowed"
+          />
+          <AdminLink
+            to="/rankings/browse"
+            label="Browse Rankings"
+            onClick={onClose}
+            className="block py-2 text-white/60 hover:text-white"
+            lockClassName="flex items-center gap-2 py-2 text-white/40 cursor-not-allowed"
+          />
           <NavGroup label="Tools" isMobile={true}>
             <Link
               to="/tier-maker"
@@ -123,10 +169,13 @@ const MobileMenu = ({ isOpen, onClose }) => {
             >
               QB Ranker
             </Link>
-            <div className="flex items-center gap-2 py-2 text-white/40 cursor-not-allowed">
-              <Lock size={14} />
-              <span>Create Rankings</span>
-            </div>
+            <AdminLink
+              to="/rankings/all"
+              label="Create Rankings"
+              onClick={onClose}
+              className="block py-2 text-white/60 hover:text-white"
+              lockClassName="flex items-center gap-2 py-2 text-white/40 cursor-not-allowed"
+            />
             <div className="border-t border-white/10 my-2" />
             <div>
               <div className="flex items-center gap-2 py-2 text-white/40 cursor-not-allowed">
@@ -137,10 +186,13 @@ const MobileMenu = ({ isOpen, onClose }) => {
                 <Lock size={14} />
                 <span>Tiers</span>
               </div>
-              <div className="flex items-center gap-2 py-2 text-white/40 cursor-not-allowed">
-                <Lock size={14} />
-                <span>Browse Rankings</span>
-              </div>
+              <AdminLink
+                to="/rankings/browse"
+                label="Browse Rankings"
+                onClick={onClose}
+                className="block py-2 text-white/60 hover:text-white"
+                lockClassName="flex items-center gap-2 py-2 text-white/40 cursor-not-allowed"
+              />
             </div>
           </NavGroup>
         </nav>
@@ -178,6 +230,13 @@ const SiteLayout = () => {
           <Link to="/rankings" className="hover:text-white">
             QB Rankings
           </Link>
+          <AdminLink
+            to="/rankings/edit"
+            label="Edit Rankings"
+            iconSize={12}
+            className="hover:text-white"
+            lockClassName="flex items-center gap-1 text-white/40 cursor-not-allowed"
+          />
           <NavGroup label="Tools" align="center">
             <Link
               to="/tier-maker"
@@ -191,10 +250,13 @@ const SiteLayout = () => {
             >
               QB Ranker
             </Link>
-            <div className="flex items-center gap-2 py-2 px-4 text-white/40 cursor-not-allowed">
-              <Lock size={12} />
-              <span>Create Rankings</span>
-            </div>
+            <AdminLink
+              to="/rankings/all"
+              label="Create Rankings"
+              iconSize={12}
+              className="block py-2 px-4 text-white/60 hover:text-white hover:bg-white/5"
+              lockClassName="flex items-center gap-2 py-2 px-4 text-white/40 cursor-not-allowed"
+            />
             <div className="border-t border-white/10 my-2" />
             <div className="px-4">
               <div className="flex items-center gap-2 py-2 text-white/40 cursor-not-allowed">
@@ -205,10 +267,13 @@ const SiteLayout = () => {
                 <Lock size={12} />
                 <span>Tiers</span>
               </div>
-              <div className="flex items-center gap-2 py-2 text-white/40 cursor-not-allowed">
-                <Lock size={12} />
-                <span>Browse Rankings</span>
-              </div>
+              <AdminLink
+                to="/rankings/browse"
+                label="Browse Rankings"
+                iconSize={12}
+                className="block py-2 text-white/60 hover:text-white"
+                lockClassName="flex items-center gap-2 py-2 text-white/40 cursor-not-allowed"
+              />
             </div>
           </NavGroup>
         </nav>

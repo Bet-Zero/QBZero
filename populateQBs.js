@@ -11,35 +11,25 @@
 // entry with no status leaves whatever is already saved alone (so the manual
 // toggle on the profile page still works for anyone not yet marked here).
 //
-// Uses firebase-admin with serviceAccountKey.json (gitignored, one per
-// developer from the Firebase console), not the public client SDK. The
-// `players` collection is admin-write-only (see firestore.rules), so writing
-// through the client SDK -- as this script used to -- authenticates as
-// nobody and every write comes back PERMISSION_DENIED; only the admin SDK,
-// which carries its own service-account credential, can get past that.
-import fs from 'fs';
-import path from 'path';
+// Uses firebase-admin, not the public client SDK. The `players` collection is
+// admin-write-only (see firestore.rules), so writing through the client SDK --
+// as this script used to -- authenticates as nobody and every write comes back
+// PERMISSION_DENIED; only the admin SDK, which carries its own service-account
+// credential, can get past that. scripts/firebaseAdmin.js resolves that
+// credential from serviceAccountKey.json or FIREBASE_SERVICE_ACCOUNT.
 import { fileURLToPath } from 'url';
-import admin from 'firebase-admin';
 import { quarterbacks } from './src/features/ranker/quarterbacks.js';
 import { emptyTraits } from './src/constants/traits.js';
 import { ACTIVE, RETIRED } from './src/constants/playerStatus.js';
+import { getAdminDb } from './scripts/firebaseAdmin.js';
 
-const here = path.dirname(fileURLToPath(import.meta.url));
-const keyPath = path.join(here, 'serviceAccountKey.json');
-
-if (!fs.existsSync(keyPath)) {
-  console.error(
-    `Missing ${keyPath}.\n` +
-      'Generate one from Firebase console > Project settings > Service accounts ' +
-      '> Generate new private key, and save it there (it is gitignored).'
-  );
+let db;
+try {
+  db = getAdminDb();
+} catch (error) {
+  console.error(error.message);
   process.exit(1);
 }
-
-const serviceAccount = JSON.parse(fs.readFileSync(keyPath, 'utf8'));
-admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
-const db = admin.firestore();
 
 const DRY_RUN = process.argv.includes('--dry-run');
 
