@@ -3,13 +3,13 @@
 // The personal ranking board and its history.
 //
 // Both live in `personalRankingArchives`. One document carries `isCurrent: true`
-// and is the live board every page reads; the rest are snapshots, written when
+// and is the live board every page reads; the rest are archives, written when
 // the live board is replaced. That is the only thing telling the two apart, so
 // every query here filters on it explicitly.
 //
 // Saving is a transaction: the outgoing board is archived and the live document
 // replaced in one commit. It used to be a read, then a write, then another
-// write, so two tabs -- or one slow save -- produced two snapshots of the same
+// write, so two tabs -- or one slow save -- produced two archives of the same
 // state and silently lost one of the two boards.
 import { db } from '../firebaseConfig';
 import {
@@ -30,7 +30,7 @@ import {
 const COLLECTION = 'personalRankingArchives';
 const personalRankingArchivesRef = collection(db, COLLECTION);
 
-/** How many snapshots the history views ask for at once. */
+/** How many archives the history views ask for at once. */
 export const ARCHIVE_PAGE_SIZE = 50;
 
 /**
@@ -158,7 +158,7 @@ export const savePersonalRankingNotes = async (qbId, notes) => {
 };
 
 /**
- * Snapshots, newest first.
+ * Archives, newest first.
  *
  * The live board sits in the same collection, so one extra document is
  * requested and the filter drops it if it lands in the window. Its `createdAt`
@@ -179,7 +179,7 @@ export const getPersonalRankingArchives = async (max = ARCHIVE_PAGE_SIZE) => {
 };
 
 /**
- * The snapshot the live board replaced -- what movement indicators compare
+ * The archive the live board replaced -- what movement indicators compare
  * against. Reads three documents rather than the whole collection, which the
  * public rankings page was doing on every visit to use one of them.
  */
@@ -188,17 +188,17 @@ export const getPreviousPersonalRanking = async () => {
   return previous || null;
 };
 
-/** One snapshot by id. */
+/** One archive by id. */
 export const fetchPersonalRankingArchive = async (archiveId) => {
   const snapshot = await getDoc(doc(db, COLLECTION, archiveId));
   return snapshot.exists() ? withId(snapshot) : null;
 };
 
-/** Delete one snapshot. The live board is never a valid target. */
+/** Delete one archive. The live board is never a valid target. */
 export const deletePersonalRankingArchive = async (archiveId) => {
   const archive = await fetchPersonalRankingArchive(archiveId);
   if (archive?.isCurrent) {
-    throw new Error('That is the live ranking, not a snapshot.');
+    throw new Error('That is the live ranking, not an archive.');
   }
   await deleteDoc(doc(db, COLLECTION, archiveId));
   return true;

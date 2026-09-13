@@ -5,7 +5,7 @@ import { formatRankingDate } from '@/utils/formatting/rankingDates';
 import { describeRankingChange } from '@/utils/rankings/rankingSummary';
 
 /**
- * The list of saved snapshots.
+ * The list of saved archives.
  *
  * Lifted out of QBRankingsHome and BrowseRankingsPage, which carried it -- and
  * the panel beside it -- as two byte-identical copies. Restore and delete are
@@ -107,7 +107,7 @@ const ArchiveSidebar = ({
                       disabled={isBusy}
                       onClick={() => onDelete(archive)}
                       className="flex items-center gap-1 px-2 py-1 rounded bg-red-600/20 hover:bg-red-600/40 disabled:opacity-40 text-red-300 text-xs transition-colors"
-                      title="Delete this snapshot"
+                      title="Delete this archive"
                     >
                       <Trash2 size={12} />
                       Delete

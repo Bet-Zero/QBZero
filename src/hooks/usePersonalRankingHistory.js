@@ -9,8 +9,8 @@ import {
 import { summariseRankingChange } from '@/utils/rankings/rankingSummary';
 
 /**
- * The live board plus its snapshots, and the two things you can do to a
- * snapshot: put it back, or throw it away.
+ * The live board plus its archives, and the two things you can do to a
+ * archive: put it back, or throw it away.
  *
  * Restoring goes through the ordinary save, so the board being replaced is
  * archived first -- restoring the wrong version is itself undoable.
@@ -30,7 +30,7 @@ const usePersonalRankingHistory = () => {
         getPersonalRankingArchives(),
       ]);
       setCurrent(liveBoard);
-      // Each snapshot is described by what changed between it and the one
+      // Each archive is described by what changed between it and the one
       // before it, so two updates a week apart are told apart without opening
       // both. The boards are already loaded; this is the comparison, not a read.
       setArchives(
@@ -61,7 +61,7 @@ const usePersonalRankingHistory = () => {
     async (archive) => {
       if (
         !window.confirm(
-          `Make this snapshot your current rankings? The board you have now is archived first, so this can be undone.`
+          'Make this archive your current rankings? The board you have now is archived first, so this can be undone.'
         )
       ) {
         return;
@@ -72,14 +72,12 @@ const usePersonalRankingHistory = () => {
           notes: archive.notes || '',
           expectedVersion: current?.version ?? null,
         });
-        toast.success('Rankings restored from that snapshot.');
+        toast.success('Rankings restored from that archive.');
         setSelectedArchive(null);
         await load();
       } catch (restoreError) {
         console.error('Error restoring archive:', restoreError);
-        toast.error(
-          restoreError?.message || 'Could not restore that snapshot.'
-        );
+        toast.error(restoreError?.message || 'Could not restore that archive.');
       } finally {
         setBusyId(null);
       }
@@ -91,7 +89,7 @@ const usePersonalRankingHistory = () => {
     async (archive) => {
       if (
         !window.confirm(
-          'Delete this snapshot? The rankings it holds are not recoverable afterwards.'
+          'Delete this archive? The rankings it holds are not recoverable afterwards.'
         )
       ) {
         return;
@@ -99,14 +97,14 @@ const usePersonalRankingHistory = () => {
       setBusyId(archive.id);
       try {
         await deletePersonalRankingArchive(archive.id);
-        toast.success('Snapshot deleted.');
+        toast.success('Archive deleted.');
         setSelectedArchive((selected) =>
           selected?.id === archive.id ? null : selected
         );
         await load();
       } catch (deleteError) {
         console.error('Error deleting archive:', deleteError);
-        toast.error(deleteError?.message || 'Could not delete that snapshot.');
+        toast.error(deleteError?.message || 'Could not delete that archive.');
       } finally {
         setBusyId(null);
       }

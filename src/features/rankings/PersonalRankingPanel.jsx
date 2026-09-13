@@ -8,7 +8,7 @@ import { describeRankingChange } from '@/utils/rankings/rankingSummary';
 
 /**
  * The main panel on the two history pages: either the live board's top ten, or
- * the snapshot the reader picked from the sidebar.
+ * the archive the reader picked from the sidebar.
  *
  * QBRankingsHome and BrowseRankingsPage each carried their own copy of this,
  * identical line for line, which is why a fix to either had to be made twice.
@@ -21,8 +21,8 @@ const PersonalRankingPanel = ({
   onRestore,
   isRestoring,
 }) => {
-  // A snapshot could be viewed but not exported, which is most of what a
-  // snapshot is for -- showing what the board looked like at the time.
+  // A archive could be viewed but not exported, which is most of what a
+  // archive is for -- showing what the board looked like at the time.
   const [exportingArchive, setExportingArchive] = useState(false);
 
   if (selectedArchive) {
@@ -76,7 +76,7 @@ const PersonalRankingPanel = ({
           <RankingsExportModal
             rankings={selectedArchive.rankings || []}
             rankingName={`QB Rankings ${formatRankingDate(selectedArchive)}`}
-            title="Export Snapshot"
+            title="Export Archive"
             subtitle={`The board as it stood on ${formatRankingDate(selectedArchive)}`}
             onClose={() => setExportingArchive(false)}
           />

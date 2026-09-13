@@ -6,7 +6,7 @@ import { calculateRankingMovement } from '@/utils/rankingMovement';
  * How far each quarterback has moved since the previous saved ranking.
  *
  * Both the editor and the public page worked this out for themselves, and both
- * compared against the wrong snapshot: they took `archives[1]`, reasoning that
+ * compared against the wrong archive: they took `archives[1]`, reasoning that
  * the newest archive "is likely the same as current". It isn't -- saving
  * archives the board it is replacing, so the newest archive *is* the previous
  * version and `archives[1]` is a generation older than that. Every arrow was
