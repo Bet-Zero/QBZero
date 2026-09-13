@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ChevronUp, ChevronDown, Trash2, Edit3 } from 'lucide-react';
 import RankingMovementIndicator from '@/components/shared/RankingMovementIndicator';
 import { TEAM_LOGO_MAP as teamLogoMap } from '@/utils/formatting/teamLogos';
+import { splitNameForTwoLines } from '@/utils/formatting/playerName';
 
 const QBRankingCard = ({
   qb,
@@ -18,6 +19,14 @@ const QBRankingCard = ({
 }) => {
   const [isEditingNotes, setIsEditingNotes] = useState(false);
   const [notesValue, setNotesValue] = useState(qb.notes || '');
+
+  // The draft is seeded from the prop and then owned by the textarea, so a note
+  // changed anywhere else -- another tab, a restored snapshot, the same card
+  // reused for a different archive -- left a stale draft behind. Re-seed when
+  // the saved note changes, unless the box is open and being typed in.
+  useEffect(() => {
+    if (!isEditingNotes) setNotesValue(qb.notes || '');
+  }, [qb.notes, isEditingNotes]);
 
   const handleSaveNotes = () => {
     onEditNotes(notesValue);
@@ -47,6 +56,7 @@ const QBRankingCard = ({
   };
 
   const teamLogo = getTeamLogo();
+  const splitName = splitNameForTwoLines(qb.name);
 
   return (
     <div className="group relative bg-[#1a1a1a] hover:bg-[#1f1f1f] border border-white/10 rounded-xl transition-all duration-300 hover:border-white/20 overflow-hidden">
@@ -162,16 +172,15 @@ const QBRankingCard = ({
                 {/* Force 2-line layout on mobile for archive mode only */}
                 {isArchiveMode ? (
                   <span className="block sm:inline">
-                    {/* On mobile, split name and force 2 lines. On desktop, keep inline with proper spacing */}
-                    <span className="block sm:inline">
-                      {qb.name.split(' ').slice(0, -1).join(' ')}
-                    </span>
-                    {qb.name.split(' ').length > 1 && (
+                    {/* Two lines on mobile so every archive row is the same
+                        height; inline on desktop. A suffix stays with the
+                        surname -- "Penix Jr.", not "Jr." on a line of its own. */}
+                    <span className="block sm:inline">{splitName.first}</span>
+                    {splitName.last && (
                       <>
-                        <span className="hidden sm:inline"> </span>{' '}
-                        {/* Add space back for desktop */}
+                        <span className="hidden sm:inline"> </span>
                         <span className="block sm:inline">
-                          {qb.name.split(' ').slice(-1)[0]}
+                          {splitName.last}
                         </span>
                       </>
                     )}

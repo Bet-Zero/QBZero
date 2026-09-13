@@ -1,11 +1,21 @@
-import React, { useState, useCallback } from 'react';
-import { ChevronUp, ChevronDown, Save, X, Edit3 } from 'lucide-react';
+import React, { useState, useCallback, useRef } from 'react';
+import {
+  ChevronUp,
+  ChevronDown,
+  Save,
+  X,
+  Edit3,
+  GripVertical,
+} from 'lucide-react';
 import { getLogoPath, getHeadshotSrc } from '@/utils/rankingExportHelpers';
 
 const AdjustableRankings = ({ initialRanking = [], onSave, onCancel }) => {
   const [adjustedRanking, setAdjustedRanking] = useState(initialRanking);
   const [draggedPlayer, setDraggedPlayer] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
+  // Rows keyed by index, so a pointer position can be resolved to a row
+  // without hit-testing the whole list.
+  const rowsRef = useRef(new Map());
 
   const movePlayer = useCallback((fromIndex, toIndex) => {
     if (fromIndex === toIndex) return;
@@ -36,29 +46,49 @@ const AdjustableRankings = ({ initialRanking = [], onSave, onCancel }) => {
     [movePlayer, adjustedRanking.length]
   );
 
-  const handleDragStart = (e, index) => {
-    setDraggedPlayer(index);
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/html', e.target);
+  // Pointer events rather than HTML5 drag-and-drop, which does not fire for
+  // touch at all -- on a phone this screen was arrow buttons only, on a screen
+  // whose whole purpose is dragging.
+  const rowIndexAt = (clientY) => {
+    let found = null;
+    rowsRef.current.forEach((node, index) => {
+      if (!node) return;
+      const box = node.getBoundingClientRect();
+      if (clientY >= box.top && clientY <= box.bottom) found = index;
+    });
+    return found;
   };
 
-  const handleDragOver = (e, index) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
+  const handlePointerDown = (e, index) => {
+    // Left button or a touch; ignore right-clicks and the like.
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+    setDraggedPlayer(index);
     setDragOverIndex(index);
   };
 
-  const handleDragLeave = () => {
-    setDragOverIndex(null);
+  const handlePointerMove = (e) => {
+    if (draggedPlayer === null) return;
+    // Stops the page scrolling under a finger mid-drag.
+    e.preventDefault();
+    const over = rowIndexAt(e.clientY);
+    if (over !== null) setDragOverIndex(over);
   };
 
-  const handleDrop = (e, dropIndex) => {
-    e.preventDefault();
+  const handlePointerUp = (e) => {
+    if (draggedPlayer === null) return;
+    e.currentTarget.releasePointerCapture?.(e.pointerId);
 
-    if (draggedPlayer !== null && draggedPlayer !== dropIndex) {
+    const dropIndex = rowIndexAt(e.clientY);
+    if (dropIndex !== null && dropIndex !== draggedPlayer) {
       movePlayer(draggedPlayer, dropIndex);
     }
 
+    setDraggedPlayer(null);
+    setDragOverIndex(null);
+  };
+
+  const handlePointerCancel = () => {
     setDraggedPlayer(null);
     setDragOverIndex(null);
   };
@@ -81,7 +111,7 @@ const AdjustableRankings = ({ initialRanking = [], onSave, onCancel }) => {
             Adjust Your Rankings
           </h2>
           <p className="text-white/60">
-            Fine-tune your results by dragging players or using the arrow
+            Fine-tune your results by dragging the handles or using the arrow
             buttons
           </p>
         </div>
@@ -123,13 +153,12 @@ const AdjustableRankings = ({ initialRanking = [], onSave, onCancel }) => {
           return (
             <div
               key={player.id}
-              draggable
-              onDragStart={(e) => handleDragStart(e, index)}
-              onDragOver={(e) => handleDragOver(e, index)}
-              onDragLeave={handleDragLeave}
-              onDrop={(e) => handleDrop(e, index)}
+              ref={(node) => {
+                if (node) rowsRef.current.set(index, node);
+                else rowsRef.current.delete(index);
+              }}
               className={`
-                relative flex items-center gap-4 p-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg transition-all cursor-move
+                relative flex items-center gap-4 p-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg transition-all
                 ${draggedPlayer === index ? 'opacity-50' : ''}
                 ${dragOverIndex === index && draggedPlayer !== index ? 'border-orange-400 bg-orange-400/10' : ''}
               `}
@@ -193,15 +222,20 @@ const AdjustableRankings = ({ initialRanking = [], onSave, onCancel }) => {
                 </button>
               </div>
 
-              {/* Drag Handle Indicator */}
-              <div className="text-white/40">
-                <div className="w-2 h-8 flex flex-col justify-center gap-0.5">
-                  <div className="w-full h-0.5 bg-current"></div>
-                  <div className="w-full h-0.5 bg-current"></div>
-                  <div className="w-full h-0.5 bg-current"></div>
-                  <div className="w-full h-0.5 bg-current"></div>
-                  <div className="w-full h-0.5 bg-current"></div>
-                </div>
+              {/* Drag handle. The drag lives on the handle rather than the
+                  whole row so a touch anywhere else still scrolls the page. */}
+              <div
+                role="button"
+                tabIndex={-1}
+                aria-label={`Drag to reorder ${player.display_name || player.name}`}
+                onPointerDown={(e) => handlePointerDown(e, index)}
+                onPointerMove={handlePointerMove}
+                onPointerUp={handlePointerUp}
+                onPointerCancel={handlePointerCancel}
+                className="text-white/40 hover:text-white/70 cursor-grab active:cursor-grabbing touch-none p-2 -m-2"
+                style={{ touchAction: 'none' }}
+              >
+                <GripVertical size={20} />
               </div>
             </div>
           );
@@ -214,9 +248,9 @@ const AdjustableRankings = ({ initialRanking = [], onSave, onCancel }) => {
           <strong className="text-white">How to adjust:</strong>
         </p>
         <p>
-          • Drag and drop players to reorder them
+          • Drag the handle on the right to reorder — works with a finger too
           <br />
-          • Use the ↑ ↓ buttons to move players up or down
+          • Or use the ↑ ↓ buttons to move players one place at a time
           <br />• Save your changes when you&apos;re happy with the adjustments
         </p>
       </div>
