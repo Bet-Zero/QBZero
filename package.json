@@ -13,6 +13,7 @@
     "zen": "node toggleView.cjs",
     "prepare": "echo skipped",
     "check-roster": "node scripts/checkRoster.js",
+    "check-firestore": "node scripts/checkFirestore.js",
     "populate-qbs": "node populateQBs.js",
     "populate-qbs:dry": "node populateQBs.js --dry-run",
     "refresh-headshots": "node scripts/refreshHeadshots.js",
