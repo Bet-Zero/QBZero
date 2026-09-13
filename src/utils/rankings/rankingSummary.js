@@ -1,9 +1,9 @@
 import { calculateRankingMovement } from '@/utils/rankingMovement';
 
 /**
- * What changed between one snapshot and the one before it.
+ * What changed between one archive and the one before it.
  *
- * The history list showed a date and a quarterback count, so two snapshots
+ * The history list showed a date and a quarterback count, so two archives
  * taken a week apart were indistinguishable without opening both. Everything
  * needed to say more is already loaded -- the boards themselves -- and
  * calculateRankingMovement already does the comparison.
