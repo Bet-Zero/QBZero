@@ -21,8 +21,25 @@ failure visible without resolving its cause, say that in those words.
 
 ## Access
 
-This session has no Firebase credentials and cannot reach Firestore, deploy
-rules, or read the live site. Anything requiring them is a step for the owner.
+A cloud session can reach Firestore's API and can run every maintenance script
+— but only with a credential. `scripts/firebaseAdmin.js` takes one from
+`serviceAccountKey.json` (the owner's machine) or from the
+`FIREBASE_SERVICE_ACCOUNT` environment variable, raw or base64.
+
+So say which of these is actually blocking, rather than "no access":
+
+- **No credential in this session.** Fixable without the owner's machine — the
+  key comes from the Firebase console and goes in the environment's secrets.
+  Say so instead of deferring the whole task. `npm run check-firestore` is the
+  read-only one to run first.
+- **Needs the owner's machine.** Only things that are genuinely local: files
+  `.gitignore` excludes by name (`updateStats.js` and friends), and anything
+  needing a phone or a browser signed in as the owner.
+- **Needs the owner as a person.** Firebase console settings, Vercel settings,
+  looking at the live site.
+
+That key bypasses `firestore.rules` entirely — full read and write on every
+collection — so never ask for one casually, and say what it will be used for.
 
 ## Verification
 

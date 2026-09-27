@@ -162,9 +162,15 @@ blurbs, overall grade, status.
 
 But `.gitignore` excludes several local-only scripts by name — `updateStats.js`,
 `uploadPlayersToFirebase.js`, `validatePlayersJson.js` — so the owner may have
-working tooling for exactly this that simply is not tracked. Ask before
-concluding a pipeline is missing; a file's absence here does not mean it does
-not exist. `npm run update-stats` points at one of them.
+working tooling for exactly this that simply is not tracked. A file's absence
+here does not mean it does not exist; `npm run update-stats` points at one of
+them.
+
+Don't guess either way: `npm run check-firestore` reports how many player
+documents actually have stats, bio and contract filled in. Populated means the
+local tooling exists and is being run. Empty across the board means there is no
+ingestion path, and the stat filters and the profile stats table have nothing
+to show.
 
 ## Verification
 
