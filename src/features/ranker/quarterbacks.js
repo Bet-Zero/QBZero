@@ -120,13 +120,13 @@ export const quarterbacks = [
 ];
 
 // VERIFY — entries whose team is a last-known value rather than a confirmed
-// 2026 roster spot. `team` is only a seed, so a wrong one here is cosmetic
-// until someone corrects it on the profile, but these are the ones to look at
-// first next season:
+// roster spot. `team` is only a seed, so a wrong one here is cosmetic until
+// someone corrects it on the profile, but list them so the next person knows
+// which entries to distrust.
 //
-//   russell-wilson    retired during/after 2025; NYG is his last team. Now
-//                     marked status: RETIRED above.
-//   taylor-heinicke   cut by the Chargers in camp and since retired; LAC is
-//                     his last team. Now marked status: RETIRED above.
-//   jake-haener       signed by NYG 17 Aug 2026 to the practice squad; one
-//                     report has him released since.
+//   (none — every entry was confirmed against a current roster.)
+//
+// Last confirmed: 27 Sep 2026, week 4. Russell Wilson and Taylor Heinicke are
+// carried at their last team with status: RETIRED. Jake Haener was promoted
+// from the Giants' practice squad to the active roster on 26 Sep after Jaxson
+// Dart's knee injury; Dart stays on NYG, since an injury is not a move.
