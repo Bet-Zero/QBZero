@@ -134,6 +134,13 @@ quarterbacks the app carries. Updating it for a new season:
 4. npm run populate-qbs        applies it
 ```
 
+Then update `src/features/ranker/defaultPool.js` — the ranker's default pool,
+one starter per team plus the backups worth ranking. It is the list that goes
+stale fastest, since starters change mid-season too. Keep its size a multiple of
+six (the rankings export lays out six per row); `tests/defaultPool.test.js`
+fails otherwise, and also when a starter is filed under a team the roster no
+longer has them on.
+
 Saved data always wins over the script's defaults, so re-running preserves
 grades, roles and blurbs. Only name, team and position are refreshed.
 
