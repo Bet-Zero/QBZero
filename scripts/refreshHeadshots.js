@@ -1,10 +1,9 @@
 // scripts/refreshHeadshots.js
 //
 // Pulls a current headshot for every quarterback in quarterbacks.js from
-// ESPN's public roster data, crops it to a transparent square, resizes it to
-// 400x400 to match the existing files, and saves it to
-// public/assets/headshots/{id}.png. Needs no credentials -- just network
-// access to ESPN's public site API.
+// ESPN's public roster data, crops it to a 400x400 square the player fills
+// (see headshotFraming.js), and saves it to public/assets/headshots/{id}.png.
+// Needs no credentials -- just network access to ESPN's public site API.
 //
 //   node scripts/refreshHeadshots.js            refresh every quarterback
 //   node scripts/refreshHeadshots.js --dry-run  report matches, write nothing
@@ -16,7 +15,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import sharp from 'sharp';
+import { frameHeadshot } from './headshotFraming.js';
 import { quarterbacks } from '../src/features/ranker/quarterbacks.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -115,33 +114,11 @@ async function searchHeadshot(name) {
   return match?.image?.default || null;
 }
 
-async function squareAndSave(url, destPath) {
+async function fetchAndSave(url, destPath) {
   const res = await fetch(url, { headers: HEADERS });
   if (!res.ok) throw new Error(`fetch failed: ${res.status}`);
   const buffer = Buffer.from(await res.arrayBuffer());
-
-  const { width, height } = await sharp(buffer).metadata();
-  const side = Math.max(width, height);
-
-  // Extend and resize in separate passes, each starting a fresh Sharp
-  // instance from the previous step's buffer -- chaining .extend() then
-  // .resize() straight off the same instance used for .metadata() silently
-  // resizes to the wrong aspect ratio (a sharp quirk, not intentional).
-  const squareBuffer = await sharp(buffer)
-    .ensureAlpha()
-    .extend({
-      top: Math.floor((side - height) / 2),
-      bottom: Math.ceil((side - height) / 2),
-      left: Math.floor((side - width) / 2),
-      right: Math.ceil((side - width) / 2),
-      background: { r: 0, g: 0, b: 0, alpha: 0 },
-    })
-    .png()
-    .toBuffer();
-
-  const resized = await sharp(squareBuffer).resize(400, 400).png().toBuffer();
-
-  fs.writeFileSync(destPath, resized);
+  fs.writeFileSync(destPath, await frameHeadshot(buffer));
 }
 
 async function refreshHeadshots() {
@@ -175,7 +152,7 @@ async function refreshHeadshots() {
     }
 
     try {
-      await squareAndSave(url, path.join(headshotDir, `${qb.id}.png`));
+      await fetchAndSave(url, path.join(headshotDir, `${qb.id}.png`));
       updated.push(qb.name);
     } catch (error) {
       failed.push(`${qb.name}: ${error.message}`);

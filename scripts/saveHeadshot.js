@@ -16,6 +16,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import sharp from 'sharp';
+import { frameHeadshot } from './headshotFraming.js';
 import { quarterbacks } from '../src/features/ranker/quarterbacks.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -31,26 +32,11 @@ async function readSource(source) {
   return fs.readFileSync(source);
 }
 
-// Same two-pass treatment as refreshHeadshots.js: pad to a transparent square,
-// then resize, each pass starting a fresh Sharp instance.
-async function squareAndSave(buffer, destPath) {
+// Same framing as refreshHeadshots.js -- see headshotFraming.js.
+async function frameAndSave(buffer, destPath) {
   const { width, height } = await sharp(buffer).metadata();
   if (!width || !height) throw new Error('not a readable image');
-  const side = Math.max(width, height);
-
-  const squared = await sharp(buffer)
-    .ensureAlpha()
-    .extend({
-      top: Math.floor((side - height) / 2),
-      bottom: Math.ceil((side - height) / 2),
-      left: Math.floor((side - width) / 2),
-      right: Math.ceil((side - width) / 2),
-      background: { r: 0, g: 0, b: 0, alpha: 0 },
-    })
-    .png()
-    .toBuffer();
-
-  fs.writeFileSync(destPath, await sharp(squared).resize(400, 400).png().toBuffer());
+  fs.writeFileSync(destPath, await frameHeadshot(buffer));
   return { width, height };
 }
 
@@ -65,7 +51,7 @@ async function saveHeadshot(id, source) {
 
   const destPath = path.join(headshotDir, `${id}.png`);
   const buffer = await readSource(source);
-  const { width, height } = await squareAndSave(buffer, destPath);
+  const { width, height } = await frameAndSave(buffer, destPath);
 
   console.log(
     `Saved ${qb.name} (${qb.team}) -> public/assets/headshots/${id}.png ` +

@@ -35,6 +35,7 @@ scripts/*
 !scripts/checkRoster.js
 !scripts/refreshHeadshots.js
 !scripts/saveHeadshot.js
+!scripts/headshotFraming.js
 !scripts/firebaseAdmin.js
 !scripts/checkFirestore.js
 tools/
