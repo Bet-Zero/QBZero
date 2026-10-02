@@ -58,7 +58,7 @@ export const quarterbacks = [
   { id: 'garrett-nussmeier', name: 'Garrett Nussmeier', team: 'KC' },
   { id: 'geno-smith', name: 'Geno Smith', team: 'NYJ' },
   { id: 'haynes-king', name: 'Haynes King', team: 'CAR' },
-  { id: 'j-j-mccarthy', name: 'J.J. McCarthy', team: 'MIN' },
+  { id: 'j-j-mccarthy', name: 'J.J. McCarthy', team: 'NYG' },
   { id: 'jack-strand', name: 'Jack Strand', team: 'ATL' },
   { id: 'jacoby-brissett', name: 'Jacoby Brissett', team: 'ARI' },
   { id: 'jake-haener', name: 'Jake Haener', team: 'NYG' },
@@ -130,3 +130,5 @@ export const quarterbacks = [
 // carried at their last team with status: RETIRED. Jake Haener was promoted
 // from the Giants' practice squad to the active roster on 26 Sep after Jaxson
 // Dart's knee injury; Dart stays on NYG, since an injury is not a move.
+//
+// 2 Oct 2026: J.J. McCarthy traded from MIN to NYG on 30 Sep.
