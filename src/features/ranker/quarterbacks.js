@@ -1,8 +1,9 @@
 // The curated quarterback roster, current for the 2026 season.
 //
 // This list decides who the app carries. `team` is a seed value: the saved
-// player record wins at runtime (see useQBRoster), so correcting a team here
-// and re-running populateQBs is what actually moves someone.
+// player record wins at runtime (see useQBRoster). Moving someone mid-season
+// is the TEAM field on their profile; correct it here too, or the next
+// populateQBs run puts the old team back.
 //
 // Never remove an entry. Grades and any past ranking containing a quarterback
 // depend on it existing — set `status: RETIRED` instead, which keeps them

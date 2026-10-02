@@ -28,9 +28,13 @@ A cloud session can reach Firestore's API and can run every maintenance script
 
 So say which of these is actually blocking, rather than "no access":
 
-- **No credential in this session.** Fixable without the owner's machine — the
-  key comes from the Firebase console and goes in the environment's secrets.
-  Say so instead of deferring the whole task. `npm run check-firestore` is the
+- **No credential in this session.** The key comes from the Firebase console,
+  but the cloud environment's variables field warns it is visible to anyone
+  using the environment and is not for secrets — so do not send the owner
+  there for it. Prefer a path that needs no key: an admin signed in on the site
+  can already edit most of a player record, including team. Reach for the key
+  only when a script genuinely has to run, and only if the environment offers
+  a dedicated secrets or credentials store. `npm run check-firestore` is the
   read-only one to run first.
 - **Needs the owner's machine.** Only things that are genuinely local: files
   `.gitignore` excludes by name (`updateStats.js` and friends), and anything

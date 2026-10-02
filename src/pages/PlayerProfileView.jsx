@@ -46,6 +46,7 @@ const PlayerProfileView = () => {
   const [editedBlurbs, setEditedBlurbs] = useState(defaultBlurbs);
   const [overallGrade, setOverallGrade] = useState(null);
   const [status, setStatus] = useState('active');
+  const [team, setTeam] = useState('');
   const [hasChanges, setHasChanges] = useState(false);
 
   useEffect(() => {
@@ -81,12 +82,14 @@ const PlayerProfileView = () => {
     setEditedBlurbs(data.blurbs || { ...defaultBlurbs });
     setOverallGrade(data.overall_grade || null);
     setStatus(data.status || 'active');
+    setTeam(data.bio?.Team || '');
     setHasChanges(false);
   }, [selectedPlayer, playersData]);
 
   useAutoSavePlayer({
     playerId: selectedPlayer,
     player,
+    team,
     traits,
     roles,
     subRoles,
@@ -226,6 +229,11 @@ const PlayerProfileView = () => {
             status={status}
             setStatus={(val) => {
               setStatus(val);
+              setHasChanges(true);
+            }}
+            team={team}
+            setTeam={(val) => {
+              setTeam(val);
               setHasChanges(true);
             }}
             setOpenModal={setOpenModal}

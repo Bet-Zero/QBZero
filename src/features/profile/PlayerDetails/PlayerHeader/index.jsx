@@ -6,8 +6,14 @@ import PlayerHeadshot from '@/components/shared/PlayerHeadshot';
 import QBRankingBadge from '@/components/shared/QBRankingBadge';
 import { POSITION_MAP } from '@/utils/roles';
 import { getCurrentSeasonYear } from '@/utils/contracts';
+import TeamSelect from './TeamSelect';
 
-const PlayerHeader = ({ player, selectedPlayer }) => {
+// `team` is the edited value, which leads the saved one until the save lands
+// and the record reloads. Falls back to the record for callers that do not
+// edit it.
+const PlayerHeader = ({ player, selectedPlayer, team, onTeamChange }) => {
+  const currentTeam = team || player.bio?.Team;
+
   const getAbbreviatedPosition = (position) => {
     if (!position) return 'N/A';
     return POSITION_MAP[position] || position;
@@ -42,7 +48,7 @@ const PlayerHeader = ({ player, selectedPlayer }) => {
         <div className="flex flex-col justify-center">
           <PlayerName name={player.display_name || player.name || 'Unknown'} />
           <div className="flex items-center gap-4 mt-4">
-            <TeamLogo teamAbbr={player.bio?.Team} />
+            <TeamLogo teamAbbr={currentTeam} />
             <div className="h-[2.5rem] w-[2px] bg-black" />
             <PlayerPosition
               position={getAbbreviatedPosition(player.bio?.Position)}
@@ -80,7 +86,12 @@ const PlayerHeader = ({ player, selectedPlayer }) => {
         <div className="h-6" />
         <div className="space-y-[2px]">
           <p>
-            <span className="font-bold">TEAM</span>: {player.bio?.Team || 'N/A'}
+            <span className="font-bold">TEAM</span>:{' '}
+            {onTeamChange ? (
+              <TeamSelect value={currentTeam} onChange={onTeamChange} />
+            ) : (
+              currentTeam || 'N/A'
+            )}
           </p>
           <p>
             <span className="font-bold">CONTRACT</span>: {contractSummary}
