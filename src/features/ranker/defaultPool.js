@@ -19,17 +19,17 @@
 // pool at runtime, so retiring someone here does not need an edit — but it
 // leaves a gap in the last row until the list is updated.
 //
-// Last set: 2 Oct 2026, week 5. See VERIFY below.
+// Last set: 2 Oct 2026, week 5.
 
 export const DEFAULT_POOL_STARTERS = {
   ARI: 'jacoby-brissett',
-  ATL: 'tua-tagovailoa',
+  ATL: 'michael-penix-jr',
   BAL: 'lamar-jackson',
   BUF: 'josh-allen',
   CAR: 'bryce-young',
   CHI: 'caleb-williams',
   CIN: 'joe-burrow',
-  CLE: 'shedeur-sanders',
+  CLE: 'deshaun-watson',
   DAL: 'dak-prescott',
   DEN: 'bo-nix',
   DET: 'jared-goff',
@@ -40,7 +40,7 @@ export const DEFAULT_POOL_STARTERS = {
   KC: 'patrick-mahomes',
   LAC: 'justin-herbert',
   LAR: 'matthew-stafford',
-  LV: 'fernando-mendoza',
+  LV: 'kirk-cousins',
   MIA: 'malik-willis',
   MIN: 'kyler-murray',
   NE: 'drake-maye',
@@ -59,16 +59,16 @@ export const DEFAULT_POOL_STARTERS = {
 // Backups with a real claim to playing time: injury fill-ins, the other half
 // of an open competition, and recent starters.
 export const DEFAULT_POOL_BACKUPS = [
-  'michael-penix-jr', // ATL
-  'deshaun-watson', // CLE
-  'anthony-richardson', // IND
-  'justin-fields', // KC
-  'kirk-cousins', // LV
-  'j-j-mccarthy', // MIN
+  'fernando-mendoza', // LV
+  'tua-tagovailoa', // ATL
   'jameis-winston', // NYG — starting while Dart is out
-  'joe-flacco', // CIN
   'mac-jones', // SF
+  'joe-flacco', // CIN
+  'carson-wentz', // MIN
   'marcus-mariota', // WAS
+  'sam-howell', // DAL
+  'j-j-mccarthy', // NYG
+  'drew-lock', // SEA
 ];
 
 export const DEFAULT_POOL_IDS = [
@@ -76,10 +76,4 @@ export const DEFAULT_POOL_IDS = [
   ...DEFAULT_POOL_BACKUPS,
 ];
 
-// VERIFY — teams whose starter here is a projection rather than a confirmed
-// depth chart, mostly open competitions where both quarterbacks are in the
-// pool anyway, so a wrong pick only mislabels who is the starter:
-//
-//   ARI Brissett, ATL Tagovailoa / Penix, CLE Sanders / Watson,
-//   IND Jones / Richardson, LV Mendoza / Cousins, MIN Murray / McCarthy,
-//   PIT Rodgers
+// Starters and backups confirmed by the owner, 2 Oct 2026.
