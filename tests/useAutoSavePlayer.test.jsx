@@ -82,6 +82,16 @@ describe('useAutoSavePlayer', () => {
     expect(payload.bio).toEqual({ Team: 'BUF', Position: 'QB' });
   });
 
+  it('writes an edited team without losing the rest of the bio', async () => {
+    // A trade used to need quarterbacks.js plus populateQBs, which needs a
+    // service-account key. The profile can now record it directly.
+    renderAutosave({ team: 'NYG' });
+    await flush();
+
+    const [, payload] = savePlayerData.mock.calls[0];
+    expect(payload.bio).toEqual({ Team: 'NYG', Position: 'QB' });
+  });
+
   it('does not write derived fields back', async () => {
     renderAutosave();
     await flush();

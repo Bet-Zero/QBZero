@@ -144,6 +144,12 @@ longer has them on.
 Saved data always wins over the script's defaults, so re-running preserves
 grades, roles and blurbs. Only name, team and position are refreshed.
 
+A mid-season move does not need the script: set the team on the quarterback's
+profile (the TEAM field in the info card), which an admin can do from any
+browser. Update `quarterbacks.js` to match as well, though — populateQBs writes
+team from the list on every run, so a list left behind would undo the profile
+edit the next time it runs.
+
 **Never remove a quarterback from the list.** Their grades and any past
 ranking that includes them depend on the entry existing. Mark them retired on
 their profile instead — the status icon in the header — which keeps them
@@ -165,7 +171,8 @@ before each season rather than trusting the whole list equally.
 
 Nothing in this repository. `populateQBs.js` writes them empty and the profile
 page edits only evaluation — traits, roles, subroles, badges, running profile,
-blurbs, overall grade, status.
+blurbs, overall grade, status — plus team, the one bio field that changes
+mid-season.
 
 But `.gitignore` excludes several local-only scripts by name — `updateStats.js`,
 `uploadPlayersToFirebase.js`, `validatePlayersJson.js` — so the owner may have

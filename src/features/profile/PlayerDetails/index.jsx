@@ -27,11 +27,18 @@ const PlayerDetails = ({
   setOverallGrade,
   status,
   setStatus,
+  team,
+  setTeam,
   setOpenModal,
 }) => (
   <>
     <div className="relative w-full max-w-[750px]">
-      <PlayerHeader player={player} selectedPlayer={selectedPlayer} />
+      <PlayerHeader
+        player={player}
+        selectedPlayer={selectedPlayer}
+        team={team}
+        onTeamChange={setTeam}
+      />
       <PlayerStatusToggle
         status={status}
         onChange={setStatus}

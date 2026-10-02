@@ -38,8 +38,13 @@ const stripUndefinedDeep = (value) => {
 // bio is kept deliberately: usePlayerData only merges a document whose nested
 // bio.Position is 'QB', so a record saved without it is dropped on reload and
 // the edit looks like it never saved.
+//
+// `team` is the one bio field the profile edits, so a trade can be recorded
+// without a service-account key and populateQBs. It is merged over the saved
+// bio rather than replacing it.
 const buildPlayerUpdate = ({
   player,
+  team,
   traits,
   roles,
   subRoles,
@@ -52,7 +57,7 @@ const buildPlayerUpdate = ({
   stripUndefinedDeep({
     player_id: player.player_id ?? player.id,
     display_name: player.display_name ?? player.name ?? '',
-    bio: player.bio ?? {},
+    bio: { ...(player.bio ?? {}), ...(team ? { Team: team } : {}) },
     traits,
     roles,
     subRoles,
@@ -73,6 +78,7 @@ const buildPlayerUpdate = ({
 const useAutoSavePlayer = ({
   playerId,
   player,
+  team,
   traits,
   roles,
   subRoles,
@@ -94,6 +100,7 @@ const useAutoSavePlayer = ({
   snapshotRef.current = {
     playerId,
     player,
+    team,
     traits,
     roles,
     subRoles,
@@ -175,6 +182,7 @@ const useAutoSavePlayer = ({
   }, [
     playerId,
     player,
+    team,
     traits,
     roles,
     subRoles,
