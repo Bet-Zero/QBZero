@@ -61,6 +61,12 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Backup QBs bracket picks (one document, backupBrackets/main).
+    match /backupBrackets/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // QB Weekly takes board. The page is still locked behind admin sign-in,
     // so only the owner writes here for now. The open version let anyone
     // create takes under any author name and overwrite any author record,

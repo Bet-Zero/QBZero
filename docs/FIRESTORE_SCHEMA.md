@@ -97,6 +97,10 @@ under any author name or overwrite another author's record.
 text in a publicly readable document. The app no longer reads or writes it;
 any documents left there are legacy.
 
+## `backupBrackets/main`
+
+The owner's Backup QBs bracket picks. Owner-written, publicly readable.
+
 ## `qbwShelves/main`
 
 The Crystal Ball shelves on the QB Weekly page. Owner-written, publicly
