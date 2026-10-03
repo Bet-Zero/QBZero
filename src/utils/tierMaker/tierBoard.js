@@ -225,3 +225,20 @@ export const reorderTiers = (tierOrder, active, over) => {
   next.splice(to, 0, next.splice(from, 1)[0]);
   return [...next, POOL];
 };
+
+/** The local calendar day a save belongs to, as `YYYY-MM-DD`. */
+export const versionDayKey = (date = new Date()) => {
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+};
+
+/** `2026-10-03` → `Oct 3, 2026`, without time zone drift. */
+export const formatVersionDay = (key) => {
+  const [y, m, d] = (key || '').split('-').map(Number);
+  if (!y || !m || !d) return key || '';
+  return new Date(y, m - 1, d).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+};
