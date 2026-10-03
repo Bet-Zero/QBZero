@@ -31,9 +31,11 @@ vi.mock('@/firebase/listHelpers', () => ({
   fetchTierList: (...a) => fetchTierList(...a),
   saveTierList: (...a) => saveTierList(...a),
   fetchTierListVersions: (...a) => fetchTierListVersions(...a),
+  saveNamedTierListVersion: (...a) => saveNamedTierListVersion(...a),
   createTierList: vi.fn(),
 }));
 const fetchTierListVersions = vi.fn(async () => []);
+const saveNamedTierListVersion = vi.fn(async () => 'named1');
 const sendTierBoardToList = vi.fn(async () => {});
 vi.mock('@/firebase/listTierLink', () => ({
   sendTierBoardToList: (...a) => sendTierBoardToList(...a),
@@ -85,6 +87,7 @@ afterEach(() => {
   saveTierList.mockImplementation(async () => {});
   fetchTierListVersions.mockReset();
   fetchTierListVersions.mockImplementation(async () => []);
+  saveNamedTierListVersion.mockClear();
   sendTierBoardToList.mockClear();
   vi.restoreAllMocks();
 });
@@ -117,7 +120,7 @@ describe('TierMakerBoard', () => {
     await screen.findByText('MAHOMES');
     vi.spyOn(window, 'prompt').mockReturnValue('S');
     fireEvent.click(screen.getByText('Add Tier'));
-    fireEvent.click(screen.getByText(/^Save/));
+    fireEvent.click(screen.getByText(/^Saved?$/));
     await waitFor(() => expect(saveTierList).toHaveBeenCalled());
     expect(saveTierList.mock.calls[0][1]).toEqual({
       tiers: { S: ['p1'], A: ['p2'], Pool: [] },
@@ -270,5 +273,54 @@ describe('TierMakerBoard history', () => {
       tiers: { S: ['p2'], Pool: ['p1'] },
       tierOrder: ['S', 'Pool'],
     });
+  });
+});
+
+describe('TierMakerBoard named versions', () => {
+  it('saves the current board under a name', async () => {
+    fetchTierList.mockResolvedValue(savedList);
+    renderBoard('list1');
+    await screen.findByText('MAHOMES');
+    vi.spyOn(window, 'prompt').mockReturnValue('  Preseason ');
+    fireEvent.click(screen.getByText('Save as version'));
+    await waitFor(() => expect(saveNamedTierListVersion).toHaveBeenCalled());
+    expect(saveNamedTierListVersion).toHaveBeenCalledWith(
+      'list1',
+      { tiers: savedList.tiers, tierOrder: savedList.tierOrder },
+      'Preseason'
+    );
+  });
+
+  it('lists a named version apart from the daily ones and shows its name', async () => {
+    fetchTierList.mockResolvedValue(savedList);
+    fetchTierListVersions.mockResolvedValue([
+      {
+        id: 'named1',
+        label: 'Preseason',
+        day: '2026-09-01',
+        tiers: { S: ['p2'], Pool: ['p1'] },
+        tierOrder: ['S', 'Pool'],
+      },
+      {
+        id: '2026-10-03',
+        tiers: savedList.tiers,
+        tierOrder: savedList.tierOrder,
+      },
+    ]);
+    const { container } = renderBoard('list1');
+    const history = await screen.findByLabelText('History');
+    const groups = [...history.querySelectorAll('optgroup')].map((g) => [
+      g.label,
+      [...g.querySelectorAll('option')].map((o) => o.textContent),
+    ]);
+    expect(groups).toEqual([
+      ['Named', ['📌 Preseason · Sep 1, 2026']],
+      ['By day', ['Oct 3, 2026']],
+    ]);
+    fireEvent.change(history, { target: { value: 'named1' } });
+    expect(
+      (await screen.findByText(/Viewing this board as saved on/)).textContent
+    ).toContain('Preseason');
+    expect(rowLabels(container)).toEqual(['S', 'Pool']);
   });
 });

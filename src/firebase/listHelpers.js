@@ -14,7 +14,10 @@ import {
   arrayUnion,
   writeBatch,
 } from 'firebase/firestore';
-import { versionDayKey } from '../utils/tierMaker/tierBoard';
+import {
+  sortTierListVersions,
+  versionDayKey,
+} from '../utils/tierMaker/tierBoard';
 
 const listsRef = collection(db, 'lists');
 const tierListsRef = collection(db, 'tierLists');
@@ -114,7 +117,8 @@ export const renameTierList = async (id, newName) => {
   await updateDoc(docRef, { name: newName });
 };
 
-// Each tier list keeps one snapshot per day in tierLists/{id}/versions/{day};
+// Each tier list keeps one snapshot per day in tierLists/{id}/versions/{day},
+// plus any versions saved by name (auto ids, with `label` and `day`).
 // Firestore does not delete subcollections with their parent, so remove
 // those first.
 const tierListVersionsRef = (id) => collection(db, 'tierLists', id, 'versions');
@@ -125,12 +129,28 @@ export const deleteTierList = async (id) => {
   await deleteDoc(doc(db, 'tierLists', id));
 };
 
-/** Saved versions of a tier list, newest day first. */
+/** Saved versions of a tier list: named ones first, then by day, newest first. */
 export const fetchTierListVersions = async (id) => {
   const snapshot = await getDocs(tierListVersionsRef(id));
-  return snapshot.docs
-    .map((d) => ({ id: d.id, ...d.data() }))
-    .sort((a, b) => b.id.localeCompare(a.id));
+  return sortTierListVersions(
+    snapshot.docs.map((d) => ({ id: d.id, ...d.data() }))
+  );
+};
+
+/** Keep this board as a named version; it is never replaced by later saves. */
+export const saveNamedTierListVersion = async (
+  id,
+  { tiers, tierOrder },
+  label
+) => {
+  const ref = await addDoc(tierListVersionsRef(id), {
+    label,
+    day: versionDayKey(),
+    tiers,
+    tierOrder,
+    savedAt: serverTimestamp(),
+  });
+  return ref.id;
 };
 export const fetchTierList = async (id) => {
   const docRef = doc(db, 'tierLists', id);

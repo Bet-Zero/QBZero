@@ -242,3 +242,21 @@ export const formatVersionDay = (key) => {
     year: 'numeric',
   });
 };
+
+const versionDay = (v) => v.day || v.id;
+const savedMillis = (v) =>
+  v.savedAt?.toMillis?.() ?? (typeof v.savedAt === 'number' ? v.savedAt : 0);
+
+/** Named versions first, then daily ones; newest first within each. */
+export const sortTierListVersions = (versions) =>
+  [...versions].sort((a, b) => {
+    if (!!a.label !== !!b.label) return a.label ? -1 : 1;
+    const byDay = versionDay(b).localeCompare(versionDay(a));
+    return byDay || savedMillis(b) - savedMillis(a);
+  });
+
+/** How a version is listed: `📌 Preseason · Oct 3, 2026` or `Oct 3, 2026`. */
+export const versionTitle = (v) =>
+  v?.label
+    ? `📌 ${v.label} · ${formatVersionDay(versionDay(v))}`
+    : formatVersionDay(v?.id);

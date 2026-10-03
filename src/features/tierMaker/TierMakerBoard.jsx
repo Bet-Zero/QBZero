@@ -40,6 +40,7 @@ import {
   fetchAllTierLists,
   fetchTierList,
   fetchTierListVersions,
+  saveNamedTierListVersion,
   saveTierList,
 } from '@/firebase/listHelpers';
 import {
@@ -52,7 +53,7 @@ import {
   canMove,
   createEmptyBoard,
   deleteTier as deleteTierFromBoard,
-  formatVersionDay,
+  versionTitle,
   movePlayerTo,
   POOL,
   renameTier as renameTierOnBoard,
@@ -564,6 +565,30 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
     setViewingVersion(version);
   };
 
+  const saveNamedVersion = async () => {
+    if (!selectedTierList || viewingVersion) return;
+    const raw = window.prompt(
+      'Name this version (for example "Preseason" or "After Week 4")'
+    );
+    const label = (raw || '').trim();
+    if (!label) return;
+    // Name what is saved, so the version matches the list.
+    if (isDirty && !(await saveBoard(selectedTierList, { silent: true })))
+      return;
+    try {
+      await saveNamedTierListVersion(
+        selectedTierList,
+        boardToSaved(latest.current.board),
+        label
+      );
+      toast.success(`Saved version "${label}"`);
+      refreshVersions(selectedTierList);
+    } catch (err) {
+      console.error('Failed to save named version', err);
+      toast.error('Failed to save version');
+    }
+  };
+
   const backToCurrent = () => {
     if (boardBeforeVersion.current) setBoard(boardBeforeVersion.current);
     boardBeforeVersion.current = null;
@@ -664,7 +689,7 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
             >
               <span>
                 Viewing this board as saved on{' '}
-                <strong>{formatVersionDay(viewingVersion.id)}</strong>.
+                <strong>{versionTitle(viewingVersion)}</strong>.
                 Changes here are not saved unless you restore it.
               </span>
               <span className="flex gap-2">
@@ -813,6 +838,15 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
                 </button>
               </div>
 
+              {selectedTierList && (
+                <button
+                  onClick={saveNamedVersion}
+                  disabled={!!viewingVersion || isSaving}
+                  className="px-2 py-1 text-sm rounded bg-white/10 hover:bg-white/20 text-white disabled:opacity-40"
+                >
+                  Save as version
+                </button>
+              )}
               {selectedTierList && versions.length > 0 && (
                 <select
                   aria-label="History"
@@ -825,11 +859,26 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
                   className="bg-[#1a1a1a] text-white text-sm px-2 py-1 rounded border border-white/10"
                 >
                   <option value="">History...</option>
-                  {versions.map((v) => (
-                    <option key={v.id} value={v.id}>
-                      {formatVersionDay(v.id)}
-                    </option>
-                  ))}
+                  {versions.some((v) => v.label) && (
+                    <optgroup label="Named">
+                      {versions
+                        .filter((v) => v.label)
+                        .map((v) => (
+                          <option key={v.id} value={v.id}>
+                            {versionTitle(v)}
+                          </option>
+                        ))}
+                    </optgroup>
+                  )}
+                  <optgroup label="By day">
+                    {versions
+                      .filter((v) => !v.label)
+                      .map((v) => (
+                        <option key={v.id} value={v.id}>
+                          {versionTitle(v)}
+                        </option>
+                      ))}
+                  </optgroup>
                 </select>
               )}
             </div>
