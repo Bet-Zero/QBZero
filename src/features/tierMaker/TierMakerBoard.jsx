@@ -36,6 +36,7 @@ import OpenDrawerButton from '@/components/shared/ui/drawers/OpenDrawerButton';
 import AddPlayerDrawer from '@/features/roster/AddPlayerDrawer';
 import CreateTierListModal from '@/features/tierMaker/CreateTierListModal';
 import NamePromptModal from '@/components/shared/ui/NamePromptModal';
+import { useConfirm } from '@/components/shared/ui/ConfirmModal';
 import TierMakerExport from '@/features/tierMaker/TierMakerExport';
 import {
   fetchAllTierLists,
@@ -216,9 +217,17 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
   // A board that is not saved anywhere yet: a new board with no list, or
   // edits made while looking at an old version.
   const hasUnsavedWork = isDirty && (!selectedTierList || !!viewingVersion);
-  const confirmDiscard = () =>
-    !hasUnsavedWork ||
-    window.confirm('You have unsaved changes. Discard them?');
+  const { confirm, confirmDialog } = useConfirm();
+  const confirmLeave = () =>
+    confirm({
+      title: 'Discard unsaved changes?',
+      message:
+        'This board is not saved to a tier list yet, so leaving loses it.',
+      confirmLabel: 'Discard',
+      cancelLabel: 'Keep editing',
+      danger: true,
+    });
+  const confirmDiscard = async () => !hasUnsavedWork || confirmLeave();
 
   useEffect(() => {
     if (!hasUnsavedWork) return undefined;
@@ -234,17 +243,21 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
       const url = new URL(link.href, window.location.href);
       if (url.origin !== window.location.origin) return;
       if (url.pathname === window.location.pathname) return;
-      if (!window.confirm('You have unsaved changes. Leave this page?')) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
+      // Hold the navigation until the in-app dialog is answered.
+      e.preventDefault();
+      e.stopPropagation();
+      confirmLeave().then((leave) => {
+        if (leave) navigate(url.pathname + url.search + url.hash);
+      });
     };
     document.addEventListener('click', guardLinks, true);
     return () => {
       window.removeEventListener('beforeunload', warn);
       document.removeEventListener('click', guardLinks, true);
     };
-  }, [hasUnsavedWork]);
+    // confirmLeave only wraps the stable confirm().
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasUnsavedWork, navigate]);
 
   // Calculate which players are currently used in any tier
   const usedPlayerIds = useMemo(() => boardPlayerIds(tiers), [tiers]);
@@ -393,8 +406,16 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
     return null;
   };
 
-  const resetBoard = () => {
-    if (!window.confirm('Clear every tier and the pool?')) return;
+  const resetBoard = async () => {
+    if (
+      !(await confirm({
+        title: 'Clear the board?',
+        message: 'Every tier and the pool are emptied.',
+        confirmLabel: 'Clear',
+        danger: true,
+      }))
+    )
+      return;
     setBoard(createEmptyBoard(players));
   };
 
@@ -620,9 +641,12 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
     if (!sourceList) return;
     const listName = sourceList.name || 'the list';
     if (
-      !window.confirm(
-        `Replace the order and tiers of "${listName}" with this board? Players in the Pool go under "Unplaced", and notes stay for players still on the list.`
-      )
+      !(await confirm({
+        title: `Send this board to "${listName}"?`,
+        message:
+          'It replaces the order and tiers of the list. Players in the Pool go under "Unplaced", and notes stay for players still on the list.',
+        confirmLabel: 'Send',
+      }))
     )
       return;
     try {
@@ -817,7 +841,7 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
                   value={selectedTierList}
                   onChange={async (e) => {
                     const id = e.target.value;
-                    if (!confirmDiscard()) return;
+                    if (!(await confirmDiscard())) return;
                     // Save a change still waiting on autosave before leaving.
                     if (isDirty && selectedTierList && !viewingVersion) {
                       await saveBoard(selectedTierList, { silent: true });
@@ -937,6 +961,8 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
           </button>
         </div>
       )}
+
+      {confirmDialog}
 
       <NamePromptModal
         isOpen={!!namePrompt}
