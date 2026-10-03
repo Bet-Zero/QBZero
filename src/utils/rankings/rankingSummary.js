@@ -95,3 +95,33 @@ export const describeRankingChange = (summary) => {
 
   return parts.join(' · ');
 };
+
+const qbs = (count) => `${count} QB${count === 1 ? '' : 's'}`;
+const spots = (count) => `${count} spot${count === 1 ? '' : 's'}`;
+
+/**
+ * The same summary as labelled lines, for places with room to spell it out.
+ * The one-line form above leaned on ▲/▼ and bare numbers, which read as
+ * noise without already knowing what they meant.
+ *
+ * @returns {string[]} empty when there is nothing to compare against
+ */
+export const describeRankingChangeLines = (summary) => {
+  if (!summary) return [];
+  if (summary.unchanged) return ['Same order as the version before'];
+
+  const lines = [];
+  if (summary.riser) {
+    lines.push(
+      `Biggest rise: ${summary.riser.name}, up ${spots(summary.riser.positions)}`
+    );
+  }
+  if (summary.faller) {
+    lines.push(
+      `Biggest drop: ${summary.faller.name}, down ${spots(summary.faller.positions)}`
+    );
+  }
+  if (summary.added) lines.push(`Added ${qbs(summary.added)}`);
+  if (summary.removed) lines.push(`Removed ${qbs(summary.removed)}`);
+  return lines;
+};

@@ -11,7 +11,7 @@ import {
   formatReplacedDate,
 } from '@/utils/formatting/rankingDates';
 import {
-  describeRankingChange,
+  describeRankingChangeLines,
   summariseRankingChange,
 } from '@/utils/rankings/rankingSummary';
 import {
@@ -267,9 +267,9 @@ const RankingHistoryPage = () => {
                       ))}
                   </select>
                 </label>
-                {describeRankingChange(comparedSummary) && (
+                {describeRankingChangeLines(comparedSummary).length > 0 && (
                   <span className="text-white/70">
-                    {describeRankingChange(comparedSummary)}
+                    {describeRankingChangeLines(comparedSummary).join(' · ')}
                   </span>
                 )}
               </div>
@@ -284,6 +284,7 @@ const RankingHistoryPage = () => {
             <div className="p-3">
               <HistoryBoard
                 key={selected.id}
+                initialOpenId={params.get('qb')}
                 entry={selected}
                 movement={movement}
                 history={entries}

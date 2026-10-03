@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ChevronUp, ChevronDown, Trash2, Edit3 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import RankingMovementIndicator from '@/components/shared/RankingMovementIndicator';
 import { TEAM_LOGO_MAP as teamLogoMap } from '@/utils/formatting/teamLogos';
 import { splitNameForTwoLines } from '@/utils/formatting/playerName';
@@ -16,6 +17,7 @@ const QBRankingCard = ({
   movement = null, // Movement data from ranking comparison
   showMovement = false, // Toggle for showing movement indicators
   isArchiveMode = false, // New prop to indicate this is being used in archive display
+  noteHistoryHref = null, // Where this QB's notes history lives, when there is one
 }) => {
   const [isEditingNotes, setIsEditingNotes] = useState(false);
   const [notesValue, setNotesValue] = useState(qb.notes || '');
@@ -232,6 +234,14 @@ const QBRankingCard = ({
                   >
                     Cancel
                   </button>
+                  {noteHistoryHref && (
+                    <Link
+                      to={noteHistoryHref}
+                      className="ml-auto self-center text-[10px] sm:text-xs text-blue-300 hover:text-blue-200"
+                    >
+                      Note history
+                    </Link>
+                  )}
                 </div>
               </div>
             ) : (

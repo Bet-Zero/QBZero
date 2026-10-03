@@ -3,15 +3,23 @@ import PropTypes from 'prop-types';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import RankingMovementIndicator from '@/components/shared/RankingMovementIndicator';
 import RankSparkline from '@/features/rankings/history/RankSparkline';
+import NoteHistory from '@/features/rankings/history/NoteHistory';
 import { rankHistoryFor, rankRange } from '@/utils/rankings/rankHistory';
 
 /**
  * One saved version of the board, as it stood: every quarterback with his
  * movement against the version being compared to and the note he carried.
- * Opening a row shows his rank across every version loaded.
+ * Opening a row shows his rank across every version loaded and his notes
+ * history.
  */
-const HistoryBoard = ({ entry, movement, history, showMovement }) => {
-  const [openId, setOpenId] = useState(null);
+const HistoryBoard = ({
+  entry,
+  movement,
+  history,
+  showMovement,
+  initialOpenId = null,
+}) => {
+  const [openId, setOpenId] = useState(initialOpenId);
   const rankings = entry.rankings || [];
 
   if (!rankings.length) {
@@ -77,24 +85,27 @@ const HistoryBoard = ({ entry, movement, history, showMovement }) => {
             </button>
 
             {isOpen && (
-              <div className="ml-12 mb-3 mt-1 px-3 py-3 rounded-lg bg-white/5 flex flex-wrap items-center gap-x-6 gap-y-2">
-                <RankSparkline points={points} highlightId={entry.id} />
-                <div className="text-xs text-white/60 space-y-0.5">
-                  {range ? (
-                    <>
-                      <div>
-                        Best <span className="text-white">#{range.best}</span>
-                        {' · '}Worst{' '}
-                        <span className="text-white">#{range.worst}</span>
-                      </div>
-                      <div>
-                        On {onBoards} of {points.length} versions loaded
-                      </div>
-                    </>
-                  ) : (
-                    <div>No other versions to compare.</div>
-                  )}
+              <div className="ml-12 mb-3 mt-1 px-3 py-3 rounded-lg bg-white/5 space-y-4">
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+                  <RankSparkline points={points} highlightId={entry.id} />
+                  <div className="text-xs text-white/60 space-y-0.5">
+                    {range && onBoards > 1 ? (
+                      <>
+                        <div>
+                          Best <span className="text-white">#{range.best}</span>
+                          {' · '}Worst{' '}
+                          <span className="text-white">#{range.worst}</span>
+                        </div>
+                        <div>
+                          On {onBoards} of {points.length} versions loaded
+                        </div>
+                      </>
+                    ) : (
+                      <div>Only on this version so far.</div>
+                    )}
+                  </div>
                 </div>
+                <NoteHistory qb={qb} history={history} />
               </div>
             )}
           </li>
@@ -109,6 +120,7 @@ HistoryBoard.propTypes = {
   movement: PropTypes.object.isRequired,
   history: PropTypes.array.isRequired,
   showMovement: PropTypes.bool,
+  initialOpenId: PropTypes.string,
 };
 
 export default HistoryBoard;

@@ -351,6 +351,11 @@ const QBRankingsPage = () => {
               readOnly={isCleanView}
               movement={movementData[qb.id]}
               showMovement={showMovement}
+              noteHistoryHref={
+                isPersonalRankings
+                  ? `/rankings/history?qb=${encodeURIComponent(qb.id)}`
+                  : null
+              }
             />
           ))}
 
