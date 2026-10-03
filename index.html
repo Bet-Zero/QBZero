@@ -5,16 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>QBZero</title>
 
-    <!-- ✅ Preload Anton font -->
+    <!-- No /favicon.ico ships, so this pointed at a 404. The header's football
+         stands in. Anton was preloaded here too, but only locked pages use it,
+         so every visitor downloaded 160 KB they never rendered; the
+         @font-face in antonFont.css still loads it where it's used. -->
     <link
-      rel="preload"
-      href="/fonts/Anton.woff2"
-      as="font"
-      type="font/woff2"
-      crossorigin="anonymous"
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏈</text></svg>"
     />
-    <!-- Add favicon -->
-    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
   </head>
   <body class="bg-neutral-900 text-white">
     <div id="root"></div>
