@@ -50,6 +50,8 @@ const RankerResultsPage = () => {
     setFinalRanking,
     generateShareableURL,
     canNavigateToStep,
+    sessionProgress,
+    undoLastPick,
   } = useRankerContext();
 
   const { isAdmin } = useAuth();
@@ -84,6 +86,20 @@ const RankerResultsPage = () => {
   const handleStartNew = () => {
     resetRanker();
     navigate('/ranker');
+  };
+
+  // The final answer sends the user straight here, so this is the only place
+  // left to take it back. Any hand adjustments are recomputed away when the
+  // session finishes again, hence the confirmation.
+  const handleUndoLastPick = () => {
+    if (
+      !window.confirm(
+        'Go back to your last comparison? The ranking is rebuilt when you answer it, so any adjustments made here are lost.'
+      )
+    ) {
+      return;
+    }
+    if (undoLastPick()) navigate('/ranker/comparisons');
   };
 
   const handleRankingAdjusted = (adjustedRanking) => {
@@ -273,6 +289,14 @@ const RankerResultsPage = () => {
           >
             ✏️ Adjust Rankings
           </ActionButton>
+          {sessionProgress?.history?.length > 0 && (
+            <ActionButton
+              onClick={handleUndoLastPick}
+              className="bg-white/10 hover:bg-white/20"
+            >
+              ↩️ Undo Last Pick
+            </ActionButton>
+          )}
           <ActionButton
             onClick={() => setShowExportModal(true)}
             className="bg-blue-600 hover:bg-blue-700"

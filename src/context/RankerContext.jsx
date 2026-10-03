@@ -63,6 +63,7 @@ const STORAGE_KEYS = {
   SETUP_DATA: 'ranker_setup_data',
   COMPARISON_RESULTS: 'ranker_comparison_results',
   FINAL_RANKING: 'ranker_final_ranking',
+  SESSION_PROGRESS: 'ranker_session_progress',
   SESSION_ID: 'ranker_session_id',
 };
 
@@ -80,42 +81,51 @@ export const RankerProvider = () => {
     return created;
   });
 
+  // Saved state is read synchronously, during the first render. Reading it in
+  // an effect left the first render empty, and the comparisons page mounted a
+  // blank session that saved over the real progress before it was loaded.
+  const readStored = (key) => {
+    const raw = safeStorage.get(`${key}_${sessionId}`);
+    if (!raw) return undefined;
+    try {
+      return JSON.parse(raw);
+    } catch {
+      // A corrupted entry should not block the rest of the session.
+      safeStorage.remove(`${key}_${sessionId}`);
+      return undefined;
+    }
+  };
+
   // Player pool from setup
-  const [playerPool, setPlayerPoolState] = useState([]);
+  const [playerPool, setPlayerPoolState] = useState(
+    () => readStored(STORAGE_KEYS.PLAYER_POOL) || []
+  );
 
   // Setup data (top/bottom tiers, anchor, etc.)
-  const [setupData, setSetupDataState] = useState(null);
+  const [setupData, setSetupDataState] = useState(
+    () => readStored(STORAGE_KEYS.SETUP_DATA) || null
+  );
 
   // Comparison results
-  const [comparisonResults, setComparisonResultsState] = useState([]);
+  const [comparisonResults, setComparisonResultsState] = useState(
+    () => readStored(STORAGE_KEYS.COMPARISON_RESULTS) || []
+  );
 
   // Final ranking
-  const [finalRanking, setFinalRankingState] = useState([]);
+  const [finalRanking, setFinalRankingState] = useState(
+    () => readStored(STORAGE_KEYS.FINAL_RANKING) || []
+  );
 
-  // Load state from localStorage on mount
-  useEffect(() => {
-    const read = (key) => {
-      const raw = safeStorage.get(`${key}_${sessionId}`);
-      if (!raw) return undefined;
-      try {
-        return JSON.parse(raw);
-      } catch {
-        // A corrupted entry should not block the rest of the session.
-        safeStorage.remove(`${key}_${sessionId}`);
-        return undefined;
-      }
-    };
+  // The in-progress comparison session: the user's answers and skips, and the
+  // anchor sweep. Saved on every answer so a session survives a reload.
+  const [sessionProgress, setSessionProgressState] = useState(
+    () => readStored(STORAGE_KEYS.SESSION_PROGRESS) || null
+  );
 
-    const pool = read(STORAGE_KEYS.PLAYER_POOL);
-    const setup = read(STORAGE_KEYS.SETUP_DATA);
-    const comparisons = read(STORAGE_KEYS.COMPARISON_RESULTS);
-    const ranking = read(STORAGE_KEYS.FINAL_RANKING);
-
-    if (pool) setPlayerPoolState(pool);
-    if (setup) setSetupDataState(setup);
-    if (comparisons) setComparisonResultsState(comparisons);
-    if (ranking) setFinalRankingState(ranking);
-  }, [sessionId]);
+  // True while showing a session decoded from a shared link. That session is
+  // someone else's, so it is shown but never written over the viewer's own
+  // saved progress.
+  const [isSharedView, setIsSharedView] = useState(false);
 
   // Drop entries belonging to sessions other than the current one. Before the
   // session id was persisted, every reload minted a new one and left a full
@@ -126,6 +136,7 @@ export const RankerProvider = () => {
       STORAGE_KEYS.SETUP_DATA,
       STORAGE_KEYS.COMPARISON_RESULTS,
       STORAGE_KEYS.FINAL_RANKING,
+      STORAGE_KEYS.SESSION_PROGRESS,
     ];
     safeStorage.keys().forEach((key) => {
       const owner = dataKeys.find((k) => key.startsWith(`${k}_`));
@@ -148,6 +159,8 @@ export const RankerProvider = () => {
     setSetupDataState(decoded.setupData);
     setComparisonResultsState(decoded.comparisonResults);
     setFinalRankingState(decoded.finalRanking);
+    setSessionProgressState(null);
+    setIsSharedView(true);
   }, [location.search]);
 
   // Enhanced setters that persist to localStorage
@@ -195,6 +208,29 @@ export const RankerProvider = () => {
     [sessionId]
   );
 
+  const setSessionProgress = useCallback(
+    (progress) => {
+      setSessionProgressState(progress);
+      if (isSharedView) return;
+      safeStorage.set(
+        `${STORAGE_KEYS.SESSION_PROGRESS}_${sessionId}`,
+        JSON.stringify(progress)
+      );
+    },
+    [sessionId, isSharedView]
+  );
+
+  // Take back the most recent answer or skip of the saved session, so the
+  // comparisons page reopens on that matchup.
+  const undoLastPick = useCallback(() => {
+    if (!sessionProgress?.history?.length) return false;
+    setSessionProgress({
+      ...sessionProgress,
+      history: sessionProgress.history.slice(0, -1),
+    });
+    return true;
+  }, [sessionProgress, setSessionProgress]);
+
   // Build a shareable URL carrying the whole session.
   //
   // Returns { url } on success or { error } when the session cannot be encoded
@@ -234,6 +270,7 @@ export const RankerProvider = () => {
       STORAGE_KEYS.SETUP_DATA,
       STORAGE_KEYS.COMPARISON_RESULTS,
       STORAGE_KEYS.FINAL_RANKING,
+      STORAGE_KEYS.SESSION_PROGRESS,
     ].forEach((key) => {
       safeStorage.remove(`${key}_${sessionId}`);
     });
@@ -248,6 +285,8 @@ export const RankerProvider = () => {
     setSetupDataState(null);
     setComparisonResultsState([]);
     setFinalRankingState([]);
+    setSessionProgressState(null);
+    setIsSharedView(false);
   }, [sessionId]);
 
   // Check if we can navigate to a specific step
@@ -273,6 +312,7 @@ export const RankerProvider = () => {
     setupData,
     comparisonResults,
     finalRanking,
+    sessionProgress,
     sessionId,
 
     // Setters
@@ -280,9 +320,11 @@ export const RankerProvider = () => {
     setSetupData,
     setComparisonResults,
     setFinalRanking,
+    setSessionProgress,
 
     // Actions
     resetRanker,
+    undoLastPick,
     generateShareableURL,
     canNavigateToStep,
   };

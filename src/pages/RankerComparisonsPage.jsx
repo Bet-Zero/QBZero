@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useRankerContext } from '@/context/RankerContext';
-import RankingSession from '@/features/ranker/RankingSession';
+import RankingSession, {
+  sessionProgressKey,
+} from '@/features/ranker/RankingSession';
 import RankerNavBar from '@/components/ranker/RankerNavBar';
 
 const RankerComparisonsPage = () => {
@@ -11,6 +13,8 @@ const RankerComparisonsPage = () => {
     setupData,
     setFinalRanking,
     setComparisonResults,
+    sessionProgress,
+    setSessionProgress,
     canNavigateToStep,
   } = useRankerContext();
 
@@ -88,10 +92,21 @@ const RankerComparisonsPage = () => {
   return (
     <div className="bg-neutral-900 min-h-screen">
       <RankerNavBar />
+      {/* Keyed to the pool and setup: when a shared link replaces them, the
+          session starts over against the new ones instead of carrying the
+          previous session's answers across. */}
       <RankingSession
+        key={sessionProgressKey(playerPool, setupData)}
         playerPool={playerPool}
         setupData={setupData}
         onComplete={handleRankingComplete}
+        savedProgress={sessionProgress}
+        onProgressChange={setSessionProgress}
+        onViewResults={
+          canNavigateToStep('results')
+            ? () => navigate('/ranker/results')
+            : undefined
+        }
       />
     </div>
   );
