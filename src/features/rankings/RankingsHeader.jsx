@@ -21,6 +21,8 @@ const RankingsHeader = ({
   isSaving,
   canSave,
   onSave,
+  saveNote,
+  onSaveNoteChange,
   onViewArchives,
   showViewArchives,
   onClearAll,
@@ -182,6 +184,22 @@ const RankingsHeader = ({
               </button>
             )}
 
+            {canSave && onSaveNoteChange && (
+              <input
+                type="text"
+                value={saveNote || ''}
+                onChange={(event) => onSaveNoteChange(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' && !isSaving) onSave();
+                }}
+                maxLength={200}
+                placeholder="What changed? (optional)"
+                aria-label="Note for this save"
+                title="Saved with this version and shown in your ranking history"
+                className="w-full sm:w-56 px-3 py-2 rounded-lg bg-white/10 border border-white/10 text-white text-xs placeholder-white/40 outline-none focus:border-green-500/60"
+              />
+            )}
+
             {canSave && (
               <button
                 onClick={onSave}
@@ -224,6 +242,8 @@ RankingsHeader.propTypes = {
   isSaving: PropTypes.bool,
   canSave: PropTypes.bool,
   onSave: PropTypes.func,
+  saveNote: PropTypes.string,
+  onSaveNoteChange: PropTypes.func,
   onViewArchives: PropTypes.func,
   showViewArchives: PropTypes.bool,
   onClearAll: PropTypes.func,

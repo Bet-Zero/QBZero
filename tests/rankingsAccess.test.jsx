@@ -116,5 +116,11 @@ describe('site navigation', () => {
       .map((node) => node.closest('a'))
       .find(Boolean);
     expect(browseLink.getAttribute('href')).toBe('/rankings/browse');
+
+    const historyLink = screen
+      .getAllByText('Ranking History')
+      .map((node) => node.closest('a'))
+      .find(Boolean);
+    expect(historyLink.getAttribute('href')).toBe('/rankings/history');
   });
 });

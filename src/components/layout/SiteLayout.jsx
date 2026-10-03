@@ -149,6 +149,13 @@ const MobileMenu = ({ isOpen, onClose }) => {
             lockClassName="flex items-center gap-2 py-2 text-white/40 cursor-not-allowed"
           />
           <AdminLink
+            to="/rankings/history"
+            label="Ranking History"
+            onClick={onClose}
+            className="block py-2 text-white/60 hover:text-white"
+            lockClassName="flex items-center gap-2 py-2 text-white/40 cursor-not-allowed"
+          />
+          <AdminLink
             to="/rankings/browse"
             label="Browse Rankings"
             onClick={onClose}
@@ -240,6 +247,13 @@ const SiteLayout = () => {
           <AdminLink
             to="/rankings/edit"
             label="Edit Rankings"
+            iconSize={12}
+            className="hover:text-white"
+            lockClassName="flex items-center gap-1 text-white/40 cursor-not-allowed"
+          />
+          <AdminLink
+            to="/rankings/history"
+            label="Ranking History"
             iconSize={12}
             className="hover:text-white"
             lockClassName="flex items-center gap-1 text-white/40 cursor-not-allowed"

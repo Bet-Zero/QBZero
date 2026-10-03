@@ -4,6 +4,7 @@ import {
   fireEvent,
   cleanup,
   waitFor,
+  within,
 } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
@@ -20,11 +21,9 @@ const helpers = vi.hoisted(() => ({
 }));
 vi.mock('@/firebase/personalRankingHelpers', () => helpers);
 
-const ArchiveSidebar = (await import('@/features/rankings/ArchiveSidebar.jsx'))
+const RankingHistoryPage = (await import('@/pages/RankingHistoryPage.jsx'))
   .default;
-const usePersonalRankingHistory = (
-  await import('@/hooks/usePersonalRankingHistory.js')
-).default;
+const { MemoryRouter } = await import('react-router-dom');
 
 const makeArchives = (count, offset = 0) =>
   Array.from({ length: count }, (_, i) => ({
@@ -33,33 +32,23 @@ const makeArchives = (count, offset = 0) =>
     rankings: [{ id: 'a', name: 'Alpha', team: 'BUF' }],
   }));
 
-// A component that exercises the hook the way both history pages do.
-const History = () => {
-  const {
-    archives,
-    hasMore,
-    loadMore,
-    loadingMore,
-    selectedArchive,
-    setSelectedArchive,
-  } = usePersonalRankingHistory();
-  return (
-    <ArchiveSidebar
-      archives={archives}
-      selectedId={selectedArchive?.id}
-      onSelect={setSelectedArchive}
-      hasMore={hasMore}
-      onLoadMore={loadMore}
-      loadingMore={loadingMore}
-    />
-  );
-};
+const History = () => (
+  <MemoryRouter>
+    <RankingHistoryPage />
+  </MemoryRouter>
+);
+
+// The timeline holds the live board plus one row per archive.
+const timelineRows = () =>
+  within(screen.getByRole('navigation', { name: 'Ranking versions' }))
+    .getAllByRole('listitem')
+    .filter((row) => !row.textContent.includes('Current'));
 
 beforeEach(() => {
   vi.clearAllMocks();
   helpers.getCurrentPersonalRanking.mockResolvedValue({
     id: 'live',
-    rankings: [],
+    rankings: [{ id: 'a', name: 'Alpha', team: 'BUF' }],
   });
 });
 afterEach(cleanup);
@@ -72,7 +61,7 @@ describe('archive history paging', () => {
     });
 
     render(<History />);
-    expect(await screen.findByText('Load older archives')).toBeTruthy();
+    expect(await screen.findByText('Load older rankings')).toBeTruthy();
   });
 
   it('says nothing when the whole history already fits', async () => {
@@ -85,7 +74,7 @@ describe('archive history paging', () => {
     await waitFor(() =>
       expect(helpers.getPersonalRankingArchives).toHaveBeenCalled()
     );
-    expect(screen.queryByText('Load older archives')).toBeNull();
+    expect(screen.queryByText('Load older rankings')).toBeNull();
   });
 
   it('asks for a bigger page rather than dropping what is already shown', async () => {
@@ -99,15 +88,13 @@ describe('archive history paging', () => {
       archives: makeArchives(80),
       hasMore: false,
     });
-    fireEvent.click(await screen.findByText('Load older archives'));
+    fireEvent.click(await screen.findByText('Load older rankings'));
 
     await waitFor(() =>
       expect(helpers.getPersonalRankingArchives).toHaveBeenLastCalledWith(100)
     );
     // All eighty are on screen, and there is nothing left to offer.
-    await waitFor(() =>
-      expect(screen.getAllByText(/QBs ranked/).length).toBe(80)
-    );
-    expect(screen.queryByText('Load older archives')).toBeNull();
+    await waitFor(() => expect(timelineRows().length).toBe(80));
+    expect(screen.queryByText('Load older rankings')).toBeNull();
   });
 });

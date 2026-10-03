@@ -4,25 +4,13 @@ import { Calendar } from 'lucide-react';
 import { fetchAllQBRankings } from '@/firebase/listHelpers';
 import usePersonalRankingHistory from '@/hooks/usePersonalRankingHistory';
 import PersonalRankingPanel from '@/features/rankings/PersonalRankingPanel';
-import ArchiveSidebar from '@/features/rankings/ArchiveSidebar';
+import HistoryPreview from '@/features/rankings/history/HistoryPreview';
 import { formatRankingDate } from '@/utils/formatting/rankingDates';
 
 const BrowseRankingsPage = () => {
   const navigate = useNavigate();
-  const {
-    current,
-    archives,
-    selectedArchive,
-    setSelectedArchive,
-    loading,
-    error,
-    busyId,
-    restore,
-    remove,
-    hasMore,
-    loadMore,
-    loadingMore,
-  } = usePersonalRankingHistory();
+  const { current, archives, loading, error, hasMore } =
+    usePersonalRankingHistory();
   const [otherRankings, setOtherRankings] = React.useState([]);
 
   React.useEffect(() => {
@@ -63,11 +51,7 @@ const BrowseRankingsPage = () => {
           <div className="lg:col-span-2">
             <PersonalRankingPanel
               current={current}
-              selectedArchive={selectedArchive}
-              onClearSelection={() => setSelectedArchive(null)}
               onEdit={() => navigate('/rankings/edit')}
-              onRestore={restore}
-              isRestoring={busyId === selectedArchive?.id}
             />
 
             <div className="bg-neutral-800/50 rounded-xl p-6 border border-white/10">
@@ -112,17 +96,7 @@ const BrowseRankingsPage = () => {
           </div>
 
           <div>
-            <ArchiveSidebar
-              archives={archives}
-              selectedId={selectedArchive?.id}
-              onSelect={setSelectedArchive}
-              onRestore={restore}
-              onDelete={remove}
-              busyId={busyId}
-              hasMore={hasMore}
-              onLoadMore={loadMore}
-              loadingMore={loadingMore}
-            />
+            <HistoryPreview archives={archives} hasMore={hasMore} />
           </div>
         </div>
       </div>
