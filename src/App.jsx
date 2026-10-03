@@ -103,7 +103,16 @@ const App = () => {
           }
         />
 
-        <Route path="/qbw" element={<QBWPage />} />
+        {/* Still in progress: padlocked in the nav and gated here, so the
+            URL alone doesn't open it for visitors. */}
+        <Route
+          path="/qbw"
+          element={
+            <AdminProtectedRoute>
+              <QBWPage />
+            </AdminProtectedRoute>
+          }
+        />
         <Route
           path="/lists"
           element={
@@ -138,11 +147,22 @@ const App = () => {
           }
         />
 
-        {/* Backup QBs Routes */}
-        <Route path="/backup-qbs" element={<BackupQBsHome />} />
+        {/* Backup QBs Routes: still in progress, gated like /qbw */}
+        <Route
+          path="/backup-qbs"
+          element={
+            <AdminProtectedRoute>
+              <BackupQBsHome />
+            </AdminProtectedRoute>
+          }
+        />
         <Route
           path="/backup-qbs/hall-of-fame"
-          element={<BackupQBHallOfFame />}
+          element={
+            <AdminProtectedRoute>
+              <BackupQBHallOfFame />
+            </AdminProtectedRoute>
+          }
         />
 
         {/* Ranker Routes */}
