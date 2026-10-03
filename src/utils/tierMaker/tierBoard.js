@@ -185,3 +185,10 @@ export const addToPool = (board, players) => {
 
 /** Stable fingerprint of what would be saved, for unsaved-change checks. */
 export const boardSignature = (board) => JSON.stringify(boardToSaved(board));
+
+/** Whether a player in `tier` can step one tier up or down. */
+export const canMove = (tierOrder, tier, direction) => {
+  const index = tierOrder.indexOf(tier);
+  if (index === -1) return false;
+  return direction === 'up' ? index > 0 : index < tierOrder.length - 1;
+};

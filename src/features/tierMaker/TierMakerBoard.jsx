@@ -24,6 +24,7 @@ import {
   boardPlayerIds,
   boardSignature,
   boardToSaved,
+  canMove,
   createEmptyBoard,
   deleteTier as deleteTierFromBoard,
   renameTier as renameTierOnBoard,
@@ -363,10 +364,10 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
 
       <div
         className={`flex-1 transition-[margin] duration-300 ease-in-out ${
-          drawerOpen ? 'ml-[300px]' : 'ml-0'
+          drawerOpen ? 'md:ml-[300px]' : 'ml-0'
         }`}
       >
-        <div className="flex flex-col gap-2 w-full max-w-[1000px] mx-auto pt-6 pb-12x">
+        <div className="flex flex-col gap-2 w-full max-w-[1000px] mx-auto px-2 pt-6 pb-28">
           {!screenshotMode && (
             <div className="flex justify-between items-center mb-1">
               <button
@@ -389,6 +390,8 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
               key={tier}
               tier={tier}
               players={tiers[tier]}
+              canMoveUp={canMove(tierOrder, tier, 'up')}
+              canMoveDown={canMove(tierOrder, tier, 'down')}
               screenshotMode={screenshotMode}
               movePlayer={movePlayer}
               removePlayer={removePlayer}
@@ -499,6 +502,7 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
         <div className="fixed bottom-6 right-6 z-50">
           <button
             onClick={() => handleSaveTierList()}
+            disabled={isSaving}
             className="bg-black/20 text-white px-4 py-2 rounded hover:bg-white/20"
           >
             {isSaving

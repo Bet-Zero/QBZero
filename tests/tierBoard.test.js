@@ -7,6 +7,7 @@ import {
   boardFromSaved,
   boardSignature,
   boardToSaved,
+  canMove,
   createEmptyBoard,
   deleteTier,
   renameTier,
@@ -152,5 +153,14 @@ describe('boardSignature', () => {
     const b = addToPool(a, [players.p1]);
     expect(boardSignature(a)).toBe(boardSignature(createEmptyBoard()));
     expect(boardSignature(a)).not.toBe(boardSignature(b));
+  });
+});
+
+describe('canMove', () => {
+  it('uses position, not the tier name', () => {
+    const order = ['Elite', 'S', POOL];
+    expect(canMove(order, 'Elite', 'up')).toBe(false);
+    expect(canMove(order, 'S', 'up')).toBe(true);
+    expect(canMove(order, POOL, 'down')).toBe(false);
   });
 });

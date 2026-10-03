@@ -14,7 +14,7 @@ const CreateTierListModal = ({ isOpen, onClose, onCreated }) => {
       const id = await createTierList(trimmed);
       setName('');
       setError('');
-      onCreated?.(id);
+      onCreated?.(id, trimmed);
       onClose();
     } catch (err) {
       setError(err.message);
@@ -28,13 +28,17 @@ const CreateTierListModal = ({ isOpen, onClose, onCreated }) => {
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') handleCreate();
+          }}
           placeholder="Enter tier list name"
-          className="w-full p-2 bg-neutral-800 text-black border border-black rounded mb-2 placeholder:text-neutral-700"
+          aria-label="Tier list name"
+          className="w-full p-2 bg-neutral-800 text-white border border-white/20 rounded mb-2 placeholder:text-white/40"
         />
 
         {error && <p className="text-red-500 text-sm mb-2">{error}</p>}
         <button
-          className="bg-neutral-600 hover:bg-neutral-700 text-white px-04 py-2 rounded w-full"
+          className="bg-neutral-600 hover:bg-neutral-700 text-white px-4 py-2 rounded w-full"
           onClick={handleCreate}
         >
           Create Tier List
