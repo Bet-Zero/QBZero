@@ -39,6 +39,7 @@ import TierMakerExport from '@/features/tierMaker/TierMakerExport';
 import {
   fetchAllTierLists,
   fetchTierList,
+  fetchTierListVersions,
   saveTierList,
 } from '@/firebase/listHelpers';
 import {
@@ -51,6 +52,7 @@ import {
   canMove,
   createEmptyBoard,
   deleteTier as deleteTierFromBoard,
+  formatVersionDay,
   movePlayerTo,
   POOL,
   renameTier as renameTierOnBoard,
@@ -59,6 +61,9 @@ import {
 import { sendTierBoardToList } from '@/firebase/listTierLink';
 import { mergeListOrder, playerIdsOf } from '@/utils/lists/listOrder';
 import { toast } from 'react-hot-toast';
+
+// How long the board sits unchanged before it saves itself.
+export const AUTOSAVE_DELAY_MS = 1500;
 
 // Player drags only land on players or rows, tier drags only on tiers.
 // Within a row, a tile under the pointer wins over the row itself.
@@ -168,6 +173,26 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
   const [initialLoaded, setInitialLoaded] = useState(false);
   const [activePlayerId, setActivePlayerId] = useState(null);
   const boardBeforeDrag = useRef(null);
+  // Daily snapshots of the selected list, newest first.
+  const [versions, setVersions] = useState([]);
+  // The snapshot shown on the board instead of the current list, if any.
+  // Autosave is off while one is shown.
+  const [viewingVersion, setViewingVersion] = useState(null);
+  const boardBeforeVersion = useRef(null);
+  // A save that failed is not retried until the board changes again.
+  const [failedSignature, setFailedSignature] = useState(null);
+
+  const refreshVersions = useCallback(async (id) => {
+    if (!id) {
+      setVersions([]);
+      return;
+    }
+    try {
+      setVersions(await fetchTierListVersions(id));
+    } catch (err) {
+      console.error('Failed to fetch tier list versions', err);
+    }
+  }, []);
 
   const sensors = useSensors(
     // Mouse rather than Pointer: on touch, pointer events get cancelled as
@@ -182,19 +207,40 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
     })
   );
 
-  const isDirty = boardSignature(board) !== savedSignature;
+  const signature = boardSignature(board);
+  const isDirty = signature !== savedSignature;
+  // A board that is not saved anywhere yet: a new board with no list, or
+  // edits made while looking at an old version.
+  const hasUnsavedWork = isDirty && (!selectedTierList || !!viewingVersion);
   const confirmDiscard = () =>
-    !isDirty || window.confirm('You have unsaved changes. Discard them?');
+    !hasUnsavedWork ||
+    window.confirm('You have unsaved changes. Discard them?');
 
   useEffect(() => {
-    if (!isDirty) return undefined;
+    if (!hasUnsavedWork) return undefined;
     const warn = (e) => {
       e.preventDefault();
       e.returnValue = '';
     };
     window.addEventListener('beforeunload', warn);
-    return () => window.removeEventListener('beforeunload', warn);
-  }, [isDirty]);
+    // Links inside the site change pages without unloading, so ask here too.
+    const guardLinks = (e) => {
+      const link = e.target.closest?.('a[href]');
+      if (!link || link.target === '_blank' || e.defaultPrevented) return;
+      const url = new URL(link.href, window.location.href);
+      if (url.origin !== window.location.origin) return;
+      if (url.pathname === window.location.pathname) return;
+      if (!window.confirm('You have unsaved changes. Leave this page?')) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+    document.addEventListener('click', guardLinks, true);
+    return () => {
+      window.removeEventListener('beforeunload', warn);
+      document.removeEventListener('click', guardLinks, true);
+    };
+  }, [hasUnsavedWork]);
 
   // Calculate which players are currently used in any tier
   const usedPlayerIds = useMemo(() => boardPlayerIds(tiers), [tiers]);
@@ -393,6 +439,9 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
           return;
         }
         const loaded = boardFromSaved(data, playersMap);
+        boardBeforeVersion.current = null;
+        setViewingVersion(null);
+        refreshVersions(id);
         setBoard(loaded);
         setSavedSignature(boardSignature(loaded));
         setSelectedTierList(id);
@@ -411,8 +460,37 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
         toast.error('Failed to load tier list');
       }
     },
-    [playersMap, showTierListInUrl]
+    [playersMap, showTierListInUrl, refreshVersions]
   );
+
+  const latest = useRef({});
+  latest.current = {
+    board,
+    signature,
+    selectedTierList,
+    isDirty,
+    viewingVersion,
+  };
+
+  const saveBoard = async (listId, { silent = false } = {}) => {
+    const { board: snapshot, signature: snapshotSignature } = latest.current;
+    try {
+      setIsSaving(true);
+      await saveTierList(listId, boardToSaved(snapshot));
+      setSavedSignature(snapshotSignature);
+      setFailedSignature(null);
+      if (!silent) toast.success('Tier list saved!');
+      refreshVersions(listId);
+      return true;
+    } catch (err) {
+      console.error('Failed to save tier list', err);
+      setFailedSignature(snapshotSignature);
+      toast.error('Failed to save tier list');
+      return false;
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleSaveTierList = async (idOverride) => {
     const listId = idOverride || selectedTierList;
@@ -420,18 +498,82 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
       setShowCreateModal(true);
       return;
     }
-    const snapshot = board;
-    try {
-      setIsSaving(true);
-      await saveTierList(listId, boardToSaved(snapshot));
-      setSavedSignature(boardSignature(snapshot));
-      toast.success('Tier list saved!');
-    } catch (err) {
-      console.error('Failed to save tier list', err);
-      toast.error('Failed to save tier list');
-    } finally {
-      setIsSaving(false);
+    if (viewingVersion) {
+      restoreVersion();
     }
+    await saveBoard(listId);
+  };
+
+  // Autosave: once a list is selected, a change saves itself after a short
+  // pause. Not while a drag is in progress or an old version is shown.
+  useEffect(() => {
+    if (
+      !selectedTierList ||
+      !isDirty ||
+      isSaving ||
+      viewingVersion ||
+      activePlayerId ||
+      signature === failedSignature
+    )
+      return undefined;
+    const timer = setTimeout(
+      () => saveBoard(selectedTierList, { silent: true }),
+      AUTOSAVE_DELAY_MS
+    );
+    return () => clearTimeout(timer);
+    // saveBoard reads the latest board from a ref.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    selectedTierList,
+    isDirty,
+    isSaving,
+    viewingVersion,
+    activePlayerId,
+    signature,
+    failedSignature,
+  ]);
+
+  // Leaving the page inside the pause still saves the last change.
+  useEffect(
+    () => () => {
+      const {
+        board: last,
+        selectedTierList: listId,
+        isDirty: dirty,
+        viewingVersion: viewing,
+      } = latest.current;
+      if (listId && dirty && !viewing) {
+        saveTierList(listId, boardToSaved(last)).catch((err) =>
+          console.error('Failed to save tier list on leave', err)
+        );
+      }
+    },
+    []
+  );
+
+  const viewVersion = async (versionId) => {
+    if (!versionId) return;
+    const version = versions.find((v) => v.id === versionId);
+    if (!version) return;
+    // Save pending edits first so "Back to current" really is current.
+    if (!viewingVersion && isDirty && selectedTierList) {
+      if (!(await saveBoard(selectedTierList, { silent: true }))) return;
+    }
+    if (!viewingVersion) boardBeforeVersion.current = latest.current.board;
+    setBoard(boardFromSaved(version, playersMap));
+    setViewingVersion(version);
+  };
+
+  const backToCurrent = () => {
+    if (boardBeforeVersion.current) setBoard(boardBeforeVersion.current);
+    boardBeforeVersion.current = null;
+    setViewingVersion(null);
+  };
+
+  // Keep the board as shown; autosave then writes it as the current list.
+  const restoreVersion = () => {
+    boardBeforeVersion.current = null;
+    setViewingVersion(null);
   };
 
   const handleCreateAndSave = async (newId) => {
@@ -439,8 +581,10 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
     setSelectedTierList(newId);
     setSourceList(null);
     setShowCreateModal(false);
+    setViewingVersion(null);
+    boardBeforeVersion.current = null;
     showTierListInUrl(newId);
-    await handleSaveTierList(newId);
+    await saveBoard(newId);
     refreshTierLists();
   };
 
@@ -513,6 +657,32 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
         }`}
       >
         <div className="flex flex-col gap-2 w-full max-w-[1000px] mx-auto px-2 pt-6 pb-28">
+          {viewingVersion && !screenshotMode && (
+            <div
+              role="status"
+              className="flex flex-wrap items-center justify-between gap-2 rounded border border-amber-400/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-100"
+            >
+              <span>
+                Viewing this board as saved on{' '}
+                <strong>{formatVersionDay(viewingVersion.id)}</strong>.
+                Changes here are not saved unless you restore it.
+              </span>
+              <span className="flex gap-2">
+                <button
+                  onClick={restoreVersion}
+                  className="px-2 py-1 rounded bg-amber-500/80 hover:bg-amber-500 text-black"
+                >
+                  Restore this version
+                </button>
+                <button
+                  onClick={backToCurrent}
+                  className="px-2 py-1 rounded bg-white/10 hover:bg-white/20 text-white"
+                >
+                  Back to current
+                </button>
+              </span>
+            </div>
+          )}
           {!screenshotMode && (
             <div className="flex justify-between items-center mb-1">
               <button
@@ -617,8 +787,14 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
               <div className="flex items-center gap-1">
                 <select
                   value={selectedTierList}
-                  onChange={(e) => {
-                    if (confirmDiscard()) handleLoadTierList(e.target.value);
+                  onChange={async (e) => {
+                    const id = e.target.value;
+                    if (!confirmDiscard()) return;
+                    // Save a change still waiting on autosave before leaving.
+                    if (isDirty && selectedTierList && !viewingVersion) {
+                      await saveBoard(selectedTierList, { silent: true });
+                    }
+                    handleLoadTierList(id);
                   }}
                   className="bg-[#1a1a1a] text-white text-sm px-2 py-1 rounded border border-white/10"
                 >
@@ -636,6 +812,26 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
                   New
                 </button>
               </div>
+
+              {selectedTierList && versions.length > 0 && (
+                <select
+                  aria-label="History"
+                  value={viewingVersion?.id || ''}
+                  onChange={(e) =>
+                    e.target.value
+                      ? viewVersion(e.target.value)
+                      : backToCurrent()
+                  }
+                  className="bg-[#1a1a1a] text-white text-sm px-2 py-1 rounded border border-white/10"
+                >
+                  <option value="">History...</option>
+                  {versions.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {formatVersionDay(v.id)}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
           )}
         </div>
@@ -683,7 +879,7 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
           >
             {isSaving
               ? 'Saving...'
-              : selectedTierList && !isDirty
+              : selectedTierList && !isDirty && !viewingVersion
                 ? 'Saved'
                 : 'Save'}
           </button>

@@ -6,7 +6,7 @@ import {
   cleanup,
 } from '@testing-library/react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Routes, Route, Link } from 'react-router-dom';
 
 const rawPlayers = [
   {
@@ -30,8 +30,10 @@ vi.mock('@/firebase/listHelpers', () => ({
   fetchAllTierLists: vi.fn(async () => [{ id: 'list1', name: 'Week 1' }]),
   fetchTierList: (...a) => fetchTierList(...a),
   saveTierList: (...a) => saveTierList(...a),
+  fetchTierListVersions: (...a) => fetchTierListVersions(...a),
   createTierList: vi.fn(),
 }));
+const fetchTierListVersions = vi.fn(async () => []);
 const sendTierBoardToList = vi.fn(async () => {});
 vi.mock('@/firebase/listTierLink', () => ({
   sendTierBoardToList: (...a) => sendTierBoardToList(...a),
@@ -80,6 +82,9 @@ afterEach(() => {
   cleanup();
   fetchTierList.mockReset();
   saveTierList.mockClear();
+  saveTierList.mockImplementation(async () => {});
+  fetchTierListVersions.mockReset();
+  fetchTierListVersions.mockImplementation(async () => []);
   sendTierBoardToList.mockClear();
   vi.restoreAllMocks();
 });
@@ -148,5 +153,122 @@ describe('TierMakerBoard', () => {
     renderBoard('list1');
     await screen.findByText('MAHOMES');
     expect(screen.queryByText(/^Send to/)).toBeNull();
+  });
+});
+
+const savedList = {
+  id: 'list1',
+  name: 'Week 1',
+  tiers: { S: ['p1'], A: [], Pool: ['p2'] },
+  tierOrder: ['S', 'A', 'Pool'],
+};
+
+describe('TierMakerBoard saving', () => {
+  it('saves a change on its own after a short pause', async () => {
+    fetchTierList.mockResolvedValue(savedList);
+    renderBoard('list1');
+    await screen.findByText('MAHOMES');
+    vi.spyOn(window, 'prompt').mockReturnValue('Elite');
+    fireEvent.click(screen.getByText('Add Tier'));
+    expect(saveTierList).not.toHaveBeenCalled();
+    await waitFor(() => expect(saveTierList).toHaveBeenCalledTimes(1), {
+      timeout: 3000,
+    });
+    expect(saveTierList.mock.calls[0]).toEqual([
+      'list1',
+      {
+        tiers: { S: ['p1'], A: [], Elite: [], Pool: ['p2'] },
+        tierOrder: ['S', 'A', 'Elite', 'Pool'],
+      },
+    ]);
+    await screen.findByText('Saved');
+  });
+
+  it('saves a pending change when the page is left before autosave runs', async () => {
+    fetchTierList.mockResolvedValue(savedList);
+    const { unmount } = renderBoard('list1');
+    await screen.findByText('MAHOMES');
+    vi.spyOn(window, 'prompt').mockReturnValue('Elite');
+    fireEvent.click(screen.getByText('Add Tier'));
+    unmount();
+    expect(saveTierList).toHaveBeenCalledTimes(1);
+    expect(saveTierList.mock.calls[0][1].tierOrder).toEqual([
+      'S',
+      'A',
+      'Elite',
+      'Pool',
+    ]);
+  });
+
+  it('asks before following a link away from a board that is saved nowhere', () => {
+    render(
+      <MemoryRouter initialEntries={['/tier-maker']}>
+        <Routes>
+          <Route
+            path="/tier-maker"
+            element={
+              <>
+                <Link to="/elsewhere">go elsewhere</Link>
+                <TierMakerBoard />
+              </>
+            }
+          />
+          <Route path="/elsewhere" element={<p>Elsewhere</p>} />
+        </Routes>
+      </MemoryRouter>
+    );
+    fireEvent.click(screen.getByText('add patrick mahomes'));
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    fireEvent.click(screen.getByText('go elsewhere'));
+    expect(confirm).toHaveBeenCalled();
+    expect(screen.queryByText('Elsewhere')).toBeNull();
+    confirm.mockReturnValue(true);
+    fireEvent.click(screen.getByText('go elsewhere'));
+    expect(screen.getByText('Elsewhere')).toBeTruthy();
+  });
+});
+
+describe('TierMakerBoard history', () => {
+  const oldVersion = {
+    id: '2026-09-01',
+    tiers: { S: ['p2'], Pool: ['p1'] },
+    tierOrder: ['S', 'Pool'],
+  };
+
+  const openHistory = async () => {
+    fetchTierList.mockResolvedValue(savedList);
+    fetchTierListVersions.mockResolvedValue([oldVersion]);
+    const { container } = renderBoard('list1');
+    await screen.findByLabelText('History');
+    fireEvent.change(screen.getByLabelText('History'), {
+      target: { value: '2026-09-01' },
+    });
+    await screen.findByText(/Viewing this board as saved on/);
+    return container;
+  };
+
+  it('shows an old version without saving it, then goes back', async () => {
+    const container = await openHistory();
+    expect(
+      screen.getByText(/Viewing this board as saved on/).textContent
+    ).toContain('Sep 1, 2026');
+    expect(rowLabels(container)).toEqual(['S', 'Pool']);
+    await new Promise((r) => setTimeout(r, 2000));
+    expect(saveTierList).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByText('Back to current'));
+    expect(rowLabels(container)).toEqual(['S', 'A', 'Pool']);
+    expect(screen.queryByText(/Viewing this board/)).toBeNull();
+  });
+
+  it('restoring an old version saves it as the current board', async () => {
+    await openHistory();
+    fireEvent.click(screen.getByText('Restore this version'));
+    await waitFor(() => expect(saveTierList).toHaveBeenCalled(), {
+      timeout: 3000,
+    });
+    expect(saveTierList.mock.calls[0][1]).toEqual({
+      tiers: { S: ['p2'], Pool: ['p1'] },
+      tierOrder: ['S', 'Pool'],
+    });
   });
 });

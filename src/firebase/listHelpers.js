@@ -12,7 +12,9 @@ import {
   where,
   serverTimestamp,
   arrayUnion,
+  writeBatch,
 } from 'firebase/firestore';
+import { versionDayKey } from '../utils/tierMaker/tierBoard';
 
 const listsRef = collection(db, 'lists');
 const tierListsRef = collection(db, 'tierLists');
@@ -104,9 +106,23 @@ export const renameTierList = async (id, newName) => {
   await updateDoc(docRef, { name: newName });
 };
 
+// Each tier list keeps one snapshot per day in tierLists/{id}/versions/{day};
+// Firestore does not delete subcollections with their parent, so remove
+// those first.
+const tierListVersionsRef = (id) => collection(db, 'tierLists', id, 'versions');
+
 export const deleteTierList = async (id) => {
-  const docRef = doc(db, 'tierLists', id);
-  await deleteDoc(docRef);
+  const versions = await getDocs(tierListVersionsRef(id));
+  await Promise.all(versions.docs.map((d) => deleteDoc(d.ref)));
+  await deleteDoc(doc(db, 'tierLists', id));
+};
+
+/** Saved versions of a tier list, newest day first. */
+export const fetchTierListVersions = async (id) => {
+  const snapshot = await getDocs(tierListVersionsRef(id));
+  return snapshot.docs
+    .map((d) => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => b.id.localeCompare(a.id));
 };
 export const fetchTierList = async (id) => {
   const docRef = doc(db, 'tierLists', id);
@@ -114,13 +130,21 @@ export const fetchTierList = async (id) => {
   return snap.exists() ? { id: snap.id, ...snap.data() } : null;
 };
 
+// Saves the board and, in the same write, today's version of it (a later
+// save on the same day replaces that day's version).
 export const saveTierList = async (id, { tiers, tierOrder }) => {
-  const docRef = doc(db, 'tierLists', id);
-  await updateDoc(docRef, {
+  const batch = writeBatch(db);
+  batch.update(doc(db, 'tierLists', id), {
     tiers,
     tierOrder,
     updatedAt: serverTimestamp(),
   });
+  batch.set(doc(tierListVersionsRef(id), versionDayKey()), {
+    tiers,
+    tierOrder,
+    savedAt: serverTimestamp(),
+  });
+  await batch.commit();
 };
 
 // ===== QB Rankings =====

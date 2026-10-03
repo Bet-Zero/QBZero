@@ -4,7 +4,6 @@ import {
   collection,
   getDocs,
   updateDoc,
-  deleteDoc,
   doc,
 } from 'firebase/firestore';
 import { Link, useNavigate } from 'react-router-dom';
@@ -12,6 +11,7 @@ import { db } from '@/firebaseConfig';
 import CreateTierListModal from '@/features/tierMaker/CreateTierListModal';
 import ListSearchBar from '@/features/lists/ListSearchBar';
 import usePlayerData from '@/hooks/usePlayerData.js';
+import { deleteTierList } from '@/firebase/listHelpers';
 
 const TierListsHome = () => {
   const [lists, setLists] = useState([]);
@@ -65,7 +65,7 @@ const TierListsHome = () => {
   };
 
   const handleDelete = async () => {
-    await deleteDoc(doc(db, 'tierLists', deletingId));
+    await deleteTierList(deletingId);
     setDeletingId(null);
     fetchLists();
   };
