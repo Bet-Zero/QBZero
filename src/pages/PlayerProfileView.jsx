@@ -1,6 +1,12 @@
 // PlayerProfileView.jsx
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from 'react';
 import usePlayerData from '@/hooks/usePlayerData.js';
 import useAutoSavePlayer from '@/hooks/useAutoSavePlayer';
 
@@ -11,6 +17,7 @@ import BreakdownModal from '@/features/profile/BreakdownModal';
 import { getPlayersForTeam } from '@/utils/profileHelpers';
 import PlayerSearchBar from '@/features/profile/PlayerSearchBar';
 import { emptyTraits } from '@/constants/traits';
+import { normalizePlayerData } from '@/utils/roster';
 
 const defaultTraits = emptyTraits();
 
@@ -32,7 +39,6 @@ const defaultBlurbs = {
 const PlayerProfileView = () => {
   const { players: fetchedPlayers, loading: isLoading } = usePlayerData();
   const [playersData, setPlayersData] = useState({});
-  const [teams, setTeams] = useState([]);
   const [filteredKeys, setFilteredKeys] = useState([]);
   const [selectedTeam, setSelectedTeam] = useState('');
   const [selectedPlayer, setSelectedPlayer] = useState('');
@@ -51,26 +57,35 @@ const PlayerProfileView = () => {
 
   useEffect(() => {
     const data = {};
-    const teamSet = new Set();
     fetchedPlayers.forEach((p) => {
       data[p.id] = p;
-      // Check both bio.Team and team fields
-      const team = p.bio?.Team || p.team;
-      if (team) teamSet.add(team);
     });
     setPlayersData(data);
-    // Convert to array, filter out empty/null values, and sort
-    const sortedTeams = Array.from(teamSet)
-      .filter(Boolean)
-      .sort((a, b) => a.localeCompare(b));
-    setTeams(sortedTeams);
   }, [fetchedPlayers]);
 
+  // Derived from the working copy, so a team changed on a profile shows up in
+  // the team dropdown without a reload.
+  const teams = useMemo(() => {
+    const teamSet = new Set();
+    Object.values(playersData).forEach((p) => {
+      const t = p.bio?.Team || p.team;
+      if (t) teamSet.add(t);
+    });
+    return Array.from(teamSet).sort((a, b) => a.localeCompare(b));
+  }, [playersData]);
+
+  // Load the editor from the record when the selection changes -- and only
+  // then. A save updates playersData below, and reloading the editor from it
+  // would roll back whatever was typed while that save was in flight.
+  const loadedPlayerRef = useRef(null);
   useEffect(() => {
     if (!selectedPlayer || !playersData[selectedPlayer]) {
+      loadedPlayerRef.current = null;
       setPlayer(null);
       return;
     }
+    if (loadedPlayerRef.current === selectedPlayer) return;
+    loadedPlayerRef.current = selectedPlayer;
 
     const data = playersData[selectedPlayer];
     setPlayer(data);
@@ -78,13 +93,37 @@ const PlayerProfileView = () => {
     setRoles({ ...defaultRoles, ...(data.roles || {}) });
     setSubRoles(data.subRoles || { offense: [] });
     setBadges(data.badges || []);
-    setRunningProfile(data.runningProfile || '');
+    // normalizePlayerData fills an empty running profile with '—' for the
+    // table's benefit. Loaded as-is, the next save stored the dash.
+    setRunningProfile(
+      data.runningProfile && data.runningProfile !== '—'
+        ? data.runningProfile
+        : ''
+    );
     setEditedBlurbs(data.blurbs || { ...defaultBlurbs });
     setOverallGrade(data.overall_grade || null);
     setStatus(data.status || 'active');
     setTeam(data.bio?.Team || '');
     setHasChanges(false);
   }, [selectedPlayer, playersData]);
+
+  // Keep the working copy in step with what was written, so coming back to a
+  // player shows their saved values rather than the ones from page load.
+  const handleSaved = useCallback(
+    (id, update) => {
+      setPlayersData((prev) =>
+        prev[id]
+          ? { ...prev, [id]: normalizePlayerData({ ...prev[id], ...update }) }
+          : prev
+      );
+      // Follow a player whose team just changed into their new team's list,
+      // rather than letting the dropdown jump to someone else.
+      if (id === selectedPlayer && update.bio?.Team) {
+        setSelectedTeam(update.bio.Team);
+      }
+    },
+    [selectedPlayer]
+  );
 
   useAutoSavePlayer({
     playerId: selectedPlayer,
@@ -100,6 +139,7 @@ const PlayerProfileView = () => {
     blurbs: editedBlurbs,
     hasChanges,
     setHasChanges,
+    onSaved: handleSaved,
   });
 
   const handlePrevPlayer = useCallback(() => {
@@ -152,6 +192,7 @@ const PlayerProfileView = () => {
       else if (key.startsWith('subrole_'))
         updated.subroles = { ...prev.subroles, [key.slice(8)]: value };
       else if (key === 'running_profile') updated.runningProfile = value;
+      else if (key === 'arm_talent_meter') updated.armTalentMeter = value;
       else if (key === 'play_style') updated.playStyle = value;
       else if (key === 'overall') updated.overall = value;
       return updated;
@@ -214,11 +255,20 @@ const PlayerProfileView = () => {
             roles={roles}
             onRoleChange={handleRoleChange}
             subRoles={subRoles}
-            setSubRoles={setSubRoles}
+            setSubRoles={(val) => {
+              setSubRoles(val);
+              setHasChanges(true);
+            }}
             runningProfile={runningProfile}
-            setRunningProfile={setRunningProfile}
+            setRunningProfile={(val) => {
+              setRunningProfile(val);
+              setHasChanges(true);
+            }}
             badges={badges}
-            setBadges={setBadges}
+            setBadges={(val) => {
+              setBadges(val);
+              setHasChanges(true);
+            }}
             editedBlurbs={editedBlurbs}
             onBlurbChange={handleBlurbChange}
             overallGrade={overallGrade}

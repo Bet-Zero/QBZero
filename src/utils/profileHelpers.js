@@ -29,7 +29,12 @@ export function getBlurbValue(blurbs, key) {
   if (!key) return '';
   if (key.startsWith('trait_')) return blurbs.traits?.[key.slice(6)] || '';
   if (key.startsWith('role_')) return blurbs.roles?.[key.slice(5)] || '';
-  if (key.startsWith('subrole_')) return blurbs.subroles?.[key.slice(8)] || '';
+  if (key.startsWith('subrole_')) {
+    // Subrole notes used to be opened under trait_<name>, so ones written
+    // before that was fixed are stored with the traits.
+    const name = key.slice(8);
+    return blurbs.subroles?.[name] ?? blurbs.traits?.[name] ?? '';
+  }
   if (key === 'running_profile') return blurbs.runningProfile || '';
   if (key === 'arm_talent_meter') return blurbs.armTalentMeter || '';
   if (key === 'overall') return blurbs.overall || '';
