@@ -12,10 +12,10 @@ const CreateListModal = ({ isOpen, onClose, onListCreated }) => {
     if (!trimmed) return;
 
     try {
-      await createList(trimmed);
+      const id = await createList(trimmed);
       setName('');
       setError('');
-      onListCreated?.(); // optional callback to trigger refresh
+      onListCreated?.(id); // optional callback, receives the new list's id
       onClose();
     } catch (err) {
       setError(err.message);
@@ -29,6 +29,7 @@ const CreateListModal = ({ isOpen, onClose, onListCreated }) => {
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
           placeholder="Enter list name"
           className="w-full p-2 border border-gray-300 rounded mb-2"
         />

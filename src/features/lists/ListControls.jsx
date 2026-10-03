@@ -9,6 +9,7 @@ const ListControls = ({
   onAddDivider,
   onSave,
   isSaving,
+  isDirty = false,
   isRanked = true,
 }) => (
   <>
@@ -36,7 +37,7 @@ const ListControls = ({
         disabled={isSaving}
         className="bg-black/20 text-white px-4 py-2 rounded hover:bg-white/20 transition disabled:opacity-40"
       >
-        {isSaving ? 'Saving...' : 'Save List'}
+        {isSaving ? 'Saving...' : isDirty ? 'Save List •' : 'Save List'}
       </button>
     </div>
   </>
