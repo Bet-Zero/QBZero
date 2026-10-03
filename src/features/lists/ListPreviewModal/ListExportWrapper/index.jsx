@@ -75,15 +75,17 @@ const ListExportWrapper = ({
     );
   };
 
+  // Two columns split evenly, left column first. Every player is shown; the
+  // layout used to stop at 30 without saying so.
   const renderTwoColumnFlat = () => {
-    const limited = players.slice(0, 30);
-    const left = limited.slice(0, 15);
-    const right = limited.slice(15);
+    const split = Math.ceil(players.length / 2);
+    const left = players.slice(0, split);
+    const right = players.slice(split);
 
     return (
       <div className="flex w-full gap-6">
         {renderColumn(left, 0)}
-        {renderColumn(right, 15)}
+        {renderColumn(right, split)}
       </div>
     );
   };
@@ -113,23 +115,27 @@ const ListExportWrapper = ({
     let rankCounter = 1;
     const left = [];
     const right = [];
+    const total = tiers.reduce(
+      (n, tier) => n + tier.players.filter(Boolean).length,
+      0
+    );
+    const split = Math.ceil(total / 2);
 
     tiers.forEach((tier, tIdx) => {
-      if (rankCounter > 30) return;
       const tierPlayers = tier.players
         .map((p) => playersMap[p.id] || p)
         .filter(Boolean);
       if (tierPlayers.length === 0) return;
 
-      const targetColumn = rankCounter <= 15 ? left : right;
-      targetColumn.push({
-        type: 'heading',
-        label: tier.label || `Tier ${tIdx + 1}`,
-      });
-
+      const label = tier.label || `Tier ${tIdx + 1}`;
+      let lastColumn = null;
       for (const player of tierPlayers) {
-        if (rankCounter > 30) break;
-        const column = rankCounter <= 15 ? left : right;
+        const column = rankCounter <= split ? left : right;
+        // Repeat the heading when a tier continues into the right column.
+        if (column !== lastColumn) {
+          column.push({ type: 'heading', label });
+          lastColumn = column;
+        }
         column.push({ type: 'player', player, rank: rankCounter });
         rankCounter += 1;
       }

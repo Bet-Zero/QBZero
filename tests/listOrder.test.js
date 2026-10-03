@@ -5,6 +5,7 @@ import {
   mergeListOrder,
   movePlayerFlat,
   moveItem,
+  movePlayerToRank,
   playerIdsOf,
   removeItem,
 } from '@/utils/lists/listOrder.js';
@@ -77,5 +78,67 @@ describe('moveItem / playerIdsOf', () => {
 
   it('drops dividers from the membership list', () => {
     expect(playerIdsOf(['a', 'divider::x', 'b'])).toEqual(['a', 'b']);
+  });
+});
+
+describe('movePlayerToRank', () => {
+  const order = ['a', 'b', 'divider::T2', 'c', 'd'];
+
+  it('lands in the tier that holds the target rank', () => {
+    // a: #1 -> #3, which is c (tier 2): goes just after c.
+    expect(movePlayerToRank(order, 0, 3, roster)).toEqual([
+      'b',
+      'divider::T2',
+      'c',
+      'a',
+      'd',
+    ]);
+    // b: #2 -> #3 crosses into tier 2, after c.
+    expect(movePlayerToRank(order, 1, 3, roster)).toEqual([
+      'a',
+      'divider::T2',
+      'c',
+      'b',
+      'd',
+    ]);
+    // c: #3 -> #2 goes just before b, into tier 1.
+    expect(movePlayerToRank(order, 3, 2, roster)).toEqual([
+      'a',
+      'c',
+      'b',
+      'divider::T2',
+      'd',
+    ]);
+    expect(movePlayerToRank(order, 4, 1, roster)).toEqual([
+      'd',
+      'a',
+      'b',
+      'divider::T2',
+      'c',
+    ]);
+  });
+
+  it('puts a rank past the end after the last player', () => {
+    expect(movePlayerToRank(order, 0, 99, roster)).toEqual([
+      'b',
+      'divider::T2',
+      'c',
+      'd',
+      'a',
+    ]);
+  });
+
+  it('skips players missing from the roster when counting ranks', () => {
+    const withGone = ['gone', 'a', 'b'];
+    expect(movePlayerToRank(withGone, 2, 1, roster)).toEqual([
+      'gone',
+      'b',
+      'a',
+    ]);
+  });
+
+  it('returns the same order when nothing moves', () => {
+    expect(movePlayerToRank(order, 1, 2, roster)).toBe(order);
+    expect(movePlayerToRank(order, 2, 1, roster)).toBe(order);
   });
 });

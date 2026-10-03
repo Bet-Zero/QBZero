@@ -17,6 +17,7 @@ const RankedListTier = ({
   onMoveDown,
   onRemove,
   onNoteChange,
+  onMoveToRank,
   orderLength,
 }) => {
   return (
@@ -72,6 +73,7 @@ const RankedListTier = ({
             rank={rankIndex}
             note={notes[id] || ''}
             onNoteChange={onNoteChange}
+            onMoveToRank={onMoveToRank}
             onMoveUp={onMoveUp}
             onMoveDown={onMoveDown}
             onRemove={onRemove}

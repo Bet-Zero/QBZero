@@ -18,7 +18,7 @@ const ListControls = ({
         onClick={onToggleReorder}
         className="text-xs text-white/40 hover:text-white px-2 py-1 rounded border border-white/10"
       >
-        {showReorder ? 'Hide Arrows' : 'Show Arrows'}
+        {showReorder ? 'View Mode' : 'Edit Mode'}
       </button>
 
       <button

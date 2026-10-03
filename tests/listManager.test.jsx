@@ -206,3 +206,74 @@ describe('AddToListModal', () => {
     expect(onClose).not.toHaveBeenCalled();
   });
 });
+
+describe('ListManager notes, description, view and rank', () => {
+  it('saves a typed note, the description and the chosen view with the list', async () => {
+    helpers.fetchList.mockResolvedValue({
+      id: 'l1',
+      name: 'Notes List',
+      playerIds: ['a', 'b'],
+      playerNotes: { a: 'old note' },
+    });
+    renderAt('l1');
+    await screen.findByText('Notes List');
+
+    expect(screen.getByDisplayValue('old note')).toBeTruthy();
+    fireEvent.change(screen.getByLabelText('Note for Bravo QB'), {
+      target: { value: 'big arm' },
+    });
+
+    fireEvent.click(screen.getByText('+ Add a description'));
+    fireEvent.change(screen.getByLabelText('List description'), {
+      target: { value: '  Week 5 board  ' },
+    });
+
+    fireEvent.click(screen.getAllByText('Flat')[0]);
+    fireEvent.click(screen.getByText(/Save List/));
+
+    await waitFor(() => expect(helpers.saveList).toHaveBeenCalled());
+    expect(helpers.saveList.mock.calls[0][1]).toMatchObject({
+      playerNotes: { a: 'old note', b: 'big arm' },
+      description: 'Week 5 board',
+      isRanked: false,
+    });
+  });
+
+  it('opens in the view the list was saved in', async () => {
+    helpers.fetchList.mockResolvedValue({
+      id: 'l1',
+      name: 'Flat List',
+      playerOrder: ['a', 'divider::Tier Two', 'b'],
+      isRanked: false,
+    });
+    renderAt('l1');
+    await screen.findByText('Flat List');
+    // Ranked view would render the tier header as an editable input.
+    expect(screen.queryByDisplayValue('Tier Two')).toBeNull();
+  });
+
+  it('moves a player to a typed rank', async () => {
+    helpers.fetchList.mockResolvedValue({
+      id: 'l1',
+      name: 'Rank List',
+      playerOrder: ['a', 'b', 'divider::Tier Two', 'c'],
+    });
+    renderAt('l1');
+    await screen.findByText('Rank List');
+
+    fireEvent.click(screen.getAllByTitle('Move to rank...')[0]);
+    // First badge is Alpha (#1). Send Alpha to #3.
+    const input = screen.getByLabelText('Move to rank');
+    fireEvent.change(input, { target: { value: '3' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    fireEvent.click(screen.getByText(/Save List/));
+
+    await waitFor(() => expect(helpers.saveList).toHaveBeenCalled());
+    expect(helpers.saveList.mock.calls[0][1].playerOrder).toEqual([
+      'b',
+      'divider::Tier Two',
+      'c',
+      'a',
+    ]);
+  });
+});
