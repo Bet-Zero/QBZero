@@ -15,4 +15,27 @@ export default defineConfig({
       ),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        // Firebase and React change only when package.json does, so they get
+        // their own files. A deploy that touches app code then leaves them
+        // cached in the browser instead of re-downloading all of it.
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return undefined;
+          if (/node_modules\/(@firebase|firebase|idb)\//.test(id)) {
+            return 'firebase';
+          }
+          if (
+            /node_modules\/(react|react-dom|react-router|react-router-dom|scheduler|@remix-run)\//.test(
+              id
+            )
+          ) {
+            return 'react';
+          }
+          return undefined;
+        },
+      },
+    },
+  },
 });
