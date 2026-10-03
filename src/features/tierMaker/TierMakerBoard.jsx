@@ -56,6 +56,8 @@ import {
   renameTier as renameTierOnBoard,
   reorderTiers,
 } from '@/utils/tierMaker/tierBoard';
+import { sendTierBoardToList } from '@/firebase/listTierLink';
+import { mergeListOrder, playerIdsOf } from '@/utils/lists/listOrder';
 import { toast } from 'react-hot-toast';
 
 // Player drags only land on players or rows, tier drags only on tiers.
@@ -118,19 +120,11 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
 
   const lists = useMemo(
     () =>
-      (listsData || []).map((l) => {
-        const orderIds = l.playerOrder || [];
-        const allIds = l.playerIds || [];
-        const merged = [...orderIds];
-        allIds.forEach((id) => {
-          if (!merged.includes(id)) merged.push(id);
-        });
-        return {
-          id: l.id,
-          name: l.name,
-          playerIds: merged,
-        };
-      }),
+      (listsData || []).map((l) => ({
+        id: l.id,
+        name: l.name,
+        playerIds: playerIdsOf(mergeListOrder(l)),
+      })),
     [listsData]
   );
 
@@ -166,6 +160,9 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
   const [selectedTeam, setSelectedTeam] = useState(null);
   const [selectedList, setSelectedList] = useState('');
   const [selectedTierList, setSelectedTierList] = useState('');
+  // The list this board was made from, if any: `{ id, name }`.
+  const [sourceList, setSourceList] = useState(null);
+  const [isSending, setIsSending] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [initialLoaded, setInitialLoaded] = useState(false);
@@ -399,6 +396,7 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
         setBoard(loaded);
         setSavedSignature(boardSignature(loaded));
         setSelectedTierList(id);
+        setSourceList(data.sourceList?.id ? data.sourceList : null);
         showTierListInUrl(id);
         const missing = Object.values(loaded.unresolved).flat().length;
         if (missing) {
@@ -439,10 +437,32 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
   const handleCreateAndSave = async (newId) => {
     if (!newId) return;
     setSelectedTierList(newId);
+    setSourceList(null);
     setShowCreateModal(false);
     showTierListInUrl(newId);
     await handleSaveTierList(newId);
     refreshTierLists();
+  };
+
+  const handleSendToList = async () => {
+    if (!sourceList) return;
+    const listName = sourceList.name || 'the list';
+    if (
+      !window.confirm(
+        `Replace the order and tiers of "${listName}" with this board? Players in the Pool go under "Unplaced", and notes stay for players still on the list.`
+      )
+    )
+      return;
+    try {
+      setIsSending(true);
+      await sendTierBoardToList(sourceList.id, boardToSaved(board));
+      toast.success(`Sent to "${listName}"`);
+    } catch (err) {
+      console.error('Failed to send board to list', err);
+      toast.error(err.message || 'Failed to send board to list');
+    } finally {
+      setIsSending(false);
+    }
   };
 
   useEffect(() => {
@@ -645,7 +665,17 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
       )}
 
       {!screenshotMode && (
-        <div className="fixed bottom-6 right-6 z-50">
+        <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2">
+          {sourceList && (
+            <button
+              onClick={handleSendToList}
+              disabled={isSending}
+              title={`Made from the list "${sourceList.name}"`}
+              className="bg-black/20 text-white px-4 py-2 rounded hover:bg-white/20 disabled:opacity-40"
+            >
+              {isSending ? 'Sending...' : `Send to "${sourceList.name}"`}
+            </button>
+          )}
           <button
             onClick={() => handleSaveTierList()}
             disabled={isSaving}

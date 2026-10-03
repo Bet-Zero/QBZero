@@ -16,6 +16,10 @@ const helpers = {
   addPlayerToList: vi.fn(),
 };
 vi.mock('@/firebase/listHelpers', () => helpers);
+const createTierBoardFromList = vi.fn();
+vi.mock('@/firebase/listTierLink', () => ({
+  createTierBoardFromList: (...a) => createTierBoardFromList(...a),
+}));
 vi.mock('react-hot-toast', () => {
   const toast = Object.assign(vi.fn(), { success: vi.fn(), error: vi.fn() });
   return { toast, default: toast };
@@ -45,6 +49,7 @@ const renderAt = (id) =>
     <MemoryRouter initialEntries={[`/lists/${id}`]}>
       <Routes>
         <Route path="/lists/:listId" element={<ListManager />} />
+        <Route path="/tier-maker/:id" element={<div>tier board page</div>} />
       </Routes>
     </MemoryRouter>
   );
@@ -53,6 +58,7 @@ beforeEach(() => {
   Object.values(helpers).forEach((fn) => fn.mockReset());
   helpers.fetchAllLists.mockResolvedValue([]);
   helpers.saveList.mockResolvedValue();
+  createTierBoardFromList.mockReset();
 });
 afterEach(cleanup);
 
@@ -98,6 +104,40 @@ describe('ListManager', () => {
     helpers.fetchList.mockResolvedValue(null);
     renderAt('nope');
     expect(await screen.findByText(/does not exist/)).toBeTruthy();
+  });
+});
+
+describe('ListManager → tier board', () => {
+  it('makes a tier board from the list as shown and opens it', async () => {
+    helpers.fetchList.mockResolvedValue({
+      id: 'l1',
+      name: 'My List',
+      playerOrder: ['divider::Elite', 'a', 'divider::Good', 'b'],
+      playerIds: ['a', 'b', 'c'],
+    });
+    createTierBoardFromList.mockResolvedValue('board1');
+    renderAt('l1');
+    await screen.findByText('My List');
+    fireEvent.click(screen.getByText('Open as Tier Board'));
+    expect(await screen.findByText('tier board page')).toBeTruthy();
+    expect(createTierBoardFromList).toHaveBeenCalledWith({
+      id: 'l1',
+      name: 'My List',
+      playerOrder: ['divider::Elite', 'a', 'divider::Good', 'b', 'c'],
+    });
+  });
+
+  it('asks for a save first when the list has unsaved changes', async () => {
+    helpers.fetchList.mockResolvedValue({
+      id: 'l1',
+      name: 'My List',
+      playerIds: ['a', 'b'],
+    });
+    renderAt('l1');
+    await screen.findByText('My List');
+    fireEvent.click(screen.getAllByTitle('Remove from List')[0]);
+    fireEvent.click(screen.getByText('Open as Tier Board'));
+    expect(createTierBoardFromList).not.toHaveBeenCalled();
   });
 });
 

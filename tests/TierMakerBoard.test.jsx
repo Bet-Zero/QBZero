@@ -32,6 +32,10 @@ vi.mock('@/firebase/listHelpers', () => ({
   saveTierList: (...a) => saveTierList(...a),
   createTierList: vi.fn(),
 }));
+const sendTierBoardToList = vi.fn(async () => {});
+vi.mock('@/firebase/listTierLink', () => ({
+  sendTierBoardToList: (...a) => sendTierBoardToList(...a),
+}));
 vi.mock('react-hot-toast', () => {
   const toast = Object.assign(vi.fn(), { success: vi.fn(), error: vi.fn() });
   return { toast, default: toast };
@@ -50,7 +54,9 @@ vi.mock('@/features/roster/AddPlayerDrawer', () => ({
     </div>
   ),
 }));
-vi.mock('@/features/tierMaker/TierMakerExport', () => ({ default: () => null }));
+vi.mock('@/features/tierMaker/TierMakerExport', () => ({
+  default: () => null,
+}));
 
 import TierMakerBoard from '@/features/tierMaker/TierMakerBoard';
 
@@ -74,6 +80,7 @@ afterEach(() => {
   cleanup();
   fetchTierList.mockReset();
   saveTierList.mockClear();
+  sendTierBoardToList.mockClear();
   vi.restoreAllMocks();
 });
 
@@ -111,5 +118,35 @@ describe('TierMakerBoard', () => {
       tiers: { S: ['p1'], A: ['p2'], Pool: [] },
       tierOrder: ['S', 'A', 'Pool'],
     });
+  });
+
+  it('sends a board made from a list back to that list', async () => {
+    fetchTierList.mockResolvedValue({
+      id: 'list1',
+      name: 'Week 1',
+      tiers: { S: ['p1', 'gone'], A: [], Pool: ['p2'] },
+      tierOrder: ['S', 'A', 'Pool'],
+      sourceList: { id: 'l9', name: 'Top QBs' },
+    });
+    renderBoard('list1');
+    await screen.findByText('MAHOMES');
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    fireEvent.click(screen.getByText('Send to "Top QBs"'));
+    await waitFor(() => expect(sendTierBoardToList).toHaveBeenCalled());
+    expect(sendTierBoardToList).toHaveBeenCalledWith('l9', {
+      tiers: { S: ['p1', 'gone'], A: [], Pool: ['p2'] },
+      tierOrder: ['S', 'A', 'Pool'],
+    });
+  });
+
+  it('offers no send button on a board not made from a list', async () => {
+    fetchTierList.mockResolvedValue({
+      id: 'list1',
+      tiers: { S: ['p1'], Pool: [] },
+      tierOrder: ['S', 'Pool'],
+    });
+    renderBoard('list1');
+    await screen.findByText('MAHOMES');
+    expect(screen.queryByText(/^Send to/)).toBeNull();
   });
 });
