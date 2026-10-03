@@ -77,6 +77,22 @@ const buildPlayerUpdate = ({
  * Returns the save state so the page can show it. A silent autosave is
  * indistinguishable from one that never ran, which is exactly how this went
  * unnoticed: the previous version reported nothing at all.
+ *
+ * Each change captures a snapshot of that player's values, and that snapshot
+ * is what gets written. Two ways an edit used to vanish without an error:
+ *
+ * - Moving to another player (arrows, search, dropdown) inside the debounce
+ *   window cancelled the timer, and the next player's load cleared the dirty
+ *   flag. The pending snapshot is now written immediately instead, and the
+ *   same happens when the page unmounts.
+ * - A save that came due while another was in flight returned early and was
+ *   never retried, and the first save then cleared the dirty flag over it.
+ *   Saves now queue behind each other.
+ *
+ * `onSaved(playerId, update)` reports what was written, so the page can keep
+ * its copy of the record current. The list is fetched once, so without that a
+ * player you return to shows the values from page load -- and the next edit
+ * writes them back over the ones you saved.
  */
 const useAutoSavePlayer = ({
   playerId,
@@ -92,44 +108,42 @@ const useAutoSavePlayer = ({
   blurbs,
   hasChanges,
   setHasChanges,
+  onSaved,
 }) => {
   const { user, isAdmin } = useAuth();
   const [saveState, setSaveState] = useState('idle');
   const [saveError, setSaveError] = useState(null);
 
-  // The debounce fires later, so read the values from a ref rather than
-  // closing over whatever they were when the timer was set.
-  const snapshotRef = useRef(null);
-  snapshotRef.current = {
-    playerId,
-    player,
-    team,
-    traits,
-    roles,
-    subRoles,
-    badges,
-    runningProfile,
-    overallGrade,
-    status,
-    blurbs,
-  };
+  // Saves resolve later, so read these from refs rather than closing over
+  // whatever they were when the save was queued.
+  const contextRef = useRef(null);
+  contextRef.current = { user, isAdmin, setHasChanges, onSaved };
 
+  // The latest unsaved snapshot, or null once it has been handed to a save.
+  const pendingRef = useRef(null);
   const timerRef = useRef(null);
-  const savingRef = useRef(false);
+  const queueRef = useRef(Promise.resolve());
+  // Snapshots handed to the queue and not yet written.
+  const queuedRef = useRef(0);
+  const mountedRef = useRef(true);
 
-  const save = useCallback(async () => {
-    const snapshot = snapshotRef.current;
-    if (!snapshot?.playerId || !snapshot.player || savingRef.current) return;
-
-    savingRef.current = true;
-    setSaveState('saving');
-    setSaveError(null);
+  const write = useCallback(async (snapshot) => {
+    const ctx = contextRef.current;
+    const update = buildPlayerUpdate(snapshot);
+    if (mountedRef.current) {
+      setSaveState('saving');
+      setSaveError(null);
+    }
 
     try {
-      await savePlayerData(snapshot.playerId, buildPlayerUpdate(snapshot));
-      setSaveState('saved');
-      setSaveError(null);
-      setHasChanges(false);
+      await savePlayerData(snapshot.playerId, update);
+      contextRef.current.onSaved?.(snapshot.playerId, update);
+      // A newer edit may have been queued while this one was in flight; it is
+      // still unsaved, so the flag stays up for it.
+      if (mountedRef.current && !pendingRef.current && queuedRef.current <= 1) {
+        setSaveState('saved');
+        contextRef.current.setHasChanges(false);
+      }
       // A shared id so rapid edits replace the toast instead of stacking.
       toast.success('Saved', { id: 'player-autosave', duration: 1500 });
     } catch (error) {
@@ -151,37 +165,72 @@ const useAutoSavePlayer = ({
       let message;
       if (!denied) {
         message = `Not saved: ${error?.message || 'unknown error'}`;
-      } else if (isAdmin) {
+      } else if (ctx.isAdmin) {
         message =
           'Not saved: your account is an admin here, so the rules in Firebase ' +
           'are probably not the ones in firestore.rules. Publish that file in ' +
           'the Firebase console under Firestore \u2192 Rules.';
-      } else if (user) {
-        message = `Not saved: ${user.email} is not an admin account.`;
+      } else if (ctx.user) {
+        message = `Not saved: ${ctx.user.email} is not an admin account.`;
       } else {
         message = 'Not saved: you are not signed in.';
       }
 
-      setSaveState('error');
-      setSaveError(message);
+      if (mountedRef.current) {
+        setSaveState('error');
+        setSaveError(message);
+      }
       // Both an inline indicator and a toast: this is the one failure that
       // must not be missable, and the inline badge alone was.
       toast.error(message, { id: 'player-autosave' });
-    } finally {
-      savingRef.current = false;
     }
-  }, [setHasChanges, isAdmin, user]);
+  }, []);
+
+  // Hand the pending snapshot to the save queue now.
+  const flush = useCallback(() => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    const snapshot = pendingRef.current;
+    pendingRef.current = null;
+    if (!snapshot) return queueRef.current;
+    // Start at once when nothing is in flight; otherwise wait for it.
+    const idle = queuedRef.current === 0;
+    queuedRef.current += 1;
+    const run = idle
+      ? write(snapshot)
+      : queueRef.current.then(() => write(snapshot));
+    queueRef.current = run.finally(() => {
+      queuedRef.current -= 1;
+    });
+    return queueRef.current;
+  }, [write]);
 
   useEffect(() => {
     if (!hasChanges || !playerId || !player) return undefined;
+    // For one render after a switch, playerId is the new player while the
+    // values are still the outgoing one's. Saving that pairing would write one
+    // quarterback's grades onto another.
+    if (player.id !== playerId) return undefined;
 
+    pendingRef.current = {
+      playerId,
+      player,
+      team,
+      traits,
+      roles,
+      subRoles,
+      badges,
+      runningProfile,
+      overallGrade,
+      status,
+      blurbs,
+    };
     setSaveState('pending');
     if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(save, AUTOSAVE_DEBOUNCE_MS);
-
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
+    timerRef.current = setTimeout(flush, AUTOSAVE_DEBOUNCE_MS);
+    return undefined;
   }, [
     playerId,
     player,
@@ -195,10 +244,22 @@ const useAutoSavePlayer = ({
     status,
     blurbs,
     hasChanges,
-    save,
+    flush,
   ]);
 
-  return { saveState, saveError, saveNow: save };
+  // Leaving a player, or the page, writes what is still waiting rather than
+  // dropping it. Declared after the effect above so the snapshot it flushes is
+  // the outgoing player's.
+  useEffect(() => () => flush(), [playerId, flush]);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  return { saveState, saveError, saveNow: flush };
 };
 
 export default useAutoSavePlayer;

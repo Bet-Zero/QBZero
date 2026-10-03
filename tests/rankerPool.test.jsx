@@ -87,8 +87,16 @@ describe('restrictSetupToPool', () => {
 const context = {
   playerPool: [],
   setupData: null,
+  sessionProgress: null,
+  finalRanking: [],
+  isSharedView: false,
   setPlayerPool: vi.fn(),
   setSetupData: vi.fn(),
+  setSessionProgress: vi.fn(),
+  setFinalRanking: vi.fn(),
+  setComparisonResults: vi.fn(),
+  leaveSharedView: vi.fn(),
+  getSavedSession: vi.fn(),
 };
 
 vi.mock('@/context/RankerContext', () => ({

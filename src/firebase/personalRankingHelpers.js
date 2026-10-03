@@ -82,19 +82,43 @@ const sameOrder = (a = [], b = []) =>
   a.length === b.length &&
   a.every((entry, index) => entry?.id === b[index]?.id);
 
-/** The live board's document reference, or null if it has never been saved. */
-const findCurrentRankingRef = async () => {
+/**
+ * Thrown when the live board could not be looked up because Firestore is out of
+ * reach. Offline, getDocs does not reject: it answers from the local cache,
+ * which on a first visit is empty -- indistinguishable from "never saved".
+ */
+export class PersonalRankingUnavailableError extends Error {
+  constructor() {
+    super('The rankings could not be loaded. Check the connection and retry.');
+    this.name = 'PersonalRankingUnavailableError';
+  }
+}
+
+/**
+ * The query for the live board. An empty answer that came from the cache means
+ * the server was never asked, so it is an error, not a missing board -- reading
+ * it as missing showed visitors "No rankings available" on a bad connection,
+ * and would let a save create a second live board.
+ */
+const queryCurrentRanking = async () => {
   const snapshot = await getDocs(
     query(personalRankingArchivesRef, where('isCurrent', '==', true), limit(1))
   );
+  if (snapshot.empty && snapshot.metadata?.fromCache) {
+    throw new PersonalRankingUnavailableError();
+  }
+  return snapshot;
+};
+
+/** The live board's document reference, or null if it has never been saved. */
+const findCurrentRankingRef = async () => {
+  const snapshot = await queryCurrentRanking();
   return snapshot.empty ? null : snapshot.docs[0].ref;
 };
 
 /** The live board. */
 export const getCurrentPersonalRanking = async () => {
-  const snapshot = await getDocs(
-    query(personalRankingArchivesRef, where('isCurrent', '==', true), limit(1))
-  );
+  const snapshot = await queryCurrentRanking();
   return snapshot.empty ? null : withId(snapshot.docs[0]);
 };
 
