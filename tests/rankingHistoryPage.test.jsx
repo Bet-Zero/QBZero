@@ -202,6 +202,33 @@ describe('ranking history page', () => {
     expect(within(timeline).getByText('Added 1 QB')).toBeTruthy();
   });
 
+  it('asks in an in-app dialog before restoring, not a browser popup', async () => {
+    const browserConfirm = vi.spyOn(window, 'confirm');
+    helpers.saveCurrentPersonalRankings.mockResolvedValue({ version: 2 });
+    renderAt('/rankings/history?v=sep');
+    fireEvent.click(await screen.findByText('Restore'));
+
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText('Restore this version?')).toBeTruthy();
+    expect(browserConfirm).not.toHaveBeenCalled();
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Restore' }));
+    await waitFor(() =>
+      expect(helpers.saveCurrentPersonalRankings).toHaveBeenCalled()
+    );
+    browserConfirm.mockRestore();
+  });
+
+  it('deletes nothing when the dialog is cancelled', async () => {
+    renderAt('/rankings/history?v=sep');
+    fireEvent.click(await screen.findByText('Delete'));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText('Delete this version?')).toBeTruthy();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(helpers.deletePersonalRankingArchive).not.toHaveBeenCalled();
+  });
+
   it('says so when nothing has been saved yet', async () => {
     helpers.getCurrentPersonalRanking.mockResolvedValue(null);
     helpers.getPersonalRankingArchives.mockResolvedValue({

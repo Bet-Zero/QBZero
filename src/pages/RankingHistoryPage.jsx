@@ -48,6 +48,7 @@ const RankingHistoryPage = () => {
     busyId,
     restore,
     remove,
+    confirmDialog,
   } = usePersonalRankingHistory();
   const [params, setParams] = useSearchParams();
   const [exporting, setExporting] = useState(false);
@@ -296,6 +297,8 @@ const RankingHistoryPage = () => {
           </section>
         </div>
       )}
+
+      {confirmDialog}
 
       {exporting && selected && (
         <RankingsExportModal
