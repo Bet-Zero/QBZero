@@ -58,13 +58,21 @@ export const addPlayerToList = async (id, playerId) => {
   });
 };
 
-export const saveList = async (id, { playerOrder, playerIds, playerNotes }) => {
-  await updateDoc(doc(db, 'lists', id), {
+// `description` and `isRanked` are optional so older callers keep working;
+// when given they are saved with the order.
+export const saveList = async (
+  id,
+  { playerOrder, playerIds, playerNotes, description, isRanked }
+) => {
+  const update = {
     playerOrder,
     playerIds,
     playerNotes,
     updatedAt: serverTimestamp(),
-  });
+  };
+  if (description !== undefined) update.description = description;
+  if (isRanked !== undefined) update.isRanked = isRanked;
+  await updateDoc(doc(db, 'lists', id), update);
 };
 
 // ✅ Rename list

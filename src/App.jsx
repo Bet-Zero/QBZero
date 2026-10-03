@@ -31,9 +31,6 @@ const PublicQBRankingsPage = lazyPage(
 const QBWPage = lazyPage(() => import('@/pages/QBWPage'));
 const BackupQBsHome = lazyPage(() => import('@/pages/BackupQBsHome'));
 const BackupQBHallOfFame = lazyPage(() => import('@/pages/BackupQBHallOfFame'));
-const ListPresentationView = lazyPage(
-  () => import('@/pages/ListPresentationView')
-);
 
 const App = () => {
   return (
@@ -144,14 +141,6 @@ const App = () => {
           element={
             <AdminProtectedRoute>
               <ListManager />
-            </AdminProtectedRoute>
-          }
-        />
-        <Route
-          path="/list-presentation"
-          element={
-            <AdminProtectedRoute>
-              <ListPresentationView />
             </AdminProtectedRoute>
           }
         />

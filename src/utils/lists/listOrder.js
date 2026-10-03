@@ -103,3 +103,29 @@ export const movePlayerFlat = (order, index, direction) => {
   [next[index], next[target]] = [next[target], next[index]];
   return next;
 };
+
+// Move the player at `index` so it becomes rank `rank` (1-based) among
+// players on the roster, landing in the tier of the player who holds that
+// rank now: just before them when moving up, just after them when moving
+// down. A rank past the end puts it right after the last player.
+export const movePlayerToRank = (order, index, rank, playersMap = {}) => {
+  const item = order[index];
+  if (item === undefined || isDivider(item)) return order;
+  const ranked = order
+    .map((id, i) => ({ id, i }))
+    .filter(({ id }) => !isDivider(id) && playersMap[id]);
+  if (ranked.length < 2) return order;
+  const current = ranked.findIndex(({ i }) => i === index);
+  const target = Math.min(
+    Math.max(1, Math.floor(rank) || 1) - 1,
+    ranked.length - 1
+  );
+  if (current === target) return order;
+  // A missing player has no rank; treat it as moving up.
+  const movingDown = current !== -1 && target > current;
+  const anchor = ranked[target].i;
+  const rest = removeItem(order, index);
+  const anchorInRest = anchor > index ? anchor - 1 : anchor;
+  const insertAt = movingDown ? anchorInRest + 1 : anchorInRest;
+  return [...rest.slice(0, insertAt), item, ...rest.slice(insertAt)];
+};

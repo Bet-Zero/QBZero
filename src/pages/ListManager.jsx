@@ -1,7 +1,7 @@
 // ListManager.jsx
 // Full-page route for building and editing player lists (flat, ranked, or tiered)
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import usePlayerData from '@/hooks/usePlayerData.js';
 import { toast } from 'react-hot-toast';
@@ -25,6 +25,7 @@ import {
   makeDivider,
   mergeListOrder,
   movePlayerFlat,
+  movePlayerToRank,
   moveItem,
   playerIdsOf,
   removeItem,
@@ -40,6 +41,12 @@ const ListManager = () => {
   const [playersMap, setPlayersMap] = useState({});
   const [order, setOrder] = useState([]);
   const [notes, setNotes] = useState({});
+  const [description, setDescription] = useState('');
+  const [editingDescription, setEditingDescription] = useState(false);
+  const descriptionRef = useRef(null);
+  useEffect(() => {
+    if (editingDescription) descriptionRef.current?.focus();
+  }, [editingDescription]);
   const [isSaving, setIsSaving] = useState(false);
   const [showReorder, setShowReorder] = useState(true);
   const [isExport, setIsExport] = useState(false);
@@ -91,6 +98,9 @@ const ListManager = () => {
         setListData(data);
         setOrder(mergeListOrder(data));
         setNotes(data.playerNotes || {});
+        setDescription(data.description || '');
+        setEditingDescription(false);
+        setIsRanked(data.isRanked ?? true);
       })
       .catch((err) => {
         if (cancelled) return;
@@ -111,6 +121,27 @@ const ListManager = () => {
     };
     window.addEventListener('beforeunload', warn);
     return () => window.removeEventListener('beforeunload', warn);
+  }, [isDirty]);
+
+  // In-app links (the site nav). BrowserRouter has no navigation blocker, so
+  // catch the click before React Router's Link handles it.
+  useEffect(() => {
+    if (!isDirty) return undefined;
+    const guard = (e) => {
+      if (e.defaultPrevented || e.button !== 0) return;
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      const link = e.target.closest?.('a[href]');
+      if (!link || link.target === '_blank') return;
+      const url = new URL(link.href, window.location.href);
+      if (url.origin !== window.location.origin) return;
+      if (url.pathname === window.location.pathname) return;
+      if (!window.confirm(UNSAVED_PROMPT)) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+    document.addEventListener('click', guard, true);
+    return () => document.removeEventListener('click', guard, true);
   }, [isDirty]);
 
   const updateOrder = (next) => {
@@ -146,6 +177,14 @@ const ListManager = () => {
     updateOrder(movePlayerFlat(order, index, -1));
   const handleFlatMoveDown = (index) =>
     updateOrder(movePlayerFlat(order, index, 1));
+  const handleMoveToRank = (index, rank) =>
+    updateOrder(movePlayerToRank(order, index, rank, playersMap));
+
+  const handleRankedChange = (value) => {
+    if (value === isRanked) return;
+    setIsRanked(value);
+    setIsDirty(true);
+  };
 
   const handleRemove = (index) => {
     const removedId = order[index];
@@ -164,11 +203,17 @@ const ListManager = () => {
         playerOrder: order,
         playerIds: playerIdsOf(order),
         playerNotes: notes,
+        description: description.trim(),
+        isRanked,
       });
       setListData((prev) => ({
         ...prev,
+        description: description.trim(),
+        isRanked,
         updatedAt: { toDate: () => new Date() },
       }));
+      setDescription(description.trim());
+      setEditingDescription(false);
       setIsDirty(false);
       toast.success('List saved!');
     } catch (err) {
@@ -272,12 +317,45 @@ const ListManager = () => {
           <h1 className="text-5xl font-extrabold tracking-tight text-neutral-100 mb-3">
             {listData.name}
           </h1>
-          {listData.description && (
-            <div className="backdrop-blur-md bg-white/5 border border-white/10 rounded-md px-4 py-3 max-w-[800px]">
-              <p className="text-white/70 text-sm leading-relaxed italic">
-                {listData.description}
-              </p>
+          {editingDescription ? (
+            <div className="max-w-[800px]">
+              <textarea
+                ref={descriptionRef}
+                value={description}
+                onChange={(e) => {
+                  setDescription(e.target.value);
+                  setIsDirty(true);
+                }}
+                rows={3}
+                placeholder="What is this list? Criteria, timeframe, anything worth remembering."
+                aria-label="List description"
+                className="w-full backdrop-blur-md bg-white/5 border border-white/20 rounded-md px-4 py-3 text-white/80 text-sm leading-relaxed focus:outline-none focus:border-white/40 placeholder:text-white/30"
+              />
+              <button
+                onClick={() => setEditingDescription(false)}
+                className="text-xs text-white/40 hover:text-white mt-1"
+              >
+                Done (saved with the list)
+              </button>
             </div>
+          ) : description ? (
+            <button
+              type="button"
+              onClick={() => setEditingDescription(true)}
+              title="Edit description"
+              className="block text-left backdrop-blur-md bg-white/5 border border-white/10 hover:border-white/25 rounded-md px-4 py-3 max-w-[800px]"
+            >
+              <p className="text-white/70 text-sm leading-relaxed italic whitespace-pre-line">
+                {description}
+              </p>
+            </button>
+          ) : (
+            <button
+              onClick={() => setEditingDescription(true)}
+              className="text-sm text-white/30 hover:text-white/70"
+            >
+              + Add a description
+            </button>
           )}
         </div>
       )}
@@ -328,7 +406,7 @@ const ListManager = () => {
               compact={compact}
               twoColumn={twoColumn}
               title={listData.name}
-              subtitle={listData.description}
+              subtitle={description}
             />
           </div>
 
@@ -364,7 +442,7 @@ const ListManager = () => {
               compact={compact}
               twoColumn={twoColumn}
               title={listData.name}
-              subtitle={listData.description}
+              subtitle={description}
             />
           )}
         </>
@@ -399,6 +477,7 @@ const ListManager = () => {
                     onMoveDown={handleMoveDown}
                     onRemove={handleRemove}
                     onNoteChange={handleNoteChange}
+                    onMoveToRank={handleMoveToRank}
                     orderLength={order.length}
                   />
                 ))
@@ -449,7 +528,7 @@ const ListManager = () => {
           </div>
 
           <div className="fixed top-[72px] right-[1px] z-50 scale-75">
-            <ListRankToggle isRanked={isRanked} onChange={setIsRanked} />
+            <ListRankToggle isRanked={isRanked} onChange={handleRankedChange} />
           </div>
 
           <div className="w-full max-w-[1100px] mx-auto px-4 mb-6 text-center">
