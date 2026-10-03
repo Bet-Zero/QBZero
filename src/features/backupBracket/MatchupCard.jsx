@@ -5,15 +5,16 @@ import clsx from 'clsx';
 const EMPTY_LABELS = [];
 
 const MATCH_HEIGHT = 96;
-const CONNECTOR_LENGTH = 56;
+// Half the gap between columns: each card draws its own half of the line.
+const CONNECTOR_LENGTH = 48;
+const COLUMN_GAP = CONNECTOR_LENGTH * 2;
 
 const MatchupCard = ({
   matchIndex,
   participants,
   winnerId,
   onSelect,
-  onHover,
-  onHoverEnd,
+  isFirstRound,
   isLastRound,
   centerSpacing,
   placeholderLabels = EMPTY_LABELS,
@@ -63,14 +64,7 @@ const MatchupCard = ({
   };
 
   return (
-    <div
-      className="relative"
-      style={{ height: `${MATCH_HEIGHT}px` }}
-      onMouseEnter={onHover}
-      onMouseLeave={onHoverEnd}
-      onFocus={onHover}
-      onBlur={onHoverEnd}
-    >
+    <div className="relative" style={{ height: `${MATCH_HEIGHT}px` }}>
       <div className="h-full rounded-xl border border-white/10 bg-neutral-800/70 backdrop-blur-sm shadow-lg overflow-hidden flex flex-col">
         {participantRows.map((participant, index) => {
           const showDivider = index === 1;
@@ -86,7 +80,7 @@ const MatchupCard = ({
               key={participant.id}
               type="button"
               className={clsx(
-                'w-full text-left px-4 py-3 transition-colors focus:outline-none flex-1 flex items-center justify-between gap-3',
+                'w-full min-w-0 text-left px-3 py-1.5 transition-colors focus:outline-none flex-1 flex items-center justify-between gap-2',
                 statusClasses,
                 showDivider && 'border-t border-white/10'
               )}
@@ -103,12 +97,20 @@ const MatchupCard = ({
                 minHeight: `${MATCH_HEIGHT / participantRows.length}px`,
               }}
             >
-              <div className="flex items-center gap-3">
-                <span className="text-xs font-semibold text-white/50">
+              <div className="flex min-w-0 items-center gap-2">
+                <span className="w-6 shrink-0 text-xs font-semibold text-white/50">
                   {participant.seed ? `#${participant.seed}` : '—'}
                 </span>
-                <div className="flex flex-col">
-                  <span className="font-semibold text-sm md:text-base">
+                <div className="flex min-w-0 flex-col leading-tight">
+                  <span
+                    className={clsx(
+                      'truncate text-sm',
+                      participant.isPlaceholder
+                        ? 'text-white/40'
+                        : 'font-semibold'
+                    )}
+                    title={participant.label}
+                  >
                     {participant.label}
                   </span>
                   {participant.team && !participant.isPlaceholder && (
@@ -120,7 +122,7 @@ const MatchupCard = ({
               </div>
               <span
                 className={clsx(
-                  'text-xs font-semibold uppercase tracking-wide text-right min-w-[44px]',
+                  'shrink-0 text-xs font-semibold uppercase tracking-wide text-right',
                   participant.status === 'winner'
                     ? 'text-emerald-300'
                     : participant.status === 'eliminated'
@@ -129,17 +131,26 @@ const MatchupCard = ({
                 )}
               >
                 {participant.status === 'winner'
-                  ? ' '
+                  ? '✓'
                   : participant.status === 'eliminated'
                     ? 'Out'
-                    : participant.isPlaceholder
-                      ? 'TBD'
-                      : 'Pick'}
+                    : ''}
               </span>
             </button>
           );
         })}
       </div>
+
+      {!isFirstRound && (
+        <div
+          aria-hidden="true"
+          className="absolute top-1/2 h-px bg-white/10"
+          style={{
+            width: `${CONNECTOR_LENGTH}px`,
+            left: `-${CONNECTOR_LENGTH}px`,
+          }}
+        />
+      )}
 
       {!isLastRound && (
         <div
@@ -168,4 +179,4 @@ const MatchupCard = ({
 };
 
 export default MatchupCard;
-export { MATCH_HEIGHT };
+export { MATCH_HEIGHT, COLUMN_GAP };

@@ -7,25 +7,52 @@ import React, {
 } from 'react';
 import {
   buildBracketBlueprint,
-  clearDependentWinners,
   getChampion,
   getMatchParticipants,
-  setWinner,
+  pickWinner,
+  sanitizeWinners,
 } from './bracketMath';
-import MatchupCard, { MATCH_HEIGHT } from './MatchupCard';
-import clsx from 'clsx';
+import MatchupCard, { MATCH_HEIGHT, COLUMN_GAP } from './MatchupCard';
+import { useConfirm } from '@/components/shared/ui/ConfirmModal';
 
 const BASE_GAP = 28;
 const COLUMN_WIDTH = 228;
-const COLUMN_GAP = 96;
 const MIN_SCALE = 0.6;
 const MAX_SCALE = 1.6;
-const HOVER_BOOST = 0.18;
+// Fit to Screen stops here on a phone and lets the bracket scroll sideways;
+// fitting all five rounds into 390px would make the names unreadable.
+const MIN_FIT_SCALE = 0.75;
 
+export const BRACKET_STORAGE_KEY = 'qbzero:backup-bracket';
+
+const readSavedWinners = () => {
+  try {
+    const raw = window.localStorage.getItem(BRACKET_STORAGE_KEY);
+    return raw ? JSON.parse(raw).winners : null;
+  } catch {
+    return null;
+  }
+};
+
+const saveWinners = (winners) => {
+  try {
+    window.localStorage.setItem(
+      BRACKET_STORAGE_KEY,
+      JSON.stringify({ winners })
+    );
+  } catch {
+    // Storage blocked (private window): picks just last for this visit.
+  }
+};
+
+// The bracket is drawn at full size and scaled down. A CSS transform does not
+// change layout size, so the scaled copy sits in a box sized to match;
+// otherwise the page keeps the full-size height as empty space below it.
 const useAutoFit = () => {
   const containerRef = useRef(null);
   const contentRef = useRef(null);
   const [fitScale, setFitScale] = useState(1);
+  const [contentSize, setContentSize] = useState({ width: 0, height: 0 });
 
   useLayoutEffect(() => {
     const container = containerRef.current;
@@ -34,13 +61,11 @@ const useAutoFit = () => {
 
     const calculateFit = () => {
       const containerWidth = container.clientWidth;
-      const contentWidth = content.scrollWidth;
-      if (!contentWidth) return;
-      const nextFit = Math.min(
-        1,
-        Math.max(MIN_SCALE, containerWidth / contentWidth)
-      );
-      setFitScale(nextFit);
+      const width = content.offsetWidth;
+      const height = content.offsetHeight;
+      if (!width) return;
+      setContentSize({ width, height });
+      setFitScale(Math.min(1, Math.max(MIN_FIT_SCALE, containerWidth / width)));
     };
 
     calculateFit();
@@ -61,7 +86,7 @@ const useAutoFit = () => {
     };
   }, []);
 
-  return { containerRef, contentRef, fitScale };
+  return { containerRef, contentRef, fitScale, contentSize };
 };
 
 const BackupQBBracket = ({ entrants = [], preferredSize = 32 }) => {
@@ -70,19 +95,26 @@ const BackupQBBracket = ({ entrants = [], preferredSize = 32 }) => {
     [entrants, preferredSize]
   );
   const { size, seeded, rounds, labels } = blueprint;
-  const [winners, setWinners] = useState(blueprint.winners);
-  const [hoveredMatch, setHoveredMatch] = useState(null);
+  // Picks are kept in this browser. The player list arrives twice (bundled
+  // list, then Firestore), so each new blueprint re-reads the saved picks and
+  // keeps the ones that still fit, instead of starting over.
+  const [winners, setWinners] = useState(() =>
+    sanitizeWinners(blueprint, readSavedWinners())
+  );
   const [isManualZoom, setIsManualZoom] = useState(false);
+  const { confirm, confirmDialog } = useConfirm();
 
-  const { containerRef, contentRef, fitScale } = useAutoFit();
+  const { containerRef, contentRef, fitScale, contentSize } = useAutoFit();
   const [baseScale, setBaseScale] = useState(1);
-  const [displayScale, setDisplayScale] = useState(1);
 
   useEffect(() => {
-    setWinners(blueprint.winners);
-    setHoveredMatch(null);
-    setIsManualZoom(false);
+    setWinners(sanitizeWinners(blueprint, readSavedWinners()));
   }, [blueprint]);
+
+  useEffect(() => {
+    // An empty bracket (players still loading) must not overwrite saved picks.
+    if (size) saveWinners(winners);
+  }, [winners, size]);
 
   useEffect(() => {
     if (!isManualZoom) {
@@ -90,37 +122,25 @@ const BackupQBBracket = ({ entrants = [], preferredSize = 32 }) => {
     }
   }, [fitScale, isManualZoom]);
 
-  useEffect(() => {
-    const focusScale = Math.min(
-      MAX_SCALE,
-      Math.max(baseScale, baseScale + HOVER_BOOST)
-    );
-    if (hoveredMatch) {
-      setDisplayScale(focusScale);
-    } else {
-      setDisplayScale(baseScale);
-    }
-  }, [baseScale, hoveredMatch]);
-
   const handleSelectWinner = (roundIndex, matchIndex, playerId) => {
-    setWinners((current) => {
-      const existing = current[roundIndex][matchIndex];
-      let updated = current;
-      if (existing === playerId) {
-        updated = setWinner(current, roundIndex, matchIndex, null);
-        updated = clearDependentWinners(updated, roundIndex, matchIndex);
-        return updated;
-      }
-
-      updated = setWinner(current, roundIndex, matchIndex, playerId);
-      updated = clearDependentWinners(updated, roundIndex, matchIndex);
-      return updated;
-    });
+    setWinners((current) =>
+      pickWinner(
+        current,
+        roundIndex,
+        matchIndex,
+        current[roundIndex]?.[matchIndex] === playerId ? null : playerId
+      )
+    );
   };
 
   const champion = useMemo(
     () => getChampion(winners, seeded.byId),
     [winners, seeded.byId]
+  );
+
+  const pickCount = winners.reduce(
+    (total, round) => total + round.filter(Boolean).length,
+    0
   );
 
   const handleZoomIn = () => {
@@ -143,9 +163,17 @@ const BackupQBBracket = ({ entrants = [], preferredSize = 32 }) => {
     setBaseScale(1);
   };
 
-  const handleResetBracket = () => {
+  const handleResetBracket = async () => {
+    if (pickCount) {
+      const ok = await confirm({
+        title: 'Reset the bracket?',
+        message: `This clears all ${pickCount} pick${pickCount === 1 ? '' : 's'}, including the saved ones.`,
+        confirmLabel: 'Reset',
+        danger: true,
+      });
+      if (!ok) return;
+    }
     setWinners(blueprint.winners);
-    setHoveredMatch(null);
     setIsManualZoom(false);
     setBaseScale(fitScale);
   };
@@ -247,17 +275,23 @@ const BackupQBBracket = ({ entrants = [], preferredSize = 32 }) => {
         </div>
       )}
 
-      <div ref={containerRef} className="relative overflow-hidden">
-        <div className="overflow-auto">
+      <div ref={containerRef} className="overflow-x-auto">
+        <div
+          style={{
+            width: contentSize.width
+              ? `${contentSize.width * baseScale}px`
+              : undefined,
+            height: contentSize.height
+              ? `${contentSize.height * baseScale}px`
+              : undefined,
+          }}
+        >
           <div
             ref={contentRef}
-            className={clsx(
-              'transition-transform duration-300 ease-out px-6 py-10'
-            )}
+            className="w-max px-6 py-10"
             style={{
-              transform: `scale(${displayScale})`,
+              transform: `scale(${baseScale})`,
               transformOrigin: 'left top',
-              minWidth: `${rounds.length * (COLUMN_WIDTH + COLUMN_GAP) + COLUMN_GAP}px`,
             }}
           >
             <div className="flex" style={{ gap: `${COLUMN_GAP}px` }}>
@@ -287,12 +321,12 @@ const BackupQBBracket = ({ entrants = [], preferredSize = 32 }) => {
                         const placeholderLabels =
                           roundIndex === 0
                             ? []
-                            : match.sources.map((source) => {
-                                const sourceLabel =
-                                  labels[source.roundIndex] ||
-                                  `Round ${source.roundIndex + 1}`;
-                                return `Winner of ${sourceLabel} • Match ${source.matchIndex + 1}`;
-                              });
+                            : match.sources.map(
+                                // Always the column to the left, so the
+                                // round name would only crowd the card.
+                                (source) =>
+                                  `Winner of Match ${source.matchIndex + 1}`
+                              );
 
                         return (
                           <MatchupCard
@@ -300,7 +334,9 @@ const BackupQBBracket = ({ entrants = [], preferredSize = 32 }) => {
                             roundIndex={roundIndex}
                             matchIndex={match.matchIndex}
                             participants={participants}
-                            winnerId={winners[roundIndex][match.matchIndex]}
+                            winnerId={
+                              winners[roundIndex]?.[match.matchIndex] ?? null
+                            }
                             placeholderLabels={placeholderLabels}
                             onSelect={(playerId) =>
                               handleSelectWinner(
@@ -309,12 +345,7 @@ const BackupQBBracket = ({ entrants = [], preferredSize = 32 }) => {
                                 playerId
                               )
                             }
-                            onHover={() =>
-                              setHoveredMatch(
-                                `${roundIndex}-${match.matchIndex}`
-                              )
-                            }
-                            onHoverEnd={() => setHoveredMatch(null)}
+                            isFirstRound={roundIndex === 0}
                             isLastRound={roundIndex === rounds.length - 1}
                             centerSpacing={centerSpacing}
                           />
@@ -328,6 +359,7 @@ const BackupQBBracket = ({ entrants = [], preferredSize = 32 }) => {
           </div>
         </div>
       </div>
+      {confirmDialog}
     </section>
   );
 };
