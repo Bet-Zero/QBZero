@@ -1,7 +1,64 @@
+const nameKey = (qb) =>
+  (qb?.name || qb?.display_name || '').trim().toLowerCase();
+
 /**
- * Calculate ranking movement for QBs between current and previous rankings
- * @param {Array} currentRankings - Current ranking data with rank property
- * @param {Array} previousRankings - Previous ranking data with rank property
+ * Pair each quarterback on the newer board with his place on the older one.
+ *
+ * Id first. Name second, for boards saved before entries kept their roster id:
+ * those carried a generated `qb-<timestamp>` id that changed whenever a
+ * quarterback was removed and re-added, so comparing against an archive from
+ * that era flagged half the board NEW. A name only matches an older entry that
+ * no id already claimed, so two different players are never paired.
+ *
+ * @returns {{ previousRank: Map<string, number>, matched: Set<number> }}
+ *   previous 1-based rank keyed by the newer board's id, and the indexes of
+ *   older entries that found a partner
+ */
+export const matchRankings = (currentRankings = [], previousRankings = []) => {
+  const previousRank = new Map();
+  const matched = new Set();
+
+  const indexById = new Map();
+  previousRankings.forEach((qb, index) => {
+    if (qb?.id != null && !indexById.has(qb.id)) indexById.set(qb.id, index);
+  });
+
+  const unmatched = [];
+  currentRankings.forEach((qb) => {
+    const index = indexById.get(qb.id);
+    if (index === undefined || matched.has(index)) {
+      unmatched.push(qb);
+      return;
+    }
+    matched.add(index);
+    previousRank.set(qb.id, index + 1);
+  });
+
+  if (unmatched.length) {
+    const indexByName = new Map();
+    previousRankings.forEach((qb, index) => {
+      const key = nameKey(qb);
+      if (key && !matched.has(index) && !indexByName.has(key)) {
+        indexByName.set(key, index);
+      }
+    });
+    unmatched.forEach((qb) => {
+      const key = nameKey(qb);
+      const index = key ? indexByName.get(key) : undefined;
+      if (index === undefined || matched.has(index)) return;
+      matched.add(index);
+      previousRank.set(qb.id, index + 1);
+    });
+  }
+
+  return { previousRank, matched };
+};
+
+/**
+ * Calculate ranking movement for QBs between current and previous rankings.
+ * Rank is position in the array, 1-based; the stored `rank` field is a copy.
+ * @param {Array} currentRankings
+ * @param {Array} previousRankings
  * @returns {Object} Map of QB ID to movement data { moved, direction, positions, isNew }
  */
 export const calculateRankingMovement = (
@@ -9,34 +66,20 @@ export const calculateRankingMovement = (
   previousRankings = []
 ) => {
   const movementMap = {};
-
-  // Create lookup maps
-  const currentMap = new Map();
-  const previousMap = new Map();
+  const { previousRank } = matchRankings(currentRankings, previousRankings);
 
   currentRankings.forEach((qb, index) => {
-    currentMap.set(qb.id, index + 1); // Use 1-based ranking
-  });
+    const currentRank = index + 1;
+    const previous = previousRank.get(qb.id);
 
-  previousRankings.forEach((qb, index) => {
-    previousMap.set(qb.id, index + 1); // Use 1-based ranking
-  });
-
-  // Calculate movement for each QB in current rankings
-  currentRankings.forEach((qb) => {
-    const currentRank = currentMap.get(qb.id);
-    const previousRank = previousMap.get(qb.id);
-
-    if (!previousRank) {
-      // New QB in rankings
+    if (!previous) {
       movementMap[qb.id] = {
         moved: false,
         direction: null,
         positions: 0,
         isNew: true,
       };
-    } else if (currentRank === previousRank) {
-      // No movement
+    } else if (currentRank === previous) {
       movementMap[qb.id] = {
         moved: false,
         direction: null,
@@ -44,14 +87,10 @@ export const calculateRankingMovement = (
         isNew: false,
       };
     } else {
-      // Moved up or down
-      const positions = Math.abs(currentRank - previousRank);
-      const direction = currentRank < previousRank ? 'up' : 'down';
-
       movementMap[qb.id] = {
         moved: true,
-        direction,
-        positions,
+        direction: currentRank < previous ? 'up' : 'down',
+        positions: Math.abs(currentRank - previous),
         isNew: false,
       };
     }

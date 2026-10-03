@@ -1,7 +1,10 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { Clock, Eye, RotateCcw, Trash2 } from 'lucide-react';
-import { formatRankingDate } from '@/utils/formatting/rankingDates';
+import {
+  formatArchiveDate,
+  formatReplacedDate,
+} from '@/utils/formatting/rankingDates';
 import { describeRankingChange } from '@/utils/rankings/rankingSummary';
 
 /**
@@ -60,10 +63,13 @@ const ArchiveSidebar = ({
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="text-white font-medium text-sm">
-                      {formatRankingDate(archive, { withTime: true })}
+                      {formatArchiveDate(archive, { withTime: true })}
                     </div>
                     <div className="text-white/60 text-xs">
                       {archive.rankings?.length || 0} QBs ranked
+                      {!archive.dateIsReplacement && (
+                        <> · current until {formatReplacedDate(archive)}</>
+                      )}
                     </div>
                     {describeRankingChange(archive.summary) && (
                       <div className="text-white/50 text-[11px] mt-0.5">

@@ -49,6 +49,11 @@ export class PersonalRankingConflictError extends Error {
 
 const withId = (snapshot) => ({ id: snapshot.id, ...snapshot.data() });
 
+/** The quarterbacks in order -- what a ranking actually is. */
+const sameOrder = (a = [], b = []) =>
+  a.length === b.length &&
+  a.every((entry, index) => entry?.id === b[index]?.id);
+
 /** The live board's document reference, or null if it has never been saved. */
 const findCurrentRankingRef = async () => {
   const snapshot = await getDocs(
@@ -84,10 +89,16 @@ export const saveCurrentPersonalRankings = async (
       notes,
       isCurrent: true,
       version: 1,
+      savedAt: serverTimestamp(),
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
-    return { currentId: created.id, archiveId: null, version: 1 };
+    return {
+      currentId: created.id,
+      archiveId: null,
+      version: 1,
+      reordered: true,
+    };
   }
 
   return runTransaction(db, async (transaction) => {
@@ -99,29 +110,48 @@ export const saveCurrentPersonalRankings = async (
       throw new PersonalRankingConflictError(version);
     }
 
+    // A save that leaves every quarterback where he was is not a new ranking.
+    // Archiving it anyway filled the history with "No changes" rows and, worse,
+    // made the identical board the "previous ranking" every movement arrow
+    // compares against -- so one idle save wiped every arrow on the public page.
+    const reordered = !sameOrder(data?.rankings, entries);
+
     // Archive what is being replaced, keeping whatever note that version
     // carried. This used to overwrite it with an "Auto-archived on ..." string
     // that both history views then detected and hid again.
+    //
+    // `createdAt` on an archive is when it was replaced, which is what the list
+    // sorts on. `savedAt` is when that board was made -- the date it belongs
+    // under. Archives written before this field existed only have the first.
     let archiveId = null;
-    if (data?.rankings?.length) {
+    if (reordered && data?.rankings?.length) {
       const archiveRef = doc(personalRankingArchivesRef);
       transaction.set(archiveRef, {
         rankings: data.rankings,
         notes: data.notes || '',
+        savedAt: data.savedAt || data.updatedAt || data.createdAt || null,
         createdAt: serverTimestamp(),
       });
       archiveId = archiveRef.id;
     }
 
+    // `updatedAt` also moves when a note is typed; `savedAt` only moves when the
+    // order does, so it is the date the ranking itself carries.
     transaction.update(currentRef, {
       rankings: entries,
       notes,
       isCurrent: true,
       version: version + 1,
+      ...(reordered ? { savedAt: serverTimestamp() } : {}),
       updatedAt: serverTimestamp(),
     });
 
-    return { currentId: currentRef.id, archiveId, version: version + 1 };
+    return {
+      currentId: currentRef.id,
+      archiveId,
+      version: version + 1,
+      reordered,
+    };
   });
 };
 

@@ -1,4 +1,7 @@
-import { calculateRankingMovement } from '@/utils/rankingMovement';
+import {
+  calculateRankingMovement,
+  matchRankings,
+} from '@/utils/rankingMovement';
 
 /**
  * What changed between one archive and the one before it.
@@ -57,8 +60,11 @@ export const summariseRankingChange = (current, previous) => {
     }
   });
 
-  const currentIds = new Set(current.map((qb) => qb.id));
-  const removed = previous.filter((qb) => !currentIds.has(qb.id)).length;
+  // Whatever on the older board found no partner on the newer one. Matched the
+  // same way as the movement above, so a renamed id is not counted as both an
+  // addition and a removal.
+  const { matched } = matchRankings(current, previous);
+  const removed = previous.length - matched.size;
 
   const strip = (entry) =>
     entry ? { name: entry.name, positions: entry.positions } : null;
