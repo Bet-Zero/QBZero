@@ -36,6 +36,9 @@ export const withSavedDates = (archives = []) =>
  * Restoring goes through the ordinary save, so the board being replaced is
  * archived first -- restoring the wrong version is itself undoable.
  */
+/** The most archives read at once, when the whole history is wanted. */
+const ALL_ARCHIVES = 2000;
+
 const usePersonalRankingHistory = () => {
   const [current, setCurrent] = useState(null);
   const [archives, setArchives] = useState([]);
@@ -90,6 +93,15 @@ const usePersonalRankingHistory = () => {
     await load(next);
     setLoadingMore(false);
   }, [load, pageSize]);
+
+  // Zoomed out to months or years, a page is not enough: every period has to
+  // be there to file. Reads the lot in one bounded query.
+  const loadAll = useCallback(async () => {
+    setLoadingMore(true);
+    setPageSize(ALL_ARCHIVES);
+    await load(ALL_ARCHIVES);
+    setLoadingMore(false);
+  }, [load]);
 
   const restore = useCallback(
     async (archive) => {
@@ -155,6 +167,7 @@ const usePersonalRankingHistory = () => {
     loadingMore,
     hasMore,
     loadMore,
+    loadAll,
     error,
     busyId,
     restore,

@@ -43,6 +43,7 @@ const RankingHistoryPage = () => {
     loadingMore,
     hasMore,
     loadMore,
+    loadAll,
     error,
     busyId,
     restore,
@@ -177,6 +178,7 @@ const RankingHistoryPage = () => {
               hasMore={hasMore}
               onLoadMore={loadMore}
               loadingMore={loadingMore}
+              onLoadAll={loadAll}
             />
           </aside>
 
