@@ -6,6 +6,8 @@ const TierRow = ({
   tier,
   players = [],
   screenshotMode,
+  canMoveUp,
+  canMoveDown,
   movePlayer,
   removePlayer,
   renameTier,
@@ -16,21 +18,23 @@ const TierRow = ({
       tier === 'Pool' ? 'bg-neutral-950 mt-0' : 'bg-neutral-800'
     } p-0`}
   >
-    <div className="w-[70px] text-sm text-white font-bold flex items-center justify-between px-1">
+    <div className="w-[70px] flex-shrink-0 text-sm text-white font-bold flex items-center justify-between px-1">
       {!screenshotMode && tier !== 'Pool' && (
         <button
           onClick={() => renameTier(tier)}
+          aria-label={`Rename tier ${tier}`}
           className="text-xs text-white bg-black/40 px-[4px] rounded hover:bg-white/10"
         >
           ✎
         </button>
       )}
-      <span className="flex-1 text-center">
+      <span className="flex-1 min-w-0 text-center break-words">
         {tier === 'Pool' ? 'Pool' : tier}
       </span>
       {!screenshotMode && tier !== 'Pool' && (
         <button
           onClick={() => deleteTier(tier)}
+          aria-label={`Delete tier ${tier}`}
           className="text-xs text-red-300 bg-black/40 px-[4px] rounded hover:bg-red-600"
         >
           🗑
@@ -43,17 +47,19 @@ const TierRow = ({
           <TierPlayerTile player={player} />
           {!screenshotMode && (
             <div className="absolute top-1 right-1 flex flex-col gap-1">
-              {tier !== 'S' && (
+              {canMoveUp && (
                 <button
                   onClick={() => movePlayer(player.player_id, tier, 'up')}
+                  aria-label="Move up a tier"
                   className="text-xs text-white bg-black/40 px-[6px] rounded hover:bg-white/10"
                 >
                   ↑
                 </button>
               )}
-              {tier !== 'Pool' && (
+              {canMoveDown && (
                 <button
                   onClick={() => movePlayer(player.player_id, tier, 'down')}
+                  aria-label="Move down a tier"
                   className="text-xs text-white bg-black/40 px-[6px] rounded hover:bg-white/10"
                 >
                   ↓
@@ -61,6 +67,7 @@ const TierRow = ({
               )}
               <button
                 onClick={() => removePlayer(player.player_id, tier)}
+                aria-label="Remove from board"
                 className="text-xs text-red-300 bg-black/40 px-[6px] rounded hover:bg-red-600"
               >
                 ✕
