@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useId, useMemo, useState } from 'react';
+import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
 import {
   CheckCircle,
   XCircle,
@@ -7,19 +7,41 @@ import {
   Plus,
   User,
   Shield,
+  Pencil,
+  Trash2,
 } from 'lucide-react';
-import {
-  fetchAllTakes,
-  fetchAuthorTakes,
-  createTake,
-} from '@/firebase/takeHelpers';
+import { createTake, updateTake, deleteTake } from '@/firebase/takeHelpers';
 import useQBRoster from '@/hooks/useQBRoster';
 import { toast } from 'react-hot-toast';
 import TakeAuthorModal from './TakeAuthorModal';
 import AdminGate from './AdminGate';
 import useAuth from '@/hooks/useAuth';
+import { useConfirm } from '@/components/shared/ui/ConfirmModal';
+import {
+  emptyTake,
+  filterTakes,
+  pickTakeFields,
+  takeStats,
+} from '@/utils/qbw/takes';
 
-const TakeCard = ({ take }) => {
+const readSavedAuthor = () => {
+  try {
+    return JSON.parse(localStorage.getItem('takeAuthor')) || null;
+  } catch {
+    return null;
+  }
+};
+
+const writeSavedAuthor = (author) => {
+  try {
+    if (author) localStorage.setItem('takeAuthor', JSON.stringify(author));
+    else localStorage.removeItem('takeAuthor');
+  } catch {
+    // Storage blocked: the author just won't be remembered.
+  }
+};
+
+const TakeCard = ({ take, onEdit, onDelete }) => {
   const getStatusIcon = () => {
     switch (take.status) {
       case 'correct':
@@ -60,6 +82,26 @@ const TakeCard = ({ take }) => {
             <div className="text-xs text-white/40 whitespace-nowrap">
               by {take.authorName}
             </div>
+            {onEdit && (
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <button
+                  type="button"
+                  onClick={() => onEdit(take)}
+                  aria-label={`Edit "${take.title}"`}
+                  className="p-1 rounded text-white/40 hover:text-white hover:bg-white/10"
+                >
+                  <Pencil size={14} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onDelete(take)}
+                  aria-label={`Delete "${take.title}"`}
+                  className="p-1 rounded text-white/40 hover:text-red-400 hover:bg-white/10"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            )}
           </div>
           <div className="text-white/70 text-sm mb-2 flex-1 line-clamp-3">
             {take.description}
@@ -81,65 +123,93 @@ const TakeCard = ({ take }) => {
   );
 };
 
-const TakeBoard = () => {
+const TakeBoard = ({ takes = [], loading = false, onChanged = () => {} }) => {
   const { isAdmin, signOut } = useAuth();
   const { roster } = useQBRoster();
+  const { confirm, confirmDialog } = useConfirm();
   const fieldId = useId();
-  const [takes, setTakes] = useState([]);
+  const formRef = useRef(null);
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [author, setAuthor] = useState(null);
   const [showAuthorModal, setShowAuthorModal] = useState(false);
   const [viewingAuthorId, setViewingAuthorId] = useState(null); // null means viewing all takes
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    qbName: '',
-    date: new Date().toLocaleDateString(),
-    proofDate: '',
-    status: 'pending',
-  });
+  const [formData, setFormData] = useState(emptyTake);
+  const [showQbOptions, setShowQbOptions] = useState(false);
 
-  // QB Search state
-  const [qbSearch, setQbSearch] = useState('');
-
-  // Filter QBs based on search
+  // QB options for whatever has been typed into the QB field.
   const filteredQBs = useMemo(() => {
-    return roster.filter((qb) =>
-      qb.name.toLowerCase().includes(qbSearch.toLowerCase())
+    const needle = formData.qbName.trim().toLowerCase();
+    if (!needle) return [];
+    return roster.filter(
+      (qb) =>
+        qb.name.toLowerCase().includes(needle) &&
+        qb.name.toLowerCase() !== needle
     );
-  }, [qbSearch, roster]);
+  }, [formData.qbName, roster]);
 
   const [adminMode, setAdminMode] = useState(false);
   const [showAdminGate, setShowAdminGate] = useState(false);
 
-  // Admin mode follows the signed-in account.
+  // Admin mode follows the signed-in account; otherwise pick up a visitor
+  // author remembered from an earlier visit.
   useEffect(() => {
     if (isAdmin) {
       setAdminMode(true);
       setAuthor({ id: 'admin', name: 'Admin' });
+    } else {
+      const savedAuthor = readSavedAuthor();
+      if (savedAuthor) setAuthor(savedAuthor);
     }
   }, [isAdmin]);
 
-  useEffect(() => {
-    if (author) {
-      loadTakes();
-    }
-  }, [author, loadTakes]);
+  const closeForm = () => {
+    setShowForm(false);
+    setEditingId(null);
+    setFormData(emptyTake());
+    setShowQbOptions(false);
+  };
 
-  const loadTakes = useCallback(async () => {
-    try {
-      const takesData = viewingAuthorId
-        ? await fetchAuthorTakes(viewingAuthorId)
-        : await fetchAllTakes();
-      setTakes(takesData);
-    } catch (error) {
-      console.error('Error loading takes:', error);
-      toast.error('Failed to load takes');
+  const openNewTake = () => {
+    if (showForm && !editingId) {
+      closeForm();
+      return;
     }
-  }, [viewingAuthorId]);
+    setEditingId(null);
+    setFormData(emptyTake());
+    setShowForm(true);
+  };
+
+  const openEdit = (take) => {
+    setEditingId(take.id);
+    setFormData(pickTakeFields(take));
+    setShowForm(true);
+    setShowQbOptions(false);
+    requestAnimationFrame(() =>
+      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    );
+  };
+
+  const handleDelete = async (take) => {
+    const ok = await confirm({
+      title: 'Delete this take?',
+      message: `"${take.title}" will be removed from the board for good.`,
+      confirmLabel: 'Delete',
+      danger: true,
+    });
+    if (!ok) return;
+    try {
+      await deleteTake(take.id);
+      if (editingId === take.id) closeForm();
+      toast.success('Take deleted');
+      onChanged();
+    } catch {
+      toast.error('Failed to delete take');
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -148,25 +218,35 @@ const TakeBoard = () => {
       return;
     }
 
+    const take = {
+      ...formData,
+      title: formData.title.trim(),
+      description: formData.description.trim(),
+      qbName: formData.qbName.trim(),
+      date: formData.date.trim(),
+      proofDate: formData.proofDate.trim(),
+    };
+    if (!take.qbName) {
+      toast.error('Pick the QB this take is about');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      await createTake(formData, author.id, author.name);
-      toast.success('Take added successfully!');
-      setFormData({
-        title: '',
-        description: '',
-        qbName: '',
-        date: new Date().toLocaleDateString(),
-        proofDate: '',
-        status: 'pending',
-      });
-      setQbSearch('');
-      setShowForm(false);
-      loadTakes();
-    } catch (error) {
-      console.error('Error creating take:', error);
-      toast.error('Failed to create take');
+      if (editingId) {
+        await updateTake(editingId, take);
+        toast.success('Take updated');
+      } else {
+        await createTake(take, author.id, author.name);
+        toast.success('Take added successfully!');
+      }
+      closeForm();
+      onChanged();
+    } catch {
+      toast.error(
+        editingId ? 'Failed to update take' : 'Failed to create take'
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -175,33 +255,25 @@ const TakeBoard = () => {
   const handleLogin = (authorData) => {
     setAuthor(authorData);
     setShowAuthorModal(false);
-    localStorage.setItem('takeAuthor', JSON.stringify(authorData));
+    writeSavedAuthor(authorData);
   };
 
-  // Load author from localStorage on mount
-  useEffect(() => {
-    const savedAuthor = localStorage.getItem('takeAuthor');
+  const handleLogout = () => {
+    setAdminMode(false);
+    setAuthor(null);
+    writeSavedAuthor(null);
+    closeForm();
+    signOut();
+    toast.success('Logged out');
+  };
 
-    if (isAdmin) {
-      setAdminMode(true);
-      setAuthor({ id: 'admin', name: 'Admin' });
-    } else if (savedAuthor) {
-      setAuthor(JSON.parse(savedAuthor));
-    }
-  }, [isAdmin]);
-
-  const filteredTakes = takes.filter((take) => {
-    if (filter !== 'all' && take.status !== filter) return false;
-    if (search.trim()) {
-      return take.qbName.toLowerCase().includes(search.toLowerCase());
-    }
-    return true;
+  const filteredTakes = filterTakes(takes, {
+    status: filter,
+    search,
+    authorId: viewingAuthorId,
   });
 
-  const statusCounts = takes.reduce((acc, take) => {
-    acc[take.status] = (acc[take.status] || 0) + 1;
-    return acc;
-  }, {});
+  const statusCounts = takeStats(takes);
 
   const getFilterButtonClass = (filterType) => {
     const isActive = filter === filterType;
@@ -243,14 +315,16 @@ const TakeBoard = () => {
                 onClick={() => setShowAuthorModal(true)}
                 className="flex items-center gap-1 px-3 py-1.5 bg-blue-600/80 hover:bg-blue-700 rounded-lg text-white text-xs font-medium transition-all whitespace-nowrap"
               >
-                <Plus size={14} />+ Add Take
+                <Plus size={14} />
+                Add Take
               </button>
             ) : (
               <button
-                onClick={() => setShowForm(!showForm)}
+                onClick={openNewTake}
                 className="flex items-center gap-1 px-3 py-1.5 bg-blue-600/80 hover:bg-blue-700 rounded-lg text-white text-xs font-medium transition-all whitespace-nowrap"
               >
-                <Plus size={14} />+ Add Take
+                <Plus size={14} />
+                Add Take
               </button>
             )}
           </div>
@@ -298,13 +372,7 @@ const TakeBoard = () => {
 
               {adminMode && (
                 <button
-                  onClick={() => {
-                    setAdminMode(false);
-                    setAuthor(null);
-                    localStorage.removeItem('takeAuthor');
-                    signOut();
-                    toast.success('Logged out');
-                  }}
+                  onClick={handleLogout}
                   className="px-3 py-2 bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 rounded-lg text-red-300 text-xs font-medium transition-all"
                 >
                   Logout
@@ -312,7 +380,7 @@ const TakeBoard = () => {
               )}
 
               <button
-                onClick={() => setShowForm(!showForm)}
+                onClick={openNewTake}
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600/80 hover:bg-blue-700 rounded-lg text-white text-sm font-medium transition-all whitespace-nowrap"
               >
                 <Plus size={16} />
@@ -375,13 +443,7 @@ const TakeBoard = () => {
             </button>
           ) : adminMode ? (
             <button
-              onClick={() => {
-                setAdminMode(false);
-                setAuthor(null);
-                localStorage.removeItem('takeAuthor');
-                signOut();
-                toast.success('Logged out');
-              }}
+              onClick={handleLogout}
               className="px-3 py-2 bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 rounded-lg text-red-300 text-sm font-medium transition-all"
             >
               Logout
@@ -392,8 +454,14 @@ const TakeBoard = () => {
 
       {/* Take Creation Form */}
       {showForm && (
-        <div className="bg-[#1a1a1a] rounded-xl border border-white/20 p-6">
+        <div
+          ref={formRef}
+          className="bg-[#1a1a1a] rounded-xl border border-white/20 p-6"
+        >
           <form onSubmit={handleSubmit} className="space-y-4">
+            <h3 className="text-white/90 font-semibold">
+              {editingId ? 'Edit Take' : 'New Take'}
+            </h3>
             <div>
               <label
                 htmlFor={`${fieldId}-title`}
@@ -449,23 +517,35 @@ const TakeBoard = () => {
                   <input
                     id={`${fieldId}-qb`}
                     type="text"
-                    value={qbSearch}
-                    onChange={(e) => setQbSearch(e.target.value)}
+                    value={formData.qbName}
+                    onChange={(e) => {
+                      setFormData((prev) => ({
+                        ...prev,
+                        qbName: e.target.value,
+                      }));
+                      setShowQbOptions(true);
+                    }}
+                    onBlur={() => setShowQbOptions(false)}
                     placeholder="Search QB..."
+                    autoComplete="off"
+                    required
                     className="w-full p-3 bg-neutral-700 border border-white/20 rounded-lg text-white placeholder-white/40 focus:border-blue-500 focus:outline-none"
                   />
-                  {qbSearch && filteredQBs.length > 0 && (
+                  {showQbOptions && filteredQBs.length > 0 && (
                     <div className="absolute z-10 mt-1 w-full bg-neutral-800 border border-white/20 rounded-lg max-h-48 overflow-y-auto">
                       {filteredQBs.map((qb) => (
                         <button
                           key={qb.id}
                           type="button"
-                          onClick={() => {
+                          // mousedown, so the pick lands before the input's
+                          // blur closes the list
+                          onMouseDown={(e) => {
+                            e.preventDefault();
                             setFormData((prev) => ({
                               ...prev,
                               qbName: qb.name,
                             }));
-                            setQbSearch(qb.name);
+                            setShowQbOptions(false);
                           }}
                           className="w-full px-3 py-2 text-left hover:bg-white/10 text-white text-sm"
                         >
@@ -500,32 +580,53 @@ const TakeBoard = () => {
               </div>
             </div>
 
-            <div>
-              <label
-                htmlFor={`${fieldId}-proof`}
-                className="block text-white/80 font-medium mb-2"
-              >
-                Proof Date
-              </label>
-              <input
-                id={`${fieldId}-proof`}
-                type="text"
-                value={formData.proofDate}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    proofDate: e.target.value,
-                  }))
-                }
-                placeholder="e.g., 2024 Season"
-                className="w-full p-3 bg-neutral-700 border border-white/20 rounded-lg text-white placeholder-white/40 focus:border-blue-500 focus:outline-none"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label
+                  htmlFor={`${fieldId}-date`}
+                  className="block text-white/80 font-medium mb-2"
+                >
+                  Made On
+                </label>
+                <input
+                  id={`${fieldId}-date`}
+                  type="text"
+                  value={formData.date}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, date: e.target.value }))
+                  }
+                  placeholder="e.g., 2023 Draft"
+                  className="w-full p-3 bg-neutral-700 border border-white/20 rounded-lg text-white placeholder-white/40 focus:border-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor={`${fieldId}-proof`}
+                  className="block text-white/80 font-medium mb-2"
+                >
+                  Proof Date
+                </label>
+                <input
+                  id={`${fieldId}-proof`}
+                  type="text"
+                  value={formData.proofDate}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      proofDate: e.target.value,
+                    }))
+                  }
+                  placeholder="e.g., 2024 Season"
+                  className="w-full p-3 bg-neutral-700 border border-white/20 rounded-lg text-white placeholder-white/40 focus:border-blue-500 focus:outline-none"
+                />
+              </div>
             </div>
 
             <div className="flex justify-end gap-3 pt-4">
               <button
                 type="button"
-                onClick={() => setShowForm(false)}
+                onClick={closeForm}
                 className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white text-sm font-medium transition-all"
               >
                 Cancel
@@ -535,7 +636,11 @@ const TakeBoard = () => {
                 disabled={isSubmitting}
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:opacity-50 rounded-lg text-white text-sm font-medium transition-all"
               >
-                {isSubmitting ? 'Adding...' : 'Add Take'}
+                {isSubmitting
+                  ? 'Saving...'
+                  : editingId
+                    ? 'Save Changes'
+                    : 'Add Take'}
               </button>
             </div>
           </form>
@@ -551,7 +656,7 @@ const TakeBoard = () => {
               onClick={() => setFilter('all')}
               className={`${getFilterButtonClass('all')} text-xs px-2 py-1.5 flex-shrink-0`}
             >
-              All ({takes.length})
+              All ({statusCounts.total})
             </button>
             <button
               onClick={() => setFilter('correct')}
@@ -601,7 +706,7 @@ const TakeBoard = () => {
             onClick={() => setFilter('all')}
             className={getFilterButtonClass('all')}
           >
-            All ({takes.length})
+            All ({statusCounts.total})
           </button>
           <button
             onClick={() => setFilter('correct')}
@@ -644,13 +749,24 @@ const TakeBoard = () => {
 
       {/* Takes Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 min-h-[500px]">
-        {filteredTakes.length > 0 ? (
-          filteredTakes.map((take) => <TakeCard key={take.id} take={take} />)
+        {loading ? (
+          <div className="col-span-full text-center py-12 text-white/40 text-lg">
+            Loading takes…
+          </div>
+        ) : filteredTakes.length > 0 ? (
+          filteredTakes.map((take) => (
+            <TakeCard
+              key={take.id}
+              take={take}
+              onEdit={adminMode ? openEdit : null}
+              onDelete={handleDelete}
+            />
+          ))
         ) : (
           <div className="col-span-full text-center py-12">
             <div className="text-6xl mb-4">🎯</div>
             <div className="text-white/40 text-lg">
-              No takes match your filter
+              {takes.length ? 'No takes match your filter' : 'No takes yet'}
             </div>
           </div>
         )}
@@ -676,6 +792,8 @@ const TakeBoard = () => {
           onClose={() => setShowAdminGate(false)}
         />
       )}
+
+      {confirmDialog}
     </div>
   );
 };
