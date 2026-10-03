@@ -104,7 +104,10 @@ PRs instead, once all of these hold:
 - `npx vitest run` passes
 - `npm run build` succeeds
 - `npm run lint` is clean
-- the Vercel preview deployed, and you have said in the PR what to look at
+- the **Checks** GitHub workflow is green on the PR (it runs the three above)
+
+Vercel does not build `claude/**` branches (`vercel.json`): previews used up the
+free plan's 100 deployments a day, and nothing here could open them anyway.
 
 `main` deploys to the live site automatically, so merging publishes. That is the
 point of the rule, and the reason for the exceptions.

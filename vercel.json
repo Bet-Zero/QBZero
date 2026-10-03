@@ -1,4 +1,9 @@
 {
+  "git": {
+    "deploymentEnabled": {
+      "claude/**": false
+    }
+  },
   "headers": [
     {
       "source": "/assets/(.*)",
@@ -11,6 +16,9 @@
     }
   ],
   "rewrites": [
-    { "source": "/(.*)", "destination": "/" }
+    {
+      "source": "/(.*)",
+      "destination": "/"
+    }
   ]
 }
