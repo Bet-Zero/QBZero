@@ -1,11 +1,20 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {
-  formatArchiveDate,
   formatRankingDate,
   formatReplacedDate,
 } from '@/utils/formatting/rankingDates';
-import { describeRankingChange } from '@/utils/rankings/rankingSummary';
+import { describeRankingChangeLines } from '@/utils/rankings/rankingSummary';
+
+/**
+ * The heading for one version: the stretch it was your ranking for. The oldest
+ * archive from before save dates were stored only knows when it was replaced.
+ */
+const periodLabel = (entry, isCurrent) => {
+  if (isCurrent) return `Since ${formatRankingDate(entry)}`;
+  if (entry.dateIsReplacement) return `Before ${formatReplacedDate(entry)}`;
+  return `${formatRankingDate(entry)} – ${formatReplacedDate(entry)}`;
+};
 
 /**
  * Every version of the personal board, newest first, as a vertical timeline.
@@ -26,7 +35,7 @@ const HistoryTimeline = ({
       {entries.map((entry) => {
         const isSelected = entry.id === selectedId;
         const isCurrent = entry.kind === 'current';
-        const change = describeRankingChange(entry.summary);
+        const changes = describeRankingChangeLines(entry.summary);
 
         return (
           <li key={entry.id} className="relative pl-5">
@@ -52,9 +61,7 @@ const HistoryTimeline = ({
             >
               <div className="flex items-baseline justify-between gap-2">
                 <span className="text-sm font-semibold text-white">
-                  {isCurrent
-                    ? formatRankingDate(entry)
-                    : formatArchiveDate(entry)}
+                  {periodLabel(entry, isCurrent)}
                 </span>
                 {isCurrent && (
                   <span className="text-[10px] uppercase tracking-wide font-bold text-green-400">
@@ -63,17 +70,25 @@ const HistoryTimeline = ({
                 )}
               </div>
               <div className="text-[11px] text-white/45">
-                {entry.rankings?.length || 0} QBs
-                {!isCurrent && !entry.dateIsReplacement && (
-                  <> · until {formatReplacedDate(entry)}</>
-                )}
+                {entry.rankings?.length || 0} QBs ranked
+                {entry.dateIsReplacement && ' · exact save date not recorded'}
               </div>
-              {change && (
-                <div className="text-[11px] text-white/65 mt-0.5">{change}</div>
+              {changes.length > 0 ? (
+                <div className="text-[11px] text-white/65 mt-1 space-y-0.5">
+                  {changes.map((line) => (
+                    <div key={line}>{line}</div>
+                  ))}
+                </div>
+              ) : (
+                !isCurrent && (
+                  <div className="text-[11px] text-white/40 mt-1">
+                    Earliest version loaded
+                  </div>
+                )
               )}
               {entry.notes && (
                 <div className="text-xs text-white/75 italic mt-1 line-clamp-2">
-                  “{entry.notes}”
+                  Note: “{entry.notes}”
                 </div>
               )}
             </button>

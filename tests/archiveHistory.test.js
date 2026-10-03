@@ -44,7 +44,7 @@ vi.mock('firebase/firestore', () => {
   };
 });
 
-const { saveCurrentPersonalRankings } = await import(
+const { saveCurrentPersonalRankings, savePersonalRankingNotes } = await import(
   '@/firebase/personalRankingHelpers.js'
 );
 const { withSavedDates } = await import('@/hooks/usePersonalRankingHistory.js');
@@ -98,6 +98,33 @@ describe('saving the personal board', () => {
   it('archives a board that was cleared', async () => {
     await saveCurrentPersonalRankings([]);
     expect(store.sets).toHaveLength(1);
+  });
+});
+
+describe('note history', () => {
+  const logged = () =>
+    store.sets.filter((set) => set.ref.path.startsWith('noteHistory'));
+
+  it('logs a note edit as its own entry', async () => {
+    await savePersonalRankingNotes('jackson', 'MVP form');
+    expect(logged().map((set) => set.data)).toEqual([
+      { qbId: 'jackson', name: 'jackson', notes: 'MVP form', at: SERVER_TIME },
+    ]);
+  });
+
+  it('logs nothing when the note did not change', async () => {
+    store.live.rankings[1].notes = 'MVP form';
+    await savePersonalRankingNotes('jackson', 'MVP form');
+    expect(logged()).toHaveLength(0);
+  });
+
+  it('logs notes that ride along with a save, and only those that changed', async () => {
+    await saveCurrentPersonalRankings([
+      { id: 'allen', name: 'allen' },
+      { id: 'jackson', name: 'jackson' },
+      { id: 'hurts', name: 'hurts', notes: 'Added with a note' },
+    ]);
+    expect(logged().map((set) => set.data.qbId)).toEqual(['hurts']);
   });
 });
 

@@ -49,6 +49,34 @@ export class PersonalRankingConflictError extends Error {
 
 const withId = (snapshot) => ({ id: snapshot.id, ...snapshot.data() });
 
+/**
+ * Every change to a quarterback's note, one document each, under the live
+ * board: `personalRankingArchives/<live>/noteHistory`. Archives only keep the
+ * note a quarterback had when the board was replaced, and notes save on their
+ * own between those saves -- so a note rewritten twice in a week kept only the
+ * last version. The existing rule on `personalRankingArchives/{document=**}`
+ * already covers this subcollection.
+ */
+const NOTE_HISTORY = 'noteHistory';
+
+/** Log each entry whose note differs from the one it had on `before`. */
+const logNoteChanges = (transaction, currentRef, before = [], after = []) => {
+  const previous = new Map(
+    before.map((entry) => [entry.id, entry.notes || ''])
+  );
+  after.forEach((entry) => {
+    const text = entry.notes || '';
+    const had = previous.has(entry.id) ? previous.get(entry.id) : '';
+    if (text === had) return;
+    transaction.set(doc(collection(currentRef, NOTE_HISTORY)), {
+      qbId: entry.id,
+      name: entry.name || '',
+      notes: text,
+      at: serverTimestamp(),
+    });
+  });
+};
+
 /** The quarterbacks in order -- what a ranking actually is. */
 const sameOrder = (a = [], b = []) =>
   a.length === b.length &&
@@ -135,6 +163,10 @@ export const saveCurrentPersonalRankings = async (
       archiveId = archiveRef.id;
     }
 
+    // Notes typed on a quarterback before he was first saved ride along with
+    // this save; log them so they are not missing from his note history.
+    logNoteChanges(transaction, currentRef, data?.rankings, entries);
+
     // `updatedAt` also moves when a note is typed; `savedAt` only moves when the
     // order does, so it is the date the ranking itself carries.
     transaction.update(currentRef, {
@@ -175,8 +207,10 @@ export const savePersonalRankingNotes = async (qbId, notes) => {
   return runTransaction(db, async (transaction) => {
     const snapshot = await transaction.get(currentRef);
     const entries = snapshot.data()?.rankings || [];
-    if (!entries.some((entry) => entry.id === qbId)) return 'not-found';
+    const entry = entries.find((candidate) => candidate.id === qbId);
+    if (!entry) return 'not-found';
 
+    logNoteChanges(transaction, currentRef, [entry], [{ ...entry, notes }]);
     transaction.update(currentRef, {
       rankings: entries.map((entry) =>
         entry.id === qbId ? { ...entry, notes } : entry
@@ -185,6 +219,21 @@ export const savePersonalRankingNotes = async (qbId, notes) => {
     });
     return 'saved';
   });
+};
+
+/**
+ * Every logged version of one quarterback's note, oldest first. Filtered on one
+ * field and sorted here, so it needs no composite index.
+ */
+export const getNoteHistory = async (qbId) => {
+  const currentRef = await findCurrentRankingRef();
+  if (!currentRef || !qbId) return [];
+  const snapshot = await getDocs(
+    query(collection(currentRef, NOTE_HISTORY), where('qbId', '==', qbId))
+  );
+  return snapshot.docs
+    .map(withId)
+    .sort((a, b) => (a.at?.toMillis?.() ?? 0) - (b.at?.toMillis?.() ?? 0));
 };
 
 /**

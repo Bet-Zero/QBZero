@@ -4,6 +4,7 @@ import {
   fireEvent,
   cleanup,
   within,
+  waitFor,
 } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
@@ -17,6 +18,7 @@ const helpers = vi.hoisted(() => ({
   getPersonalRankingArchives: vi.fn(),
   saveCurrentPersonalRankings: vi.fn(),
   deletePersonalRankingArchive: vi.fn(),
+  getNoteHistory: vi.fn(async () => []),
   ARCHIVE_PAGE_SIZE: 50,
 }));
 vi.mock('@/firebase/personalRankingHelpers', () => helpers);
@@ -112,14 +114,18 @@ describe('ranking history page', () => {
     const section = board();
 
     // Against September: Lamar +1 is the riser.
-    expect(within(section).getByText(/▲ Lamar Jackson \+1/)).toBeTruthy();
+    expect(
+      within(section).getByText(/Biggest rise: Lamar Jackson, up 1 spot/)
+    ).toBeTruthy();
 
     // Against August: Lamar went from 3rd to 1st.
     fireEvent.change(within(section).getByRole('combobox'), {
       target: { value: 'aug' },
     });
     expect(
-      await within(board()).findByText(/▲ Lamar Jackson \+2/)
+      await within(board()).findByText(
+        /Biggest rise: Lamar Jackson, up 2 spots/
+      )
     ).toBeTruthy();
   });
 
@@ -129,7 +135,71 @@ describe('ranking history page', () => {
 
     fireEvent.click(within(board()).getByText('Lamar Jackson'));
     expect(await screen.findByText(/On 3 of 3 versions loaded/)).toBeTruthy();
-    expect(screen.getByRole('img', { name: /between 1 and 3/ })).toBeTruthy();
+    // Dated along the bottom, so the span reads at a glance.
+    const chart = screen.getByRole('img', {
+      name: /Aug 1 to Sep 20, between 1 and 3/,
+    });
+    expect(within(chart).getByText('Aug 1')).toBeTruthy();
+    expect(within(chart).getByText('Sep 20')).toBeTruthy();
+  });
+
+  it('keeps a notepad of every note he has had, newest first', async () => {
+    helpers.getNoteHistory.mockResolvedValue([
+      { qbId: 'lamar-jackson', notes: 'Best player alive', at: stamp(9, 25) },
+    ]);
+    const withNotes = (entry, text) => ({
+      ...entry,
+      rankings: entry.rankings.map((q) =>
+        q.id === 'lamar-jackson' ? { ...q, notes: text } : q
+      ),
+    });
+    helpers.getCurrentPersonalRanking.mockResolvedValue(
+      withNotes(live, 'Best player alive')
+    );
+    helpers.getPersonalRankingArchives.mockResolvedValue({
+      archives: [
+        withNotes(archives[0], 'MVP form'),
+        withNotes(archives[1], 'Health is the question'),
+      ],
+      hasMore: false,
+    });
+
+    renderAt('/rankings/history?qb=lamar-jackson');
+    await screen.findByText('Notes history');
+    expect(helpers.getNoteHistory).toHaveBeenCalledWith('lamar-jackson');
+
+    const notepad = (await screen.findByText('Notes history')).closest(
+      'div'
+    ).parentElement;
+    await waitFor(() =>
+      expect(within(notepad).getAllByRole('listitem').length).toBe(3)
+    );
+    const texts = within(notepad)
+      .getAllByRole('listitem')
+      .map((item) => item.lastChild.textContent);
+    expect(texts).toEqual([
+      'Best player alive',
+      'MVP form',
+      'Health is the question',
+    ]);
+    // The edit is dated when it was written, not when its board was saved.
+    expect(screen.getByText(/Sep 25, 2026 · latest/)).toBeTruthy();
+  });
+
+  it('labels each timeline row in words', async () => {
+    renderAt();
+    await screen.findByText('Current rankings');
+    const timeline = screen.getByRole('navigation', {
+      name: 'Ranking versions',
+    });
+    expect(within(timeline).getByText(/Since Sep 20, 2026/)).toBeTruthy();
+    expect(
+      within(timeline).getByText('Sep 1, 2026 – Sep 20, 2026')
+    ).toBeTruthy();
+    expect(
+      within(timeline).getByText('Biggest drop: Josh Allen, down 1 spot')
+    ).toBeTruthy();
+    expect(within(timeline).getByText('Added 1 QB')).toBeTruthy();
   });
 
   it('says so when nothing has been saved yet', async () => {

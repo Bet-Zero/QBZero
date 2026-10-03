@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import { Link } from 'react-router-dom';
 import { Clock } from 'lucide-react';
 import { formatArchiveDate } from '@/utils/formatting/rankingDates';
-import { describeRankingChange } from '@/utils/rankings/rankingSummary';
+import { describeRankingChangeLines } from '@/utils/rankings/rankingSummary';
 
 const SHOWN = 4;
 
@@ -32,11 +32,13 @@ const HistoryPreview = ({ archives, hasMore = false }) => (
               <div className="text-sm text-white font-medium">
                 {formatArchiveDate(archive)}
               </div>
-              {describeRankingChange(archive.summary) && (
-                <div className="text-[11px] text-white/55">
-                  {describeRankingChange(archive.summary)}
-                </div>
-              )}
+              {describeRankingChangeLines(archive.summary)
+                .slice(0, 2)
+                .map((line) => (
+                  <div key={line} className="text-[11px] text-white/55">
+                    {line}
+                  </div>
+                ))}
             </Link>
           </li>
         ))}
