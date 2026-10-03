@@ -11,6 +11,8 @@ const RankerComparisonsPage = () => {
     setupData,
     setFinalRanking,
     setComparisonResults,
+    sessionProgress,
+    setSessionProgress,
     canNavigateToStep,
   } = useRankerContext();
 
@@ -92,6 +94,13 @@ const RankerComparisonsPage = () => {
         playerPool={playerPool}
         setupData={setupData}
         onComplete={handleRankingComplete}
+        savedProgress={sessionProgress}
+        onProgressChange={setSessionProgress}
+        onViewResults={
+          canNavigateToStep('results')
+            ? () => navigate('/ranker/results')
+            : undefined
+        }
       />
     </div>
   );

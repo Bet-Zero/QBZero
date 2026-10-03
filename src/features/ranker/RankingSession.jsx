@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import PlayerCompareCard from './PlayerCompareCard';
 import ComparisonMatrixDrawer from './ComparisonMatrixDrawer';
 import { AnchorComparison } from './AnchorComparison';
@@ -10,10 +10,48 @@ import {
   pairKey,
 } from '@/utils/ranker/rankingEngine';
 
-const RankingSession = ({ playerPool = [], setupData, onComplete }) => {
+/**
+ * Identifies the pool and setup a saved session belongs to. Progress saved
+ * against a different pool or setup is ignored rather than replayed, since its
+ * answers would refer to players or groupings that no longer apply.
+ */
+export const sessionProgressKey = (playerPool = [], setupData = null) =>
+  JSON.stringify({
+    ids: playerPool.map((p) => (p.original || p).id),
+    setup: setupData
+      ? {
+          topTier: setupData.topTier || [],
+          bottomTier: setupData.bottomTier || [],
+          anchor: setupData.anchor || null,
+          firstPlace: setupData.firstPlace || null,
+          lastPlace: setupData.lastPlace || null,
+        }
+      : null,
+  });
+
+const RankingSession = ({
+  playerPool = [],
+  setupData,
+  onComplete,
+  savedProgress = null,
+  onProgressChange,
+  onViewResults,
+}) => {
   const players = useMemo(
     () => playerPool.map((p) => p.original || p),
     [playerPool]
+  );
+
+  const progressKey = useMemo(
+    () => sessionProgressKey(playerPool, setupData),
+    [playerPool, setupData]
+  );
+
+  // Only progress recorded against this exact pool and setup is resumed. Read
+  // once, on mount: from then on this component's state is the source of
+  // truth and is written back through onProgressChange.
+  const [restored] = useState(() =>
+    savedProgress && savedProgress.key === progressKey ? savedProgress : null
   );
 
   // The session's comparison record has three sources, kept separate so that
@@ -22,10 +60,30 @@ const RankingSession = ({ playerPool = [], setupData, onComplete }) => {
   //   2. `anchorResults`   - the one-shot anchor sweep
   //   3. `history`         - the user's answers and skips, in order
   const [currentPair, setCurrentPair] = useState([]);
-  const [anchorResults, setAnchorResults] = useState([]);
-  const [history, setHistory] = useState([]);
+  const [anchorResults, setAnchorResults] = useState(
+    () => restored?.anchorResults || []
+  );
+  const [history, setHistory] = useState(() => restored?.history || []);
   const [isFinished, setIsFinished] = useState(false);
-  const [anchorDone, setAnchorDone] = useState(!setupData?.anchor);
+  const [anchorDone, setAnchorDone] = useState(
+    () => restored?.anchorDone ?? !setupData?.anchor
+  );
+
+  // Whether the user has done anything since this component mounted. A session
+  // restored already complete must not re-run onComplete by itself: that would
+  // recompute the ranking over any adjustments made on the results page.
+  const actedRef = useRef(false);
+
+  // Save every answer as it is given, so a reload or a trip to another page
+  // resumes the session instead of starting it over.
+  useEffect(() => {
+    onProgressChange?.({
+      key: progressKey,
+      history,
+      anchorResults,
+      anchorDone,
+    });
+  }, [onProgressChange, progressKey, history, anchorResults, anchorDone]);
 
   // Comparisons implied by the first/last place lock-ins. Derived rather than
   // pushed into state, so it can never be clobbered or undone away.
@@ -134,7 +192,7 @@ const RankingSession = ({ playerPool = [], setupData, onComplete }) => {
       setIsFinished(true);
       setCurrentPair([]);
 
-      if (onComplete) {
+      if (onComplete && actedRef.current) {
         const ranking = generateRankingFromComparisons(
           results,
           groupedPlayers,
@@ -156,6 +214,7 @@ const RankingSession = ({ playerPool = [], setupData, onComplete }) => {
   ]);
 
   const handleSelect = (winner, loser) => {
+    actedRef.current = true;
     setHistory((prev) => [
       ...prev,
       { type: 'answer', winner: winner.id, loser: loser.id },
@@ -167,6 +226,7 @@ const RankingSession = ({ playerPool = [], setupData, onComplete }) => {
   // same pair and the button did nothing.
   const handleSkip = () => {
     if (currentPair.length < 2) return;
+    actedRef.current = true;
     setHistory((prev) => [
       ...prev,
       { type: 'skip', key: pairKey(currentPair[0].id, currentPair[1].id) },
@@ -177,6 +237,7 @@ const RankingSession = ({ playerPool = [], setupData, onComplete }) => {
   // comparisons can never be undone away. Skips are undoable too.
   const handleUndo = () => {
     if (history.length === 0) return;
+    actedRef.current = true;
     setHistory((prev) => prev.slice(0, -1));
     setIsFinished(false);
   };
@@ -203,6 +264,7 @@ const RankingSession = ({ playerPool = [], setupData, onComplete }) => {
         untagged,
         betterIds
       );
+      actedRef.current = true;
       if (newResults.length) setAnchorResults(newResults);
       setAnchorDone(true);
     };
@@ -213,6 +275,44 @@ const RankingSession = ({ playerPool = [], setupData, onComplete }) => {
         players={untagged}
         onComplete={handleAnchorComplete}
       />
+    );
+  }
+
+  // Reached when a saved session is reopened after its last answer: offer the
+  // results, or a way back into the last matchup.
+  if (isFinished && !currentPair.length) {
+    const viewResults = () => {
+      if (onViewResults) {
+        onViewResults();
+      } else if (onComplete) {
+        onComplete(
+          generateRankingFromComparisons(results, groupedPlayers, setupData),
+          results
+        );
+      }
+    };
+
+    return (
+      <div className="flex flex-col items-center pt-12 px-4 text-white text-center">
+        <h2 className="text-2xl font-bold mb-2">All comparisons done</h2>
+        <p className="text-white/60 mb-6">{answered} comparisons answered.</p>
+        <div className="flex flex-wrap justify-center gap-3">
+          <button
+            onClick={viewResults}
+            className="px-5 py-2 rounded-lg bg-green-600 hover:bg-green-700 font-semibold transition-colors"
+          >
+            See results
+          </button>
+          {history.length > 0 && (
+            <button
+              onClick={handleUndo}
+              className="px-5 py-2 rounded-lg bg-white/10 hover:bg-white/20 font-semibold transition-colors"
+            >
+              Undo last pick
+            </button>
+          )}
+        </div>
+      </div>
     );
   }
 
