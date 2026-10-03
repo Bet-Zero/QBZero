@@ -17,10 +17,14 @@ export const HEADSHOT_SIZE = 400;
 
 // `position: 'top'` centres a landscape photo horizontally (the only axis
 // cropped), and keeps the head of a portrait one instead of cutting it off.
+//
+// Saved as an 8-bit palette PNG, as the 2025 originals were. Full 32-bit
+// RGBA averages ~200KB a file and is why headshots visibly "load in"; the
+// palette version is ~50KB and indistinguishable at the sizes the site shows.
 export async function frameHeadshot(buffer) {
   return sharp(buffer)
     .ensureAlpha()
     .resize(HEADSHOT_SIZE, HEADSHOT_SIZE, { fit: 'cover', position: 'top' })
-    .png()
+    .png({ palette: true, quality: 90, effort: 10, compressionLevel: 9 })
     .toBuffer();
 }

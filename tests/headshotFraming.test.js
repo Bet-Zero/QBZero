@@ -67,4 +67,16 @@ describe('the headshots on disk', () => {
     }
     expect(floating).toEqual([]);
   });
+
+  // Every headshot frame on the site waits on this download. Full 32-bit
+  // RGBA came to ~200KB a file -- a whole ranking page of them is megabytes,
+  // and each one visibly "loads in". Palette PNGs are ~50KB.
+  it('are each small enough to show up promptly', () => {
+    const MAX_BYTES = 100 * 1024;
+    const heavy = fs
+      .readdirSync(headshotDir)
+      .filter((file) => file.endsWith('.png'))
+      .filter((file) => fs.statSync(path.join(headshotDir, file)).size > MAX_BYTES);
+    expect(heavy).toEqual([]);
+  });
 });
