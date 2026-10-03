@@ -39,7 +39,14 @@ const App = () => {
     <Routes>
       <Route element={<SiteLayout />}>
         <Route path="/" element={<Home />} />
-        <Route path="/players" element={<PlayerTableView />} />
+        <Route
+          path="/players"
+          element={
+            <AdminProtectedRoute>
+              <PlayerTableView />
+            </AdminProtectedRoute>
+          }
+        />
         <Route
           path="/profiles"
           element={
@@ -129,7 +136,14 @@ const App = () => {
             </AdminProtectedRoute>
           }
         />
-        <Route path="/list-presentation" element={<ListPresentationView />} />
+        <Route
+          path="/list-presentation"
+          element={
+            <AdminProtectedRoute>
+              <ListPresentationView />
+            </AdminProtectedRoute>
+          }
+        />
         <Route
           path="/tier-lists"
           element={
