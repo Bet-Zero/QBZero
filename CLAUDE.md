@@ -53,8 +53,8 @@ behavior — not just that it passes against the new one.
 ```
 npx vitest run        # full suite
 npm run build         # vite build
-npm run lint          # eslint, currently non-zero from a known backlog
+npm run lint          # eslint, expected clean
 ```
 
-Lint has a standing backlog (mostly jsx-a11y in older features). Compare the
-count before and after rather than expecting zero.
+Lint passes clean. Treat any new warning or error as something the change
+introduced.
