@@ -1,9 +1,10 @@
 // SiteLayout.jsx
 import React, { Suspense, useEffect, useState } from 'react';
-import { Link, Outlet } from 'react-router-dom';
+import { Link, Outlet, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { ChevronDown, Menu, X, Lock } from 'lucide-react';
 import useAuth from '@/hooks/useAuth';
+import PageErrorBoundary from './PageErrorBoundary';
 
 /**
  * A destination only the owner can open.
@@ -223,6 +224,7 @@ const PageLoading = () => (
 
 const SiteLayout = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { pathname } = useLocation();
 
   return (
     <div className="min-h-screen bg-neutral-900 text-white flex flex-col">
@@ -325,9 +327,11 @@ const SiteLayout = () => {
       />
 
       <main className="flex-1 w-full">
-        <Suspense fallback={<PageLoading />}>
-          <Outlet />
-        </Suspense>
+        <PageErrorBoundary resetKey={pathname}>
+          <Suspense fallback={<PageLoading />}>
+            <Outlet />
+          </Suspense>
+        </PageErrorBoundary>
         <Toaster position="bottom-center" />
       </main>
     </div>
