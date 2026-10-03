@@ -16,6 +16,7 @@ import ListRowStyleToggle from '@/features/lists/ListRowStyleToggle';
 import ListColumnToggle from '@/features/lists/ListColumnToggle';
 import ListPreviewModal from '@/features/lists/ListPreviewModal';
 import ListSearchBar from '@/features/lists/ListSearchBar';
+import AddPlayerSearch from '@/features/lists/AddPlayerSearch';
 import { fetchAllLists, fetchList, saveList } from '@/firebase/listHelpers';
 import { createTierBoardFromList } from '@/firebase/listTierLink';
 import {
@@ -369,6 +370,18 @@ const ListManager = () => {
         </>
       ) : (
         <>
+          <div className="w-full max-w-[1100px] mx-auto px-4 mb-4">
+            <AddPlayerSearch
+              players={players}
+              excludeIds={order}
+              onAdd={(id) => updateOrder([...order, id])}
+            />
+            {order.length === 0 && (
+              <p className="text-white/40 text-sm mt-3">
+                This list is empty. Search for a QB above to add them.
+              </p>
+            )}
+          </div>
           <div className="w-full">
             {isRanked
               ? tiers.map((tier, idx) => (
