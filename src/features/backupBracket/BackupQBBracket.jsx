@@ -14,6 +14,10 @@ import {
 } from './bracketMath';
 import MatchupCard, { MATCH_HEIGHT, COLUMN_GAP } from './MatchupCard';
 import { useConfirm } from '@/components/shared/ui/ConfirmModal';
+import {
+  fetchBracketPicks,
+  saveBracketPicks,
+} from '@/firebase/backupBracketHelpers';
 
 const BASE_GAP = 28;
 const COLUMN_WIDTH = 228;
@@ -24,6 +28,8 @@ const MAX_SCALE = 1.6;
 const MIN_FIT_SCALE = 0.75;
 
 export const BRACKET_STORAGE_KEY = 'qbzero:backup-bracket';
+// Picks reach Firestore this long after the last click, not on every click.
+const ACCOUNT_SAVE_DELAY_MS = 800;
 
 const readSavedWinners = () => {
   try {
@@ -95,12 +101,19 @@ const BackupQBBracket = ({ entrants = [], preferredSize = 32 }) => {
     [entrants, preferredSize]
   );
   const { size, seeded, rounds, labels } = blueprint;
-  // Picks are kept in this browser. The player list arrives twice (bundled
-  // list, then Firestore), so each new blueprint re-reads the saved picks and
-  // keeps the ones that still fit, instead of starting over.
+  // Picks are kept in this browser, which shows them instantly, and in the
+  // owner's Firestore document, which carries them between devices. The
+  // player list arrives twice (bundled list, then Firestore), so each new
+  // blueprint re-reads the browser copy and keeps the picks that still fit.
   const [winners, setWinners] = useState(() =>
     sanitizeWinners(blueprint, readSavedWinners())
   );
+  const [savedToAccount, setSavedToAccount] = useState(false);
+  // Set by the first pick or reset; after that, the account copy arriving
+  // late must not overwrite what was just clicked.
+  const changedHere = useRef(false);
+  const blueprintRef = useRef(blueprint);
+  blueprintRef.current = blueprint;
   const [isManualZoom, setIsManualZoom] = useState(false);
   const { confirm, confirmDialog } = useConfirm();
 
@@ -117,12 +130,50 @@ const BackupQBBracket = ({ entrants = [], preferredSize = 32 }) => {
   }, [winners, size]);
 
   useEffect(() => {
+    let cancelled = false;
+    fetchBracketPicks()
+      .then(async (remote) => {
+        if (cancelled || changedHere.current) return;
+        if (remote) {
+          saveWinners(remote);
+          setWinners(sanitizeWinners(blueprintRef.current, remote));
+          setSavedToAccount(true);
+          return;
+        }
+        // Nothing in the account yet: upload what this browser has.
+        const local = readSavedWinners();
+        if (local) {
+          await saveBracketPicks(local);
+          if (!cancelled) setSavedToAccount(true);
+        }
+      })
+      .catch(() => {
+        // Not readable (rules not published yet, or offline): the browser
+        // copy still works, and the label says picks are on this device.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!size || !changedHere.current) return undefined;
+    const timer = setTimeout(() => {
+      saveBracketPicks(winners)
+        .then(() => setSavedToAccount(true))
+        .catch(() => setSavedToAccount(false));
+    }, ACCOUNT_SAVE_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [winners, size]);
+
+  useEffect(() => {
     if (!isManualZoom) {
       setBaseScale(fitScale);
     }
   }, [fitScale, isManualZoom]);
 
   const handleSelectWinner = (roundIndex, matchIndex, playerId) => {
+    changedHere.current = true;
     setWinners((current) =>
       pickWinner(
         current,
@@ -173,6 +224,7 @@ const BackupQBBracket = ({ entrants = [], preferredSize = 32 }) => {
       });
       if (!ok) return;
     }
+    changedHere.current = true;
     setWinners(blueprint.winners);
     setIsManualZoom(false);
     setBaseScale(fitScale);
@@ -216,6 +268,11 @@ const BackupQBBracket = ({ entrants = [], preferredSize = 32 }) => {
           <p className="text-white/60 text-sm">
             {size}-quarterback single-elimination showdown. Click a QB to
             advance them and build your champion.
+          </p>
+          <p className="mt-1 text-xs text-white/40">
+            {savedToAccount
+              ? 'Picks saved to your account'
+              : 'Picks saved on this device'}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
