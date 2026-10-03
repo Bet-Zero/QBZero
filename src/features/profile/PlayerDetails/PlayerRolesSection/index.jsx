@@ -112,10 +112,10 @@ const PlayerRolesSection = ({
           <CenteredLabelWithIcon
             label="Arm Talent"
             onClick={setOpenModal}
-            modalKey="arm_talent"
+            modalKey="arm_talent_meter"
           />
           <ArmTalentMeter
-            armTalentValue={roles.armTalent || 50}
+            armTalentValue={roles.armTalent ?? 50}
             onChange={onArmTalentChange}
           />
         </div>

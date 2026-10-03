@@ -1,13 +1,7 @@
 import React from 'react';
+import { formatQBStat } from '@/utils/formatting/qbStats';
 
-const formatStat = (stat, isInteger = false, multiply = false) => {
-  if (!stat && stat !== 0) return 'N/A';
-  const cleanStat = typeof stat === 'string' ? stat.replace('%', '') : stat;
-  let parsed = isInteger ? parseInt(cleanStat) : parseFloat(cleanStat);
-  if (isNaN(parsed)) return 'N/A';
-  if (multiply) parsed *= 100;
-  return parsed.toFixed(1);
-};
+const formatStat = (stats, key) => formatQBStat(stats[key], key) ?? 'N/A';
 
 const PlayerStatsTable = ({ player }) => {
   const stats = player.system?.stats || {};
@@ -34,17 +28,15 @@ const PlayerStatsTable = ({ player }) => {
           G: {gamesPlayed}
         </div>
         <div className="h-4 w-[1px] bg-neutral-700" />
-        <div className="w-[50px] text-center">{formatStat(stats.CMP)}</div>
-        <div className="w-[50px] text-center">{formatStat(stats.ATT)}</div>
-        <div className="w-[50px] text-center">{formatStat(stats.YDS)}</div>
-        <div className="w-[50px] text-center">{formatStat(stats.TD)}</div>
+        <div className="w-[50px] text-center">{formatStat(stats, 'CMP')}</div>
+        <div className="w-[50px] text-center">{formatStat(stats, 'ATT')}</div>
+        <div className="w-[50px] text-center">{formatStat(stats, 'YDS')}</div>
+        <div className="w-[50px] text-center">{formatStat(stats, 'TD')}</div>
         <div className="h-4 w-[1px] bg-neutral-700" />
-        <div className="w-[50px] text-center">{formatStat(stats.INT)}</div>
-        <div className="w-[50px] text-center">
-          {formatStat(stats['CMP%'], false, true)}
-        </div>
-        <div className="w-[50px] text-center">{formatStat(stats.RTG)}</div>
-        <div className="w-[50px] text-center">{formatStat(stats.QBR)}</div>
+        <div className="w-[50px] text-center">{formatStat(stats, 'INT')}</div>
+        <div className="w-[50px] text-center">{formatStat(stats, 'CMP%')}</div>
+        <div className="w-[50px] text-center">{formatStat(stats, 'RTG')}</div>
+        <div className="w-[50px] text-center">{formatStat(stats, 'QBR')}</div>
       </div>
     </div>
   );

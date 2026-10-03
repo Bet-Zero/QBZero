@@ -8,6 +8,16 @@ import TeamLogo from '@/components/shared/TeamLogo';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import AddToListButton from '@/features/lists/AddToListButton';
 import { getCurrentSeasonYear } from '@/utils/contracts';
+import { formatQBStat } from '@/utils/formatting/qbStats';
+
+// Height and weight as "6-2 | 225 lbs", leaving out whichever is missing
+// rather than printing "— | — lbs".
+const formatHeightWeight = (bio = {}) => {
+  const parts = [];
+  if (bio.HT) parts.push(bio.HT);
+  if (bio.WT) parts.push(`${bio.WT} lbs`);
+  return parts.length ? parts.join(' | ') : '—';
+};
 
 const PlayerRow = ({ player }) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -49,8 +59,7 @@ const PlayerRow = ({ player }) => {
           <div className="flex items-center gap-2">
             <TeamLogo teamAbbr={player.bio?.Team} className="w-6 h-6" />
             <div className="text-[14px] text-white/50 tracking-wide">
-              {player.bio?.HT || '—'} <span className="text-white/30">|</span>{' '}
-              {player.bio?.WT || '—'} lbs
+              {formatHeightWeight(player.bio)}
             </div>
           </div>
         </div>
@@ -119,7 +128,7 @@ const PlayerRow = ({ player }) => {
               >
                 <span className="text-[9px] text-gray-400">{label}</span>
                 <span className="text-xs font-bold text-white">
-                  {typeof value === 'number' ? value.toFixed(1) : '—'}
+                  {formatQBStat(value, label) ?? '—'}
                 </span>
               </div>
             ))}

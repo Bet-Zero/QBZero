@@ -2,6 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { styles } from '@/constants/styles';
+import { getPlayersForTeam } from '@/utils/profileHelpers';
 
 const TeamPlayerDropdowns = ({
   teams,
@@ -20,13 +21,11 @@ const TeamPlayerDropdowns = ({
       return;
     }
 
-    // Get all QBs for the selected team
-    const filtered = Object.keys(playersData).filter((key) => {
-      const player = playersData[key];
-      const playerTeam = player?.bio?.Team || player?.team;
-      const isQB = player?.bio?.Position === 'QB';
-      return playerTeam === selectedTeam && isQB;
-    });
+    // The same list search and the arrows use. This one also required a
+    // nested bio.Position of 'QB', which some saved records lack (see
+    // usePlayerData), so picking such a player from search jumped to a
+    // teammate instead.
+    const filtered = getPlayersForTeam(playersData, selectedTeam);
 
     setFilteredKeys(filtered);
 

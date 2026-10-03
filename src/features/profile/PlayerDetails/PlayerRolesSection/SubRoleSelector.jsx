@@ -144,9 +144,14 @@ const SubRoleSelector = ({ subRoles = {}, setSubRoles, setOpenModal }) => {
   }, [subRoles]);
 
   const handleClose = useCallback(() => {
-    setSubRoles(tempSelection);
+    // Only report an actual change: the profile autosaves on every report.
+    const before = Array.isArray(subRoles.offense) ? subRoles.offense : [];
+    const after = tempSelection.offense || [];
+    const changed =
+      before.length !== after.length || after.some((r) => !before.includes(r));
+    if (changed) setSubRoles(tempSelection);
     setIsModalOpen(false);
-  }, [setSubRoles, tempSelection]);
+  }, [setSubRoles, subRoles, tempSelection]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -183,7 +188,7 @@ const SubRoleSelector = ({ subRoles = {}, setSubRoles, setOpenModal }) => {
     setIsModalOpen(true);
   };
 
-  const handleEdit = (role) => setOpenModal?.(`trait_${role}`);
+  const handleEdit = (role) => setOpenModal?.(`subrole_${role}`);
 
   return (
     <div
