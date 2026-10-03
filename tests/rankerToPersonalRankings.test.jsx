@@ -69,7 +69,10 @@ beforeEach(() => {
       { id: 'josh-allen', name: 'Josh Allen', team: 'BUF', notes: 'cannon' },
     ],
   });
-  vi.spyOn(window, 'confirm').mockReturnValue(true);
+  // Fails the test if anything still reaches for the browser's own dialog.
+  vi.spyOn(window, 'confirm').mockImplementation(() => {
+    throw new Error('window.confirm should not be used');
+  });
 });
 afterEach(() => {
   cleanup();
@@ -87,6 +90,7 @@ describe('Ranker results → personal rankings', () => {
   it('saves the ranker order to the board, in order, keeping roster ids', async () => {
     renderResults();
     fireEvent.click(await screen.findByText(/Save to My Rankings/));
+    fireEvent.click(await screen.findByRole('button', { name: 'Replace' }));
 
     await waitFor(() =>
       expect(personal.saveCurrentPersonalRankings).toHaveBeenCalled()
@@ -99,6 +103,7 @@ describe('Ranker results → personal rankings', () => {
   it('carries existing notes across rather than dropping them with the old order', async () => {
     renderResults();
     fireEvent.click(await screen.findByText(/Save to My Rankings/));
+    fireEvent.click(await screen.findByRole('button', { name: 'Replace' }));
 
     await waitFor(() =>
       expect(personal.saveCurrentPersonalRankings).toHaveBeenCalled()
@@ -109,10 +114,13 @@ describe('Ranker results → personal rankings', () => {
   });
 
   it('does nothing if the confirmation is declined', async () => {
-    window.confirm.mockReturnValue(false);
     renderResults();
     fireEvent.click(await screen.findByText(/Save to My Rankings/));
+    fireEvent.click(await screen.findByRole('button', { name: 'Cancel' }));
 
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: 'Replace' })).toBeNull()
+    );
     expect(personal.saveCurrentPersonalRankings).not.toHaveBeenCalled();
   });
 

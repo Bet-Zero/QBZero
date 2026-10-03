@@ -311,3 +311,41 @@ describe('ListManager tier breaks', () => {
     ]);
   });
 });
+
+describe('ListManager unsaved-changes dialog', () => {
+  it('asks in-app, not with a browser pop-up, before switching lists', async () => {
+    const browserConfirm = vi
+      .spyOn(window, 'confirm')
+      .mockImplementation(() => {
+        throw new Error('window.confirm should not be used');
+      });
+    helpers.fetchAllLists.mockResolvedValue([
+      { id: 'l1', name: 'First' },
+      { id: 'l2', name: 'Second' },
+    ]);
+    helpers.fetchList.mockImplementation(async (id) => ({
+      id,
+      name: id === 'l1' ? 'First List' : 'Second List',
+      playerOrder: ['a', 'b'],
+    }));
+    renderAt('l1');
+    await screen.findByText('First List');
+    await screen.findByRole('option', { name: 'Second' });
+
+    fireEvent.click(screen.getAllByTitle('Remove from List')[0]);
+    fireEvent.change(screen.getByRole('combobox'), {
+      target: { value: 'l2' },
+    });
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Stay' }));
+    expect(screen.getByText('First List')).toBeTruthy();
+
+    fireEvent.change(screen.getByRole('combobox'), {
+      target: { value: 'l2' },
+    });
+    fireEvent.click(await screen.findByRole('button', { name: 'Leave' }));
+    expect(await screen.findByText('Second List')).toBeTruthy();
+    expect(browserConfirm).not.toHaveBeenCalled();
+    browserConfirm.mockRestore();
+  });
+});

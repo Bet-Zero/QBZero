@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useRankerContext } from '@/context/RankerContext';
+import toast from 'react-hot-toast';
 
 const RankerNavBar = () => {
   const location = useLocation();
@@ -41,18 +42,20 @@ const RankerNavBar = () => {
   const handleShare = async () => {
     const { url, error } = generateShareableURL(currentPath);
     if (error) {
-      alert(error);
+      toast.error(error);
       return;
     }
     const stepName =
       steps.find((s) => s.path === currentPath)?.name || 'current step';
     try {
       await navigator.clipboard.writeText(url);
-      alert(`${stepName} URL copied to clipboard!`);
+      toast.success(`${stepName} link copied.`);
     } catch {
       // Clipboard access is denied outside secure contexts and on some mobile
       // browsers; reporting success there would be a lie.
-      alert(`Could not copy automatically. Here is the link:\n\n${url}`);
+      toast(`Could not copy automatically. Here is the link:\n\n${url}`, {
+        duration: 10000,
+      });
     }
   };
 

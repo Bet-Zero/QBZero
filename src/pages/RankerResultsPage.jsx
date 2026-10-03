@@ -8,6 +8,7 @@ import { detectComparisonCycles } from '@/utils/ranker/rankingEngine';
 import { RankingBoard } from '@/components/shared/rankings/RankingViews';
 import AdjustableRankings from '@/features/ranker/AdjustableRankings';
 import useAuth from '@/hooks/useAuth';
+import { useConfirm } from '@/components/shared/ui/ConfirmModal';
 import {
   getCurrentPersonalRanking,
   saveCurrentPersonalRankings,
@@ -42,6 +43,7 @@ ActionButton.propTypes = {
 
 const RankerResultsPage = () => {
   const navigate = useNavigate();
+  const { confirm, confirmDialog } = useConfirm();
   const {
     finalRanking,
     comparisonResults,
@@ -91,11 +93,14 @@ const RankerResultsPage = () => {
   // The final answer sends the user straight here, so this is the only place
   // left to take it back. Any hand adjustments are recomputed away when the
   // session finishes again, hence the confirmation.
-  const handleUndoLastPick = () => {
+  const handleUndoLastPick = async () => {
     if (
-      !window.confirm(
-        'Go back to your last comparison? The ranking is rebuilt when you answer it, so any adjustments made here are lost.'
-      )
+      !(await confirm({
+        title: 'Go back to your last comparison?',
+        message:
+          'The ranking is rebuilt when you answer it, so any adjustments made here are lost.',
+        confirmLabel: 'Go back',
+      }))
     ) {
       return;
     }
@@ -121,9 +126,12 @@ const RankerResultsPage = () => {
    */
   const handleSaveToPersonalRankings = async () => {
     if (
-      !window.confirm(
-        `Replace your personal rankings with these ${finalRanking.length} quarterbacks? Your current board is archived first, so this can be undone.`
-      )
+      !(await confirm({
+        title: `Replace your personal rankings with these ${finalRanking.length} quarterbacks?`,
+        message:
+          'Your current board is archived first, so this can be undone from the history page.',
+        confirmLabel: 'Replace',
+      }))
     ) {
       return;
     }
@@ -163,16 +171,18 @@ const RankerResultsPage = () => {
   const handleShareResults = async () => {
     const { url, error } = generateShareableURL('/ranker/results');
     if (error) {
-      alert(error);
+      toast.error(error);
       return;
     }
     try {
       await navigator.clipboard.writeText(url);
-      alert(
-        'Results URL copied to clipboard! Anyone can view your results with this link.'
+      toast.success(
+        'Results link copied. Anyone can view your results with it.'
       );
     } catch {
-      alert(`Could not copy automatically. Here is the link:\n\n${url}`);
+      toast(`Could not copy automatically. Here is the link:\n\n${url}`, {
+        duration: 10000,
+      });
     }
   };
 
@@ -369,6 +379,7 @@ const RankerResultsPage = () => {
           />
         )}
       </div>
+      {confirmDialog}
     </div>
   );
 };

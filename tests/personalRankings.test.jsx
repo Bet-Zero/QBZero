@@ -272,3 +272,33 @@ describe('Personal rankings editor', () => {
     expect(document.body.textContent).toContain('unsaved changes');
   });
 });
+
+describe('Personal rankings Clear All', () => {
+  it('asks in an in-app dialog and clears only on confirm', async () => {
+    const browserConfirm = vi
+      .spyOn(window, 'confirm')
+      .mockImplementation(() => {
+        throw new Error('window.confirm should not be used');
+      });
+    helpers.getCurrentPersonalRanking.mockResolvedValue({
+      id: 'current',
+      rankings: [{ id: 'josh-allen', name: 'Josh Allen', team: 'BUF' }],
+    });
+    renderEditor();
+    await screen.findByText('Clear All');
+    expect(screen.queryByText(/No QBs ranked yet/)).toBeNull();
+
+    fireEvent.click(screen.getByText('Clear All'));
+    fireEvent.click(await screen.findByRole('button', { name: 'Cancel' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: 'Clear all' })).toBeNull()
+    );
+    expect(screen.queryByText(/No QBs ranked yet/)).toBeNull();
+
+    fireEvent.click(screen.getByText('Clear All'));
+    fireEvent.click(await screen.findByRole('button', { name: 'Clear all' }));
+    expect(await screen.findByText(/No QBs ranked yet/)).toBeTruthy();
+    expect(browserConfirm).not.toHaveBeenCalled();
+    browserConfirm.mockRestore();
+  });
+});

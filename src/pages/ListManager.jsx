@@ -16,6 +16,7 @@ import ListRowStyleToggle from '@/features/lists/ListRowStyleToggle';
 import ListColumnToggle from '@/features/lists/ListColumnToggle';
 import ListPreviewModal from '@/features/lists/ListPreviewModal';
 import ListSearchBar from '@/features/lists/ListSearchBar';
+import { useConfirm } from '@/components/shared/ui/ConfirmModal';
 import AddPlayerSearch from '@/features/lists/AddPlayerSearch';
 import { fetchAllLists, fetchList, saveList } from '@/firebase/listHelpers';
 import { createTierBoardFromList } from '@/firebase/listTierLink';
@@ -33,7 +34,13 @@ import {
   removeItem,
 } from '@/utils/lists/listOrder';
 
-const UNSAVED_PROMPT = 'You have unsaved changes to this list. Leave anyway?';
+const UNSAVED_PROMPT = {
+  title: 'Leave without saving?',
+  message: 'You have unsaved changes to this list. They will be lost.',
+  confirmLabel: 'Leave',
+  cancelLabel: 'Stay',
+  danger: true,
+};
 
 const ListManager = () => {
   const { listId } = useParams();
@@ -62,6 +69,7 @@ const ListManager = () => {
   const [allLists, setAllLists] = useState([]);
   const [isOpeningBoard, setIsOpeningBoard] = useState(false);
   const navigate = useNavigate();
+  const { confirm, confirmDialog } = useConfirm();
   const listsMap = useMemo(() => {
     const map = {};
     allLists.forEach((l) => {
@@ -138,14 +146,16 @@ const ListManager = () => {
       const url = new URL(link.href, window.location.href);
       if (url.origin !== window.location.origin) return;
       if (url.pathname === window.location.pathname) return;
-      if (!window.confirm(UNSAVED_PROMPT)) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
+      // Hold the click, ask in-app, and follow the link only on "Leave".
+      e.preventDefault();
+      e.stopPropagation();
+      confirm(UNSAVED_PROMPT).then((leave) => {
+        if (leave) navigate(`${url.pathname}${url.search}${url.hash}`);
+      });
     };
     document.addEventListener('click', guard, true);
     return () => document.removeEventListener('click', guard, true);
-  }, [isDirty]);
+  }, [isDirty, confirm, navigate]);
 
   const updateOrder = (next) => {
     if (next === order) return;
@@ -153,9 +163,9 @@ const ListManager = () => {
     setIsDirty(true);
   };
 
-  const goToList = (id) => {
+  const goToList = async (id) => {
     if (id === listId) return;
-    if (isDirty && !window.confirm(UNSAVED_PROMPT)) return;
+    if (isDirty && !(await confirm(UNSAVED_PROMPT))) return;
     navigate(`/lists/${id}`);
   };
 
@@ -567,6 +577,7 @@ const ListManager = () => {
           </div>
         </>
       )}
+      {confirmDialog}
     </>
   );
 };
