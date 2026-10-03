@@ -54,6 +54,8 @@ const RankerResultsPage = () => {
     canNavigateToStep,
     sessionProgress,
     undoLastPick,
+    isSharedView,
+    leaveSharedView,
   } = useRankerContext();
 
   const { isAdmin } = useAuth();
@@ -85,8 +87,27 @@ const RankerResultsPage = () => {
     }
   }, [finalRanking]);
 
-  const handleStartNew = () => {
+  // Starting over deletes this session for good, so it asks first.
+  const handleStartNew = async () => {
+    if (
+      !(await confirm({
+        title: 'Start a new ranking?',
+        message:
+          'These results and every pick that led to them are cleared. Export them first if you want to keep them.',
+        confirmLabel: 'Start over',
+        danger: true,
+      }))
+    ) {
+      return;
+    }
     resetRanker();
+    navigate('/ranker');
+  };
+
+  // Someone else's results, opened from a link. Ranking for yourself goes back
+  // to your own saved session rather than clearing it.
+  const handleRankYourself = () => {
+    leaveSharedView();
     navigate('/ranker');
   };
 
@@ -281,10 +302,28 @@ const RankerResultsPage = () => {
           </div>
         )}
 
+        {isSharedView && (
+          <div
+            className="mb-6 p-4 bg-teal-500/10 border border-teal-400/40 rounded-lg flex flex-wrap items-center justify-between gap-3"
+            role="status"
+          >
+            <p className="text-teal-100/80 text-sm">
+              Someone shared these rankings with you. Nothing you change here
+              touches your own ranker session.
+            </p>
+            <ActionButton
+              onClick={handleRankYourself}
+              className="bg-teal-600 hover:bg-teal-700"
+            >
+              Rank them yourself
+            </ActionButton>
+          </div>
+        )}
+
         {/* Title */}
         <div className="mb-6">
           <h1 className="text-3xl sm:text-4xl font-black uppercase tracking-[0.04em] text-white">
-            Your QB Rankings
+            {isSharedView ? 'Shared QB Rankings' : 'Your QB Rankings'}
           </h1>
           <div className="mt-2 text-white/60 text-sm">
             {finalRanking.length} quarterbacks ranked
@@ -342,14 +381,16 @@ const RankerResultsPage = () => {
               {isSavingToBoard ? 'Saving…' : '⭐ Save to My Rankings'}
             </ActionButton>
           )}
-          <div className="sm:ml-auto">
-            <ActionButton
-              onClick={handleStartNew}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              🚀 Start New Ranking
-            </ActionButton>
-          </div>
+          {!isSharedView && (
+            <div className="sm:ml-auto">
+              <ActionButton
+                onClick={handleStartNew}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                🚀 Start New Ranking
+              </ActionButton>
+            </div>
+          )}
         </div>
 
         {/* The rankings themselves */}

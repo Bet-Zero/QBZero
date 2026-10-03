@@ -4,6 +4,7 @@ import React, {
   useState,
   useCallback,
   useEffect,
+  useRef,
 } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import {
@@ -67,6 +68,30 @@ const STORAGE_KEYS = {
   SESSION_ID: 'ranker_session_id',
 };
 
+const readStoredFor = (key, sessionId) => {
+  const raw = safeStorage.get(`${key}_${sessionId}`);
+  if (!raw) return undefined;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    // A corrupted entry should not block the rest of the session.
+    safeStorage.remove(`${key}_${sessionId}`);
+    return undefined;
+  }
+};
+
+// Everything the viewer has saved for a session, with the same defaults the
+// provider starts from.
+const readSession = (sessionId) => ({
+  playerPool: readStoredFor(STORAGE_KEYS.PLAYER_POOL, sessionId) || [],
+  setupData: readStoredFor(STORAGE_KEYS.SETUP_DATA, sessionId) || null,
+  comparisonResults:
+    readStoredFor(STORAGE_KEYS.COMPARISON_RESULTS, sessionId) || [],
+  finalRanking: readStoredFor(STORAGE_KEYS.FINAL_RANKING, sessionId) || [],
+  sessionProgress:
+    readStoredFor(STORAGE_KEYS.SESSION_PROGRESS, sessionId) || null,
+});
+
 export const RankerProvider = () => {
   const location = useLocation();
 
@@ -84,17 +109,7 @@ export const RankerProvider = () => {
   // Saved state is read synchronously, during the first render. Reading it in
   // an effect left the first render empty, and the comparisons page mounted a
   // blank session that saved over the real progress before it was loaded.
-  const readStored = (key) => {
-    const raw = safeStorage.get(`${key}_${sessionId}`);
-    if (!raw) return undefined;
-    try {
-      return JSON.parse(raw);
-    } catch {
-      // A corrupted entry should not block the rest of the session.
-      safeStorage.remove(`${key}_${sessionId}`);
-      return undefined;
-    }
-  };
+  const readStored = (key) => readStoredFor(key, sessionId);
 
   // Player pool from setup
   const [playerPool, setPlayerPoolState] = useState(
@@ -124,8 +139,46 @@ export const RankerProvider = () => {
 
   // True while showing a session decoded from a shared link. That session is
   // someone else's, so it is shown but never written over the viewer's own
-  // saved progress.
-  const [isSharedView, setIsSharedView] = useState(false);
+  // saved session: not its progress, and not its results either, even once
+  // the viewer adjusts them. Confirming a setup is what makes it theirs.
+  const [isSharedView, setIsSharedViewState] = useState(false);
+  // Mirrored in a ref so the setters see a change made earlier in the same
+  // handler, before the re-render that would hand them the new value.
+  const sharedRef = useRef(false);
+  const setIsSharedView = useCallback((value) => {
+    sharedRef.current = value;
+    setIsSharedViewState(value);
+  }, []);
+
+  // Put back the viewer's own saved session in place of a shared one. Returns
+  // that session, so a caller can act on it before the re-render lands.
+  const leaveSharedView = useCallback(() => {
+    const own = readSession(sessionId);
+    setPlayerPoolState(own.playerPool);
+    setSetupDataState(own.setupData);
+    setComparisonResultsState(own.comparisonResults);
+    setFinalRankingState(own.finalRanking);
+    setSessionProgressState(own.sessionProgress);
+    setIsSharedView(false);
+    return own;
+  }, [sessionId, setIsSharedView]);
+
+  // The viewer's own saved session, read without showing it.
+  const getSavedSession = useCallback(
+    () => readSession(sessionId),
+    [sessionId]
+  );
+
+  // Each step opens at the top. A client-side route change keeps the window's
+  // scroll position, so finishing the last comparison by keyboard landed
+  // partway down the results.
+  useEffect(() => {
+    try {
+      window.scrollTo(0, 0);
+    } catch {
+      /* not available outside a browser */
+    }
+  }, [location.pathname]);
 
   // Drop entries belonging to sessions other than the current one. Before the
   // session id was persisted, every reload minted a new one and left a full
@@ -150,7 +203,12 @@ export const RankerProvider = () => {
   // instruction, so it wins over whatever was restored from storage above.
   useEffect(() => {
     const stateParam = new URLSearchParams(location.search).get('state');
-    if (!stateParam) return;
+    if (!stateParam) {
+      // The ranker home is where the viewer's own session is offered, so a
+      // shared one stops being shown there.
+      if (isSharedView && location.pathname === '/ranker') leaveSharedView();
+      return;
+    }
 
     const decoded = decodeRankerState(stateParam);
     if (!decoded) return;
@@ -161,34 +219,42 @@ export const RankerProvider = () => {
     setFinalRankingState(decoded.finalRanking);
     setSessionProgressState(null);
     setIsSharedView(true);
-  }, [location.search]);
+    // Keyed to where the viewer is, not to the shared-view flag: leaving the
+    // shared view must not re-run the decode and put it straight back.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search, location.pathname]);
 
   // Enhanced setters that persist to localStorage
+  // Pool and setup are only set by confirming the setup, which turns a shared
+  // session into the viewer's own, so these two always save.
   const setPlayerPool = useCallback(
     (pool) => {
       setPlayerPoolState(pool);
+      setIsSharedView(false);
       safeStorage.set(
         `${STORAGE_KEYS.PLAYER_POOL}_${sessionId}`,
         JSON.stringify(pool)
       );
     },
-    [sessionId]
+    [sessionId, setIsSharedView]
   );
 
   const setSetupData = useCallback(
     (data) => {
       setSetupDataState(data);
+      setIsSharedView(false);
       safeStorage.set(
         `${STORAGE_KEYS.SETUP_DATA}_${sessionId}`,
         JSON.stringify(data)
       );
     },
-    [sessionId]
+    [sessionId, setIsSharedView]
   );
 
   const setComparisonResults = useCallback(
     (results) => {
       setComparisonResultsState(results);
+      if (sharedRef.current) return;
       safeStorage.set(
         `${STORAGE_KEYS.COMPARISON_RESULTS}_${sessionId}`,
         JSON.stringify(results)
@@ -200,6 +266,7 @@ export const RankerProvider = () => {
   const setFinalRanking = useCallback(
     (ranking) => {
       setFinalRankingState(ranking);
+      if (sharedRef.current) return;
       safeStorage.set(
         `${STORAGE_KEYS.FINAL_RANKING}_${sessionId}`,
         JSON.stringify(ranking)
@@ -211,13 +278,13 @@ export const RankerProvider = () => {
   const setSessionProgress = useCallback(
     (progress) => {
       setSessionProgressState(progress);
-      if (isSharedView) return;
+      if (sharedRef.current) return;
       safeStorage.set(
         `${STORAGE_KEYS.SESSION_PROGRESS}_${sessionId}`,
         JSON.stringify(progress)
       );
     },
-    [sessionId, isSharedView]
+    [sessionId]
   );
 
   // Take back the most recent answer or skip of the saved session, so the
@@ -287,7 +354,7 @@ export const RankerProvider = () => {
     setFinalRankingState([]);
     setSessionProgressState(null);
     setIsSharedView(false);
-  }, [sessionId]);
+  }, [sessionId, setIsSharedView]);
 
   // Check if we can navigate to a specific step
   const canNavigateToStep = useCallback(
@@ -314,6 +381,7 @@ export const RankerProvider = () => {
     finalRanking,
     sessionProgress,
     sessionId,
+    isSharedView,
 
     // Setters
     setPlayerPool,
@@ -324,6 +392,8 @@ export const RankerProvider = () => {
 
     // Actions
     resetRanker,
+    leaveSharedView,
+    getSavedSession,
     undoLastPick,
     generateShareableURL,
     canNavigateToStep,
