@@ -1,9 +1,10 @@
 # Qbw Component Hierarchy
 
 ```
-AdminGate.jsx
 CrystalBall.jsx
 Shelf.jsx
-TakeAuthorModal.jsx
+ShelfEditorModal.jsx
 TakeBoard.jsx
+useShelves.js
+useTakes.js
 ```

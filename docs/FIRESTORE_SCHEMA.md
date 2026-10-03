@@ -87,9 +87,22 @@ Saved roster tool projects.
 
 ## `takes/{takeId}` and `takeAuthors/{authorId}`
 
-The QB Weekly takes board. Visitors claim an author name, receive a code, and
-post takes; `status` on a take is `'pending'` | `'correct'` | `'incorrect'`.
-These are the only collections a visitor may write to.
+The QB Weekly takes board. Each take has `title`, `description`, `qbName`,
+`date`, `proofDate`, `status` (`'pending'` | `'correct'` | `'wrong'`), plus
+`authorId`, `authorName`, `createdAt` and `updatedAt`. The admin writes, edits
+and deletes takes from the page.
+
+`takeAuthors` held visitor author accounts, each with its login code in plain
+text in a publicly readable document. The app no longer reads or writes it;
+any documents left there are legacy.
+
+## `qbwShelves/main`
+
+The Crystal Ball shelves on the QB Weekly page:
+`{ shelves: [{ id, title, qbs: [{ id, name, imageUrl, predictionText }] }], updatedAt }`.
+`imageUrl` is a path under `public/assets/crystal-balls/`, or empty for the
+generic ball. Until this document exists the page shows the shelves built
+into `src/utils/qbw/shelves.js`.
 
 ## `admins/{uid}`
 

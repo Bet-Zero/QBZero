@@ -1,5 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Shelf from '@/features/qbw/Shelf';
+import ShelfEditorModal from '@/features/qbw/ShelfEditorModal';
+import useShelves from '@/features/qbw/useShelves';
+import useAuth from '@/hooks/useAuth';
+import useQBRoster from '@/hooks/useQBRoster';
+import { countBalls } from '@/utils/qbw/shelves';
 import TakeBoard from '@/features/qbw/TakeBoard';
 import useTakes from '@/features/qbw/useTakes';
 import { takeStats } from '@/utils/qbw/takes';
@@ -8,56 +13,16 @@ const QBWPage = () => {
   const { takes, loading, reload } = useTakes();
   const stats = takeStats(takes);
 
-  // Sample data for crystal ball QBs (successful predictions)
-  // All 5 good crystal balls go to Elite Tier Predictions
-  const successfulPredictions = [
-    {
-      id: '1',
-      name: 'Baker Mayfield',
-      imageUrl: '/assets/crystal-balls/good/Baker.png',
-      predictionText: 'Comeback Player of the Year',
-    },
-    {
-      id: '2',
-      name: 'Sam Darnold',
-      imageUrl: '/assets/crystal-balls/good/Darnold.png',
-      predictionText: 'Breakout season in Minnesota',
-    },
-    {
-      id: '3',
-      name: 'Geno Smith',
-      imageUrl: '/assets/crystal-balls/good/Geno.png',
-      predictionText: 'Veteran resurgence',
-    },
-    {
-      id: '4',
-      name: 'Jared Goff',
-      imageUrl: '/assets/crystal-balls/good/Goff.png',
-      predictionText: 'Elite',
-    },
-    {
-      id: '5',
-      name: 'Matthew Stafford',
-      imageUrl: '/assets/crystal-balls/good/Stafford.png',
-      predictionText: 'Super Bowl champion',
-    },
-  ];
+  const { shelves, save: saveShelf } = useShelves();
+  const { isAdmin } = useAuth();
+  const { roster } = useQBRoster();
+  const [editingShelfId, setEditingShelfId] = useState(null);
+  const editingShelf = shelves.find((shelf) => shelf.id === editingShelfId);
 
-  // Bad predictions as placeholders for Breakout Star Calls
-  const breakoutPredictions = [
-    {
-      id: '6',
-      name: 'Kirk Cousins',
-      imageUrl: '/assets/crystal-balls/bad/Cousins.png',
-      predictionText: 'Playoff breakthrough',
-    },
-    {
-      id: '7',
-      name: 'Russell Wilson',
-      imageUrl: '/assets/crystal-balls/bad/Russ.png',
-      predictionText: 'MVP season in Denver',
-    },
-  ];
+  const handleSaveShelf = (edited) =>
+    saveShelf(
+      shelves.map((shelf) => (shelf.id === edited.id ? edited : shelf))
+    );
 
   return (
     <div className="min-h-screen bg-neutral-900 text-white">
@@ -86,7 +51,7 @@ const QBWPage = () => {
             <div className="w-px h-12 bg-white/20"></div>
             <div className="text-center">
               <div className="text-2xl font-bold text-blue-400">
-                {successfulPredictions.length + breakoutPredictions.length}
+                {countBalls(shelves)}
               </div>
               <div className="text-sm">Crystal Ball QBs</div>
             </div>
@@ -117,9 +82,14 @@ const QBWPage = () => {
           </div>
 
           <div className="space-y-20">
-            <Shelf title="The Whisperer" qbs={successfulPredictions} />
-
-            <Shelf title="Told You He's Garbage" qbs={breakoutPredictions} />
+            {shelves.map((shelf) => (
+              <Shelf
+                key={shelf.id}
+                title={shelf.title}
+                qbs={shelf.qbs}
+                onEdit={isAdmin ? () => setEditingShelfId(shelf.id) : null}
+              />
+            ))}
           </div>
         </section>
       </div>
@@ -132,6 +102,15 @@ const QBWPage = () => {
           </section>
         </div>
       </div>
+
+      {editingShelf && (
+        <ShelfEditorModal
+          shelf={editingShelf}
+          qbNames={roster.map((qb) => qb.name)}
+          onSave={handleSaveShelf}
+          onClose={() => setEditingShelfId(null)}
+        />
+      )}
     </div>
   );
 };
