@@ -55,19 +55,25 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // QB Weekly takes board. Visitors claim an author name and post takes, so
-    // creation stays open; editing and deleting other people's entries does
-    // not. Tighten these to isAdmin() if you would rather it be private.
+    // QB Weekly's Crystal Ball shelves (one document, qbwShelves/main).
+    match /qbwShelves/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // QB Weekly takes board. The page is still locked behind admin sign-in,
+    // so only the owner writes here for now. The open version let anyone
+    // create takes under any author name and overwrite any author record,
+    // and author codes sit in publicly readable documents. Reopen visitor
+    // writes only once author codes no longer live where anyone can read them.
     match /takes/{takeId} {
       allow read: if true;
-      allow create: if true;
-      allow update, delete: if isAdmin();
+      allow write: if isAdmin();
     }
 
     match /takeAuthors/{authorId} {
       allow read: if true;
-      allow create, update: if true;
-      allow delete: if isAdmin();
+      allow write: if isAdmin();
     }
 
     // Anything not named above is closed.

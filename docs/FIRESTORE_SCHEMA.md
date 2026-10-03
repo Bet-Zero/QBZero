@@ -89,8 +89,9 @@ Saved roster tool projects.
 
 The QB Weekly takes board. Each take has `title`, `description`, `qbName`,
 `date`, `proofDate`, `status` (`'pending'` | `'correct'` | `'wrong'`), plus
-`authorId`, `authorName`, `createdAt` and `updatedAt`. The admin writes, edits
-and deletes takes from the page.
+`authorId`, `authorName`, `createdAt` and `updatedAt`. Only the owner writes
+here, from the page: visitor writes were closed because anyone could post
+under any author name or overwrite another author's record.
 
 `takeAuthors` held visitor author accounts, each with its login code in plain
 text in a publicly readable document. The app no longer reads or writes it;
@@ -98,7 +99,8 @@ any documents left there are legacy.
 
 ## `qbwShelves/main`
 
-The Crystal Ball shelves on the QB Weekly page:
+The Crystal Ball shelves on the QB Weekly page. Owner-written, publicly
+readable:
 `{ shelves: [{ id, title, qbs: [{ id, name, imageUrl, predictionText }] }], updatedAt }`.
 `imageUrl` is a path under `public/assets/crystal-balls/`, or empty for the
 generic ball. Until this document exists the page shows the shelves built
