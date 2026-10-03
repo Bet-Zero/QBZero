@@ -24,10 +24,12 @@ import {
   rankingEntryIds,
 } from '@/utils/rankings/personalRankingEntries';
 import toast from 'react-hot-toast';
+import { useConfirm } from '@/components/shared/ui/ConfirmModal';
 
 const QBRankingsPage = () => {
   const { rankingId } = useParams();
   const navigate = useNavigate();
+  const { confirm, confirmDialog } = useConfirm();
   const [rankings, setRankings] = useState([]);
   const [rankingName, setRankingName] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -282,14 +284,23 @@ const QBRankingsPage = () => {
     }
   };
 
-  const handleClearAll = () => {
+  const handleClearAll = async () => {
     // The personal board archives the version it replaces on the next save,
     // so clearing it is recoverable. A standalone ranking has no history.
-    const warning = isPersonalRankings
-      ? 'Clear every QB from this board? The version you have now is archived when you save, so it can be restored from the history page.'
-      : 'Clear every QB from this ranking? This cannot be undone.';
+    const message = isPersonalRankings
+      ? 'The version you have now is archived when you save, so it can be restored from the history page.'
+      : 'This cannot be undone.';
 
-    if (window.confirm(warning)) {
+    if (
+      await confirm({
+        title: isPersonalRankings
+          ? 'Clear every QB from this board?'
+          : 'Clear every QB from this ranking?',
+        message,
+        confirmLabel: 'Clear all',
+        danger: true,
+      })
+    ) {
       setRankings([]);
       setHasChanges(true);
       toast.success('All QBs cleared from rankings');
@@ -404,6 +415,7 @@ const QBRankingsPage = () => {
           onRankingAdjusted={handleRankingAdjusted}
         />
       )}
+      {confirmDialog}
     </div>
   );
 };
