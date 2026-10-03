@@ -19,6 +19,8 @@ const RankedListTier = ({
   onNoteChange,
   onMoveToRank,
   orderLength,
+  placingBreaks = false,
+  onInsertBreak,
 }) => {
   return (
     <div className="w-full">
@@ -64,27 +66,48 @@ const RankedListTier = ({
       )}
 
       {players.map(({ id, index, rankIndex }) => {
+        // No gap straight under a tier header: a break there would only
+        // make an empty tier.
+        const showGap =
+          placingBreaks && onInsertBreak && index !== (headerIndex ?? -2) + 1;
         return (
-          <RankedListPlayerRow
-            key={id}
-            playerId={id}
-            player={playersMap[id]}
-            index={index}
-            rank={rankIndex}
-            note={notes[id] || ''}
-            onNoteChange={onNoteChange}
-            onMoveToRank={onMoveToRank}
-            onMoveUp={onMoveUp}
-            onMoveDown={onMoveDown}
-            onRemove={onRemove}
-            showReorder={showReorder}
-            isFirst={index === 0}
-            isLast={index === orderLength - 1}
-          />
+          <React.Fragment key={id}>
+            {showGap && <TierBreakGap onClick={() => onInsertBreak(index)} />}
+            <RankedListPlayerRow
+              playerId={id}
+              player={playersMap[id]}
+              index={index}
+              rank={rankIndex}
+              note={notes[id] || ''}
+              onNoteChange={onNoteChange}
+              onMoveToRank={onMoveToRank}
+              onMoveUp={onMoveUp}
+              onMoveDown={onMoveDown}
+              onRemove={onRemove}
+              showReorder={showReorder}
+              isFirst={index === 0}
+              isLast={index === orderLength - 1}
+            />
+          </React.Fragment>
         );
       })}
     </div>
   );
 };
+
+// A click target between two rows while "Add Tier Breaks" is on.
+export const TierBreakGap = ({ onClick }) => (
+  <div className="w-full max-w-[1100px] mx-auto -mt-4 mb-2">
+    <button
+      type="button"
+      onClick={onClick}
+      className="group w-full flex items-center gap-2 py-1 text-xs text-purple-300/60 hover:text-white"
+    >
+      <span className="flex-1 border-t border-dashed border-purple-400/30 group-hover:border-purple-300" />
+      <span>+ Tier break here</span>
+      <span className="flex-1 border-t border-dashed border-purple-400/30 group-hover:border-purple-300" />
+    </button>
+  </div>
+);
 
 export default RankedListTier;

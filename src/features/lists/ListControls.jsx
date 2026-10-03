@@ -1,12 +1,13 @@
 // ListControls.jsx
 // Control bar for list editing – includes save button, divider insert, and toggle UI.
 import React from 'react';
-import { Plus } from 'lucide-react';
+import { SplitSquareVertical } from 'lucide-react';
 
 const ListControls = ({
   showReorder,
   onToggleReorder,
-  onAddDivider,
+  placingBreaks = false,
+  onTogglePlacingBreaks,
   onSave,
   isSaving,
   isDirty = false,
@@ -22,12 +23,22 @@ const ListControls = ({
       </button>
 
       <button
-        onClick={onAddDivider}
-        title="Add Divider"
-        disabled={!isRanked}
-        className="text-white/40 hover:text-white transition p-2 rounded-full hover:bg-white/10 disabled:opacity-30"
+        onClick={onTogglePlacingBreaks}
+        disabled={!isRanked || !showReorder}
+        aria-pressed={placingBreaks}
+        title={
+          isRanked
+            ? 'Click between players to add tier breaks'
+            : 'Switch to Ranked to add tier breaks'
+        }
+        className={`flex items-center gap-1 text-xs px-2 py-1 rounded border transition disabled:opacity-30 ${
+          placingBreaks
+            ? 'border-purple-400 text-white bg-purple-500/20'
+            : 'border-white/10 text-white/40 hover:text-white'
+        }`}
       >
-        <Plus size={18} />
+        <SplitSquareVertical size={14} />
+        {placingBreaks ? 'Done Adding Tiers' : 'Add Tier Breaks'}
       </button>
     </div>
 

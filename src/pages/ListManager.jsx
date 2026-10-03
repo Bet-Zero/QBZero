@@ -6,7 +6,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import usePlayerData from '@/hooks/usePlayerData.js';
 import { toast } from 'react-hot-toast';
 
-import RankedListTier from '@/features/lists/ListTierHeader';
+import RankedListTier, { TierBreakGap } from '@/features/lists/ListTierHeader';
 import RankedListControls from '@/features/lists/ListControls';
 import ListRankToggle from '@/features/lists/ListRankToggle';
 import ListExportWrapper from '@/features/lists/ListPreviewModal/ListExportWrapper';
@@ -22,7 +22,9 @@ import { createTierBoardFromList } from '@/firebase/listTierLink';
 import {
   buildFlatPlayers,
   buildTiers,
+  insertDivider,
   makeDivider,
+  isDivider,
   mergeListOrder,
   movePlayerFlat,
   movePlayerToRank,
@@ -49,6 +51,7 @@ const ListManager = () => {
   }, [editingDescription]);
   const [isSaving, setIsSaving] = useState(false);
   const [showReorder, setShowReorder] = useState(true);
+  const [placingBreaks, setPlacingBreaks] = useState(false);
   const [isExport, setIsExport] = useState(false);
   const [isRanked, setIsRanked] = useState(true); // Default to ranked
   const [exportType, setExportType] = useState('list');
@@ -244,10 +247,19 @@ const ListManager = () => {
     }
   };
 
-  const insertDividerAtBottom = () => {
-    if (!isRanked) return;
-    updateOrder([...order, makeDivider('New Tier')]);
-  };
+  const handleInsertBreak = (index) => updateOrder(insertDivider(order, index));
+
+  // Placing only makes sense in the ranked editor.
+  useEffect(() => {
+    if (!isRanked || !showReorder) setPlacingBreaks(false);
+  }, [isRanked, showReorder]);
+
+  useEffect(() => {
+    if (!placingBreaks) return undefined;
+    const onKey = (e) => e.key === 'Escape' && setPlacingBreaks(false);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [placingBreaks]);
 
   const handleLabelChange = (index, newLabel) => {
     const newOrder = [...order];
@@ -479,6 +491,8 @@ const ListManager = () => {
                     onNoteChange={handleNoteChange}
                     onMoveToRank={handleMoveToRank}
                     orderLength={order.length}
+                    placingBreaks={placingBreaks}
+                    onInsertBreak={handleInsertBreak}
                   />
                 ))
               : flatEntries.map(({ id, index }) => (
@@ -498,12 +512,26 @@ const ListManager = () => {
                     isLast={index === lastFlatIndex}
                   />
                 ))}
+            {isRanked &&
+              placingBreaks &&
+              order.length > 0 &&
+              !isDivider(order[order.length - 1]) && (
+                <TierBreakGap onClick={() => handleInsertBreak(order.length)} />
+              )}
+            {placingBreaks && (
+              <p className="w-full max-w-[1100px] mx-auto px-4 text-xs text-purple-300/70 text-center">
+                Click a dashed line to add a tier break there. Unnamed tiers
+                number themselves; click a tier name to rename it. Press Esc
+                when done.
+              </p>
+            )}
           </div>
 
           <RankedListControls
             showReorder={showReorder}
             onToggleReorder={() => setShowReorder(!showReorder)}
-            onAddDivider={insertDividerAtBottom}
+            placingBreaks={placingBreaks}
+            onTogglePlacingBreaks={() => setPlacingBreaks((v) => !v)}
             onSave={handleSave}
             isSaving={isSaving}
             isDirty={isDirty}

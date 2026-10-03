@@ -277,3 +277,37 @@ describe('ListManager notes, description, view and rank', () => {
     ]);
   });
 });
+
+describe('ListManager tier breaks', () => {
+  it('places a tier break where you click instead of at the bottom', async () => {
+    helpers.fetchList.mockResolvedValue({
+      id: 'l1',
+      name: 'Break List',
+      playerOrder: ['a', 'b', 'c'],
+    });
+    renderAt('l1');
+    await screen.findByText('Break List');
+
+    fireEvent.click(screen.getByText('Add Tier Breaks'));
+    // Gaps sit above a, b and c, plus one at the end.
+    const gaps = screen.getAllByText('+ Tier break here');
+    expect(gaps).toHaveLength(4);
+    fireEvent.click(gaps[2]); // above Charlie
+
+    // The new tier numbers itself and there is no gap straight under it.
+    expect(screen.getByPlaceholderText('Tier 2')).toBeTruthy();
+    expect(screen.getAllByText('+ Tier break here')).toHaveLength(3);
+
+    fireEvent.click(screen.getByText('Done Adding Tiers'));
+    expect(screen.queryByText('+ Tier break here')).toBeNull();
+
+    fireEvent.click(screen.getByText(/Save List/));
+    await waitFor(() => expect(helpers.saveList).toHaveBeenCalled());
+    expect(helpers.saveList.mock.calls[0][1].playerOrder).toEqual([
+      'a',
+      'b',
+      'divider::',
+      'c',
+    ]);
+  });
+});

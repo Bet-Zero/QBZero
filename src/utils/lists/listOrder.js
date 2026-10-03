@@ -16,6 +16,14 @@ export const dividerLabel = (item) => item.slice(DIVIDER_PREFIX.length);
 
 export const makeDivider = (label) => `${DIVIDER_PREFIX}${label}`;
 
+// Insert an unnamed tier break before position `index` (order.length for the
+// end). Unnamed breaks display as "Tier N" by position, so the numbering
+// stays right however many are added.
+export const insertDivider = (order, index) => {
+  const at = Math.max(0, Math.min(index, order.length));
+  return [...order.slice(0, at), makeDivider(''), ...order.slice(at)];
+};
+
 // Display order for a stored list: saved order first, then any member the
 // order doesn't mention yet, each at most once.
 export const mergeListOrder = (data = {}) => {

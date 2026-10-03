@@ -5,6 +5,7 @@ import {
   mergeListOrder,
   movePlayerFlat,
   moveItem,
+  insertDivider,
   movePlayerToRank,
   playerIdsOf,
   removeItem,
@@ -140,5 +141,13 @@ describe('movePlayerToRank', () => {
   it('returns the same order when nothing moves', () => {
     expect(movePlayerToRank(order, 1, 2, roster)).toBe(order);
     expect(movePlayerToRank(order, 2, 1, roster)).toBe(order);
+  });
+});
+
+describe('insertDivider', () => {
+  it('inserts an unnamed break at the given position, clamped to the list', () => {
+    expect(insertDivider(['a', 'b'], 1)).toEqual(['a', 'divider::', 'b']);
+    expect(insertDivider(['a'], 9)).toEqual(['a', 'divider::']);
+    expect(insertDivider(['a'], -1)).toEqual(['divider::', 'a']);
   });
 });
