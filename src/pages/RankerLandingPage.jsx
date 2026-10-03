@@ -1,6 +1,10 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useRankerContext } from '@/context/RankerContext';
+import { useConfirm } from '@/components/shared/ui/ConfirmModal';
+
+const MAIN_ACTION =
+  'px-8 py-4 bg-gradient-to-r from-gray-700 to-teal-600 hover:from-gray-600 hover:to-teal-500 rounded-lg font-semibold text-lg transition-all duration-200 transform hover:scale-105 shadow-lg z-10 mb-4';
 
 const RankerLandingPage = () => {
   const {
@@ -10,9 +14,30 @@ const RankerLandingPage = () => {
     canNavigateToStep,
     resetRanker,
   } = useRankerContext();
+  const navigate = useNavigate();
+  const { confirm, confirmDialog } = useConfirm();
 
   const hasSession =
     playerPool.length > 0 || setupData || finalRanking.length > 0;
+
+  // With a session saved, "New Ranking Session" used to open that session's
+  // setup again. It now starts over, after saying what that clears.
+  const handleNewSession = async () => {
+    if (
+      !(await confirm({
+        title: 'Start a new ranking session?',
+        message: finalRanking.length
+          ? 'Your saved results and every pick that led to them are cleared.'
+          : 'Your saved setup and the picks made so far are cleared.',
+        confirmLabel: 'Start over',
+        danger: true,
+      }))
+    ) {
+      return;
+    }
+    resetRanker();
+    navigate('/ranker/setup');
+  };
 
   return (
     <div className="min-h-screen bg-neutral-900 text-white flex flex-col items-center justify-start pt-48 px-6 relative overflow-hidden">
@@ -77,25 +102,23 @@ const RankerLandingPage = () => {
               ⚙️ Review Setup
             </Link>
           </div>
-
-          <div className="text-center">
-            <button
-              onClick={resetRanker}
-              className="text-white/60 hover:text-white text-sm underline transition-colors"
-            >
-              Start Fresh Session
-            </button>
-          </div>
         </div>
       )}
 
       {/* Main Action */}
-      <Link
-        to="/ranker/setup"
-        className="inline-block px-8 py-4 bg-gradient-to-r from-gray-700 to-teal-600 hover:from-gray-600 hover:to-teal-500 rounded-lg font-semibold text-lg transition-all duration-200 transform hover:scale-105 shadow-lg z-10 mb-4"
-      >
-        🚀 {hasSession ? 'New Ranking Session' : 'Launch Ranker'}
-      </Link>
+      {hasSession ? (
+        <button
+          type="button"
+          onClick={handleNewSession}
+          className={MAIN_ACTION}
+        >
+          🚀 New Ranking Session
+        </button>
+      ) : (
+        <Link to="/ranker/setup" className={`inline-block ${MAIN_ACTION}`}>
+          🚀 Launch Ranker
+        </Link>
+      )}
 
       {/* Quick Navigation */}
       <div className="flex gap-4 z-10">
@@ -123,6 +146,7 @@ const RankerLandingPage = () => {
 
       {/* Divider */}
       <div className="w-full max-w-md mt-10 border-t border-teal-700 opacity-40 z-10" />
+      {confirmDialog}
     </div>
   );
 };
