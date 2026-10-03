@@ -261,6 +261,36 @@ describe('TierMakerBoard saving', () => {
   });
 });
 
+describe('TierMakerBoard drafts', () => {
+  it('keeps a board saved nowhere as a draft instead of a browser pop-up', async () => {
+    localStorage.clear();
+    const listen = vi.spyOn(window, 'addEventListener');
+    renderBoard();
+    fireEvent.click(screen.getByText('add patrick mahomes'));
+
+    expect(listen.mock.calls.map(([type]) => type)).not.toContain(
+      'beforeunload'
+    );
+    const draft = JSON.parse(
+      localStorage.getItem('qbzero:draft:tier-maker:new')
+    );
+    expect(Object.values(draft.snapshot.tiers).flat()).toContain('p1');
+
+    // A closed tab never unmounts, so the draft is still there next time.
+    cleanup();
+    localStorage.setItem('qbzero:draft:tier-maker:new', JSON.stringify(draft));
+    renderBoard();
+    await waitFor(() =>
+      expect(
+        JSON.parse(localStorage.getItem('qbzero:draft:tier-maker:new'))
+      ).toMatchObject({ snapshot: draft.snapshot, at: draft.at })
+    );
+    // Back on the board, so the drawer no longer offers him.
+    expect(screen.queryByText('add patrick mahomes')).toBeNull();
+    localStorage.clear();
+  });
+});
+
 describe('TierMakerBoard history', () => {
   const oldVersion = {
     id: '2026-09-01',

@@ -17,6 +17,7 @@ import {
 } from '@/firebase/listHelpers';
 import usePersonalRankingMovement from '@/hooks/usePersonalRankingMovement';
 import useQBRoster from '@/hooks/useQBRoster';
+import useUnsavedDraft from '@/hooks/useUnsavedDraft';
 import {
   appendToRanking,
   withRanks,
@@ -73,19 +74,25 @@ const QBRankingsPage = () => {
     refreshKey: loadedVersion,
   });
 
-  // Reordering a board is twenty minutes of work that lived only in this tab:
-  // closing it threw the lot away without a word. The in-app banner covers
-  // navigation within the site; this covers closing and reloading.
-  useEffect(() => {
-    if (!hasChanges) return undefined;
-
-    const warn = (event) => {
-      event.preventDefault();
-      event.returnValue = '';
-    };
-    window.addEventListener('beforeunload', warn);
-    return () => window.removeEventListener('beforeunload', warn);
-  }, [hasChanges]);
+  // Reordering a board is twenty minutes of work that lived only in this tab.
+  // Closing or reloading it keeps the unsaved board in this browser and puts
+  // it back on return, rather than asking with the browser's own pop-up.
+  useUnsavedDraft({
+    key: isPersonalRankings
+      ? 'rankings:personal'
+      : rankingId !== 'new'
+        ? `rankings:${rankingId}`
+        : null,
+    ready: !isLoading,
+    dirty: hasChanges,
+    snapshot: isPersonalRankings ? { rankings, saveNote } : { rankings },
+    restore: (draft, isDraft) => {
+      setRankings(draft?.rankings || []);
+      if (isPersonalRankings) setSaveNote(draft?.saveNote || '');
+      setHasChanges(isDraft);
+    },
+    confirm,
+  });
 
   // Load ranking data when component mounts
   useEffect(() => {

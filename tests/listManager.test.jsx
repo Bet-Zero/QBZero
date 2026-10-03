@@ -349,3 +349,59 @@ describe('ListManager unsaved-changes dialog', () => {
     browserConfirm.mockRestore();
   });
 });
+
+describe('ListManager drafts', () => {
+  const list = {
+    id: 'l1',
+    name: 'My List',
+    playerOrder: ['a', 'b', 'c'],
+    playerIds: ['a', 'b', 'c'],
+  };
+
+  it('keeps unsaved changes as a draft, not behind a browser pop-up', async () => {
+    localStorage.clear();
+    helpers.fetchList.mockResolvedValue(list);
+    const listen = vi.spyOn(window, 'addEventListener');
+    renderAt('l1');
+    await screen.findByText('My List');
+    fireEvent.click(screen.getAllByText('Flat')[0]);
+    fireEvent.click((await screen.findAllByTitle('Remove from List'))[1]);
+
+    expect(listen.mock.calls.map(([type]) => type)).not.toContain(
+      'beforeunload'
+    );
+    const draft = JSON.parse(localStorage.getItem('qbzero:draft:list:l1'));
+    expect(draft.snapshot.order).toEqual(['a', 'c']);
+    listen.mockRestore();
+    localStorage.clear();
+  });
+
+  it('puts a draft from a closed tab back and saves it', async () => {
+    localStorage.setItem(
+      'qbzero:draft:list:l1',
+      JSON.stringify({
+        snapshot: {
+          order: ['c', 'a'],
+          notes: { a: 'left a note' },
+          description: 'draft description',
+          isRanked: true,
+        },
+        base: null,
+        at: Date.now(),
+      })
+    );
+    helpers.fetchList.mockResolvedValue(list);
+    renderAt('l1');
+    await screen.findByText('My List');
+    fireEvent.click(await screen.findByText(/Save List/));
+    await waitFor(() => expect(helpers.saveList).toHaveBeenCalled());
+    expect(helpers.saveList.mock.calls[0][1]).toMatchObject({
+      playerOrder: ['c', 'a'],
+      playerNotes: { a: 'left a note' },
+      description: 'draft description',
+    });
+    await waitFor(() =>
+      expect(localStorage.getItem('qbzero:draft:list:l1')).toBeNull()
+    );
+  });
+});

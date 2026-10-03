@@ -4,6 +4,7 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import usePlayerData from '@/hooks/usePlayerData.js';
+import useUnsavedDraft from '@/hooks/useUnsavedDraft';
 import { toast } from 'react-hot-toast';
 
 import RankedListTier, { TierBreakGap } from '@/features/lists/ListTierHeader';
@@ -123,16 +124,22 @@ const ListManager = () => {
     };
   }, [listId]);
 
-  // Browser close / reload / typed URL.
-  useEffect(() => {
-    if (!isDirty) return undefined;
-    const warn = (e) => {
-      e.preventDefault();
-      e.returnValue = '';
-    };
-    window.addEventListener('beforeunload', warn);
-    return () => window.removeEventListener('beforeunload', warn);
-  }, [isDirty]);
+  // Browser close / reload / typed URL: the unsaved list stays in this
+  // browser and comes back on return, instead of a browser pop-up.
+  useUnsavedDraft({
+    key: `list:${listId}`,
+    ready: !!listData,
+    dirty: isDirty,
+    snapshot: { order, notes, description, isRanked },
+    restore: (draft, isDraft) => {
+      setOrder(draft?.order || []);
+      setNotes(draft?.notes || {});
+      setDescription(draft?.description || '');
+      setIsRanked(draft?.isRanked ?? true);
+      setIsDirty(isDraft);
+    },
+    confirm,
+  });
 
   // In-app links (the site nav). BrowserRouter has no navigation blocker, so
   // catch the click before React Router's Link handles it.
