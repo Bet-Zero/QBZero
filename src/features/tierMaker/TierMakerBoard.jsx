@@ -1,8 +1,32 @@
 // src/features/tierMaker/TierMakerBoard.jsx
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useNavigate } from 'react-router-dom';
-import TierRow from '@/features/tierMaker/TierRow';
+import {
+  DndContext,
+  DragOverlay,
+  KeyboardSensor,
+  MouseSensor,
+  TouchSensor,
+  closestCenter,
+  pointerWithin,
+  rectIntersection,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import TierRow, { tierDragId } from '@/features/tierMaker/TierRow';
+import TierPlayerTile from '@/features/lists/TierPlayerTile';
 import usePlayerData from '@/hooks/usePlayerData.js';
 import useFirebaseQuery from '@/hooks/useFirebaseQuery';
 import { POSITION_MAP } from '@/utils/roles';
@@ -27,9 +51,29 @@ import {
   canMove,
   createEmptyBoard,
   deleteTier as deleteTierFromBoard,
+  movePlayerTo,
+  POOL,
   renameTier as renameTierOnBoard,
+  reorderTiers,
 } from '@/utils/tierMaker/tierBoard';
 import { toast } from 'react-hot-toast';
+
+// Player drags only land on players or rows, tier drags only on tiers.
+// Within a row, a tile under the pointer wins over the row itself.
+const collisionDetection = (args) => {
+  const type = args.active.data.current?.type;
+  const only = (types) => ({
+    ...args,
+    droppableContainers: args.droppableContainers.filter((c) =>
+      types.includes(c.data.current?.type)
+    ),
+  });
+  if (type === 'tier') return closestCenter(only(['tier']));
+  const players = pointerWithin(only(['player']));
+  if (players.length) return players;
+  const rows = pointerWithin(only(['row']));
+  return rows.length ? rows : rectIntersection(only(['player', 'row']));
+};
 
 const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
   const { players: allPlayers, loading } = usePlayerData();
@@ -125,6 +169,21 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [initialLoaded, setInitialLoaded] = useState(false);
+  const [activePlayerId, setActivePlayerId] = useState(null);
+  const boardBeforeDrag = useRef(null);
+
+  const sensors = useSensors(
+    // Mouse rather than Pointer: on touch, pointer events get cancelled as
+    // soon as the page starts to scroll.
+    useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+    // A short hold on touch so a swipe still scrolls the page.
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 200, tolerance: 8 },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   const isDirty = boardSignature(board) !== savedSignature;
   const confirmDiscard = () =>
@@ -159,18 +218,11 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
   const movePlayer = (playerId, fromTier, direction) => {
     setBoard((prev) => {
       const currentIndex = prev.tierOrder.indexOf(fromTier);
-      const newIndex =
-        direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-      if (
-        currentIndex < 0 ||
-        newIndex < 0 ||
-        newIndex >= prev.tierOrder.length
-      )
+      const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+      if (currentIndex < 0 || newIndex < 0 || newIndex >= prev.tierOrder.length)
         return prev;
       const toTier = prev.tierOrder[newIndex];
-      const player = prev.tiers[fromTier].find(
-        (p) => p.player_id === playerId
-      );
+      const player = prev.tiers[fromTier].find((p) => p.player_id === playerId);
       if (!player) return prev;
       return {
         ...prev,
@@ -184,6 +236,79 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
       };
     });
   };
+
+  const movePlayerOnBoard = (playerId, toTier, index) =>
+    setBoard((prev) => {
+      const next = movePlayerTo(prev.tiers, playerId, toTier, index);
+      return next === prev.tiers ? prev : { ...prev, tiers: next };
+    });
+
+  const tierOf = (playerId) =>
+    Object.keys(tiers).find((t) =>
+      tiers[t].some((p) => p.player_id === playerId)
+    );
+
+  // Where a player drag is pointing: the tier, and the index of the tile
+  // under it (undefined = end of the row).
+  const dropTarget = (over) => {
+    const data = over?.data.current;
+    if (!data) return null;
+    if (data.type === 'row') return { tier: data.tier };
+    const tier = tierOf(over.id);
+    if (!tier) return null;
+    return {
+      tier,
+      index: tiers[tier].findIndex((p) => p.player_id === over.id),
+    };
+  };
+
+  const handleDragStart = ({ active }) => {
+    if (active.data.current?.type !== 'player') return;
+    boardBeforeDrag.current = board;
+    setActivePlayerId(active.id);
+  };
+
+  // Crossing into another tier moves the tile right away so the row opens
+  // a gap for it; reordering inside a tier is settled on drop.
+  const handleDragOver = ({ active, over }) => {
+    if (active.data.current?.type !== 'player') return;
+    const target = dropTarget(over);
+    if (!target || tierOf(active.id) === target.tier) return;
+    movePlayerOnBoard(active.id, target.tier, target.index);
+  };
+
+  const handleDragEnd = ({ active, over }) => {
+    const type = active.data.current?.type;
+    setActivePlayerId(null);
+    boardBeforeDrag.current = null;
+    if (!over) return;
+    if (type === 'tier') {
+      setBoard((prev) => {
+        const order = reorderTiers(
+          prev.tierOrder,
+          active.data.current.tier,
+          over.data.current?.tier
+        );
+        return order === prev.tierOrder ? prev : { ...prev, tierOrder: order };
+      });
+      return;
+    }
+    const target = dropTarget(over);
+    if (!target || active.id === over.id) return;
+    movePlayerOnBoard(active.id, target.tier, target.index);
+  };
+
+  const handleDragCancel = () => {
+    if (boardBeforeDrag.current) setBoard(boardBeforeDrag.current);
+    boardBeforeDrag.current = null;
+    setActivePlayerId(null);
+  };
+
+  const activePlayer = activePlayerId
+    ? Object.values(tiers)
+        .flat()
+        .find((p) => p.player_id === activePlayerId)
+    : null;
 
   const removePlayer = (playerId, fromTier) => {
     setBoard((prev) => ({
@@ -385,20 +510,41 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
             </div>
           )}
 
-          {tierOrder.map((tier) => (
-            <TierRow
-              key={tier}
-              tier={tier}
-              players={tiers[tier]}
-              canMoveUp={canMove(tierOrder, tier, 'up')}
-              canMoveDown={canMove(tierOrder, tier, 'down')}
-              screenshotMode={screenshotMode}
-              movePlayer={movePlayer}
-              removePlayer={removePlayer}
-              renameTier={renameTier}
-              deleteTier={deleteTier}
-            />
-          ))}
+          <DndContext
+            sensors={sensors}
+            collisionDetection={collisionDetection}
+            onDragStart={handleDragStart}
+            onDragOver={handleDragOver}
+            onDragEnd={handleDragEnd}
+            onDragCancel={handleDragCancel}
+          >
+            <SortableContext
+              items={tierOrder.filter((t) => t !== POOL).map(tierDragId)}
+              strategy={verticalListSortingStrategy}
+            >
+              {tierOrder.map((tier) => (
+                <TierRow
+                  key={tier}
+                  tier={tier}
+                  players={tiers[tier]}
+                  canMoveUp={canMove(tierOrder, tier, 'up')}
+                  canMoveDown={canMove(tierOrder, tier, 'down')}
+                  screenshotMode={screenshotMode}
+                  movePlayer={movePlayer}
+                  removePlayer={removePlayer}
+                  renameTier={renameTier}
+                  deleteTier={deleteTier}
+                />
+              ))}
+            </SortableContext>
+            <DragOverlay>
+              {activePlayer ? (
+                <div className="cursor-grabbing shadow-2xl">
+                  <TierPlayerTile player={activePlayer} />
+                </div>
+              ) : null}
+            </DragOverlay>
+          </DndContext>
 
           {!screenshotMode && (
             <div className="flex items-center gap-2 flex-wrap mt-4 justify-center">
