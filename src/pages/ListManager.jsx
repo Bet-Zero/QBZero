@@ -2,9 +2,7 @@
 // Full-page route for building and editing player lists (flat, ranked, or tiered)
 
 import React, { useEffect, useState, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { db } from '@/firebaseConfig';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import usePlayerData from '@/hooks/usePlayerData.js';
 import { toast } from 'react-hot-toast';
 
@@ -18,11 +16,25 @@ import ListRowStyleToggle from '@/features/lists/ListRowStyleToggle';
 import ListColumnToggle from '@/features/lists/ListColumnToggle';
 import ListPreviewModal from '@/features/lists/ListPreviewModal';
 import ListSearchBar from '@/features/lists/ListSearchBar';
-import { fetchAllLists } from '@/firebase/listHelpers';
+import { fetchAllLists, fetchList, saveList } from '@/firebase/listHelpers';
+import {
+  buildFlatPlayers,
+  buildTiers,
+  makeDivider,
+  mergeListOrder,
+  movePlayerFlat,
+  moveItem,
+  playerIdsOf,
+  removeItem,
+} from '@/utils/lists/listOrder';
+
+const UNSAVED_PROMPT = 'You have unsaved changes to this list. Leave anyway?';
 
 const ListManager = () => {
   const { listId } = useParams();
   const [listData, setListData] = useState(null);
+  const [loadError, setLoadError] = useState(null);
+  const [isDirty, setIsDirty] = useState(false);
   const [playersMap, setPlayersMap] = useState({});
   const [order, setOrder] = useState([]);
   const [notes, setNotes] = useState({});
@@ -48,37 +60,67 @@ const ListManager = () => {
   const { players, loading: playersLoading } = usePlayerData();
 
   useEffect(() => {
-    const loadLists = async () => {
-      const results = await fetchAllLists();
-      setAllLists(results);
-    };
-    loadLists();
+    fetchAllLists()
+      .then((results) =>
+        setAllLists(
+          [...results].sort((a, b) =>
+            (a.name || '').localeCompare(b.name || '')
+          )
+        )
+      )
+      .catch((err) => console.error('Failed to load lists:', err));
   }, []);
 
   useEffect(() => {
-    const fetchList = async () => {
-      try {
-        const listRef = doc(db, 'lists', listId);
-        const listSnap = await getDoc(listRef);
-        if (!listSnap.exists()) throw new Error('List not found');
-
-        const data = listSnap.data();
-        const orderIds = data.playerOrder || [];
-        const allIds = data.playerIds || [];
-        const merged = [...orderIds];
-        allIds.forEach((id) => {
-          if (!merged.includes(id)) merged.push(id);
-        });
+    let cancelled = false;
+    // Clear the previous list so switching never shows its rows under the
+    // new list's id (where a save would write them).
+    setListData(null);
+    setLoadError(null);
+    setIsDirty(false);
+    fetchList(listId)
+      .then((data) => {
+        if (cancelled) return;
+        if (!data) {
+          setLoadError('This list does not exist. It may have been deleted.');
+          return;
+        }
         setListData(data);
-        setOrder(merged);
+        setOrder(mergeListOrder(data));
         setNotes(data.playerNotes || {});
-      } catch (err) {
+      })
+      .catch((err) => {
+        if (cancelled) return;
         console.error('Failed to load list:', err);
-      }
+        setLoadError('Could not load this list. Try refreshing the page.');
+      });
+    return () => {
+      cancelled = true;
     };
-
-    fetchList();
   }, [listId]);
+
+  // Browser close / reload / typed URL.
+  useEffect(() => {
+    if (!isDirty) return undefined;
+    const warn = (e) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [isDirty]);
+
+  const updateOrder = (next) => {
+    if (next === order) return;
+    setOrder(next);
+    setIsDirty(true);
+  };
+
+  const goToList = (id) => {
+    if (id === listId) return;
+    if (isDirty && !window.confirm(UNSAVED_PROMPT)) return;
+    navigate(`/lists/${id}`);
+  };
 
   useEffect(() => {
     const map = {};
@@ -90,34 +132,22 @@ const ListManager = () => {
 
   const handleNoteChange = (id, text) => {
     setNotes((prev) => ({ ...prev, [id]: text }));
+    setIsDirty(true);
   };
 
-  const handleMoveUp = (index) => {
-    if (index === 0) return;
-    const newOrder = [...order];
-    [newOrder[index - 1], newOrder[index]] = [
-      newOrder[index],
-      newOrder[index - 1],
-    ];
-    setOrder(newOrder);
-  };
-
-  const handleMoveDown = (index) => {
-    if (index === order.length - 1) return;
-    const newOrder = [...order];
-    [newOrder[index + 1], newOrder[index]] = [
-      newOrder[index],
-      newOrder[index + 1],
-    ];
-    setOrder(newOrder);
-  };
+  // Every index these receive is a position in the full `order`, dividers
+  // included, whichever view the row was rendered in.
+  const handleMoveUp = (index) => updateOrder(moveItem(order, index, -1));
+  const handleMoveDown = (index) => updateOrder(moveItem(order, index, 1));
+  const handleFlatMoveUp = (index) =>
+    updateOrder(movePlayerFlat(order, index, -1));
+  const handleFlatMoveDown = (index) =>
+    updateOrder(movePlayerFlat(order, index, 1));
 
   const handleRemove = (index) => {
-    const newOrder = [...order];
-    const removedId = newOrder.splice(index, 1)[0];
-    setOrder(newOrder);
-
-    if (!removedId.startsWith('divider::')) {
+    const removedId = order[index];
+    updateOrder(removeItem(order, index));
+    if (removedId && notes[removedId] !== undefined) {
       const updatedNotes = { ...notes };
       delete updatedNotes[removedId];
       setNotes(updatedNotes);
@@ -127,17 +157,19 @@ const ListManager = () => {
   const handleSave = async () => {
     try {
       setIsSaving(true);
-      const currentPlayerIds = order.filter(
-        (id) => !id.startsWith('divider::')
-      );
-      await updateDoc(doc(db, 'lists', listId), {
+      await saveList(listId, {
         playerOrder: order,
-        playerIds: currentPlayerIds,
+        playerIds: playerIdsOf(order),
         playerNotes: notes,
-        updatedAt: new Date(),
       });
+      setListData((prev) => ({
+        ...prev,
+        updatedAt: { toDate: () => new Date() },
+      }));
+      setIsDirty(false);
       toast.success('List saved!');
     } catch (err) {
+      console.error('Failed to save list:', err);
       toast.error('Failed to save list');
     } finally {
       setIsSaving(false);
@@ -146,43 +178,45 @@ const ListManager = () => {
 
   const insertDividerAtBottom = () => {
     if (!isRanked) return;
-    setOrder((prev) => [...prev, `divider::New Tier`]);
+    updateOrder([...order, makeDivider('New Tier')]);
   };
 
   const handleLabelChange = (index, newLabel) => {
     const newOrder = [...order];
-    newOrder[index] = `divider::${newLabel}`;
-    setOrder(newOrder);
+    newOrder[index] = makeDivider(newLabel);
+    updateOrder(newOrder);
   };
 
-  const tiers = useMemo(() => {
-    if (!isRanked) return [];
+  // Built whatever the view: the tier-style export uses tiers even when the
+  // editor is showing the flat list.
+  const tiers = useMemo(
+    () => buildTiers(order, playersMap),
+    [order, playersMap]
+  );
 
-    const result = [];
-    let current = { label: '', headerIndex: null, players: [] };
-    let rankIndex = 0;
-    order.forEach((item, idx) => {
-      if (typeof item === 'string' && item.startsWith('divider::')) {
-        if (current.headerIndex !== null || current.players.length > 0) {
-          result.push(current);
-        }
-        current = {
-          label: item.replace('divider::', ''),
-          headerIndex: idx,
-          players: [],
-        };
-      } else {
-        current.players.push({ id: item, index: idx, rankIndex });
-        rankIndex += 1;
-      }
-    });
-    result.push(current);
-    return result.filter((t) => t.headerIndex !== null || t.players.length > 0);
-  }, [order, isRanked]);
+  const flatEntries = useMemo(
+    () => buildFlatPlayers(order, playersMap),
+    [order, playersMap]
+  );
+  const flatPlayers = useMemo(
+    () => flatEntries.filter((p) => !p.missing).map((p) => p.id),
+    [flatEntries]
+  );
+  const lastFlatIndex = flatEntries.length
+    ? flatEntries[flatEntries.length - 1].index
+    : -1;
+  const firstFlatIndex = flatEntries.length ? flatEntries[0].index : -1;
 
-  const flatPlayers = useMemo(() => {
-    return order.filter((id) => !id.startsWith('divider::'));
-  }, [order]);
+  if (loadError) {
+    return (
+      <div className="text-center mt-12">
+        <p className="text-white/80 mb-4">{loadError}</p>
+        <Link to="/lists" className="text-sm text-white/60 underline">
+          Back to Lists
+        </Link>
+      </div>
+    );
+  }
 
   if (!listData || playersLoading) {
     return <div className="text-white text-center mt-12">Loading List...</div>;
@@ -197,11 +231,11 @@ const ListManager = () => {
             <ListSearchBar
               listsData={listsMap}
               playersData={playersMap}
-              onSelect={(id) => navigate(`/lists/${id}`)}
+              onSelect={goToList}
             />
             <select
               value={listId}
-              onChange={(e) => navigate(`/lists/${e.target.value}`)}
+              onChange={(e) => goToList(e.target.value)}
               className="bg-neutral-800 text-white text-xs px-2 py-1 rounded border border-white/20"
             >
               {allLists.map((l) => (
@@ -318,7 +352,8 @@ const ListManager = () => {
               ? tiers.map((tier, idx) => (
                   <RankedListTier
                     key={`tier-${idx}`}
-                    label={tier.label || `Tier ${idx + 1}`}
+                    label={tier.label}
+                    placeholder={`Tier ${idx + 1}`}
                     headerIndex={tier.headerIndex}
                     players={tier.players}
                     playersMap={playersMap}
@@ -332,18 +367,21 @@ const ListManager = () => {
                     orderLength={order.length}
                   />
                 ))
-              : flatPlayers.map((id, idx) => (
+              : flatEntries.map(({ id, index }) => (
                   <ListPlayerRow
                     key={`flat-${id}`}
-                    index={idx}
+                    index={index}
+                    playerId={id}
                     player={playersMap[id]}
                     note={notes[id]}
                     onNoteChange={handleNoteChange}
-                    onMoveUp={handleMoveUp}
-                    onMoveDown={handleMoveDown}
+                    onMoveUp={handleFlatMoveUp}
+                    onMoveDown={handleFlatMoveDown}
                     onRemove={handleRemove}
                     showReorder={showReorder}
                     showRank={false}
+                    isFirst={index === firstFlatIndex}
+                    isLast={index === lastFlatIndex}
                   />
                 ))}
           </div>
@@ -354,6 +392,7 @@ const ListManager = () => {
             onAddDivider={insertDividerAtBottom}
             onSave={handleSave}
             isSaving={isSaving}
+            isDirty={isDirty}
             isRanked={isRanked}
           />
 

@@ -11,6 +11,7 @@ import {
   query,
   where,
   serverTimestamp,
+  arrayUnion,
 } from 'firebase/firestore';
 
 const listsRef = collection(db, 'lists');
@@ -23,24 +24,51 @@ export const fetchAllLists = async () => {
   return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 };
 
-// ✅ Create list (with duplicate check)
-export const createList = async (name) => {
+export const fetchList = async (id) => {
+  const snap = await getDoc(doc(db, 'lists', id));
+  return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+};
+
+// ✅ Create list (with duplicate check). Returns the new list's id.
+// Lists always get a generated id: deriving one from the name let a second
+// "Top 10" silently overwrite the first.
+export const createList = async (name, playerIds = []) => {
   const q = query(listsRef, where('name', '==', name));
   const existing = await getDocs(q);
   if (!existing.empty) throw new Error('A list with this name already exists.');
 
-  const newList = {
+  const docRef = await addDoc(listsRef, {
     name,
-    players: [],
+    playerIds,
+    playerOrder: playerIds,
     createdAt: serverTimestamp(),
-  };
-  await addDoc(listsRef, newList);
+    updatedAt: serverTimestamp(),
+  });
+  return docRef.id;
+};
+
+// Membership only: the editor shows members missing from `playerOrder` at
+// the bottom (see mergeListOrder), and writes the order on its next save.
+export const addPlayerToList = async (id, playerId) => {
+  await updateDoc(doc(db, 'lists', id), {
+    playerIds: arrayUnion(playerId),
+    updatedAt: serverTimestamp(),
+  });
+};
+
+export const saveList = async (id, { playerOrder, playerIds, playerNotes }) => {
+  await updateDoc(doc(db, 'lists', id), {
+    playerOrder,
+    playerIds,
+    playerNotes,
+    updatedAt: serverTimestamp(),
+  });
 };
 
 // ✅ Rename list
 export const renameList = async (id, newName) => {
   const docRef = doc(db, 'lists', id);
-  await updateDoc(docRef, { name: newName });
+  await updateDoc(docRef, { name: newName, updatedAt: serverTimestamp() });
 };
 
 // ✅ Delete list

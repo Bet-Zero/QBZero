@@ -1,14 +1,8 @@
 // ListsHome.jsx
 import React, { useEffect, useState, useMemo } from 'react';
-import {
-  collection,
-  getDocs,
-  deleteDoc,
-  updateDoc,
-  doc,
-} from 'firebase/firestore';
 import { Link, useNavigate } from 'react-router-dom';
-import { db } from '@/firebaseConfig';
+import { toast } from 'react-hot-toast';
+import { fetchAllLists, renameList, deleteList } from '@/firebase/listHelpers';
 import CreateListModal from '@/features/lists/CreateListModal';
 import ListSearchBar from '@/features/lists/ListSearchBar';
 import usePlayerData from '@/hooks/usePlayerData.js';
@@ -16,6 +10,7 @@ import usePlayerData from '@/hooks/usePlayerData.js';
 const ListsHome = () => {
   const [lists, setLists] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [renamingListId, setRenamingListId] = useState(null);
   const [renameValue, setRenameValue] = useState('');
@@ -41,13 +36,22 @@ const ListsHome = () => {
   }, [lists]);
 
   const fetchLists = async () => {
-    const snapshot = await getDocs(collection(db, 'lists'));
-    const results = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-    setLists(results);
-    setIsLoading(false);
+    try {
+      const results = await fetchAllLists();
+      // Most recently touched first; Firestore returns them in id order,
+      // which for generated ids is effectively random.
+      const touched = (l) =>
+        (l.updatedAt || l.createdAt)?.toMillis?.() ??
+        (l.updatedAt || l.createdAt)?.toDate?.()?.getTime?.() ??
+        0;
+      setLists([...results].sort((a, b) => touched(b) - touched(a)));
+      setLoadError(false);
+    } catch (err) {
+      console.error('Failed to load lists:', err);
+      setLoadError(true);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -55,19 +59,38 @@ const ListsHome = () => {
   }, []);
 
   const handleRename = async () => {
-    if (!renameValue.trim()) return;
-    await updateDoc(doc(db, 'lists', renamingListId), {
-      name: renameValue.trim(),
-    });
-    setRenamingListId(null);
-    setRenameValue('');
-    fetchLists();
+    const trimmed = renameValue.trim();
+    if (!trimmed) return;
+    if (
+      lists.some(
+        (l) =>
+          l.id !== renamingListId &&
+          (l.name || '').toLowerCase() === trimmed.toLowerCase()
+      )
+    ) {
+      toast.error('A list with this name already exists.');
+      return;
+    }
+    try {
+      await renameList(renamingListId, trimmed);
+      setRenamingListId(null);
+      setRenameValue('');
+      fetchLists();
+    } catch (err) {
+      console.error('Failed to rename list:', err);
+      toast.error('Failed to rename list');
+    }
   };
 
   const handleDelete = async () => {
-    await deleteDoc(doc(db, 'lists', deletingListId));
-    setDeletingListId(null);
-    fetchLists();
+    try {
+      await deleteList(deletingListId);
+      setDeletingListId(null);
+      fetchLists();
+    } catch (err) {
+      console.error('Failed to delete list:', err);
+      toast.error('Failed to delete list');
+    }
   };
 
   return (
@@ -92,6 +115,10 @@ const ListsHome = () => {
 
         {isLoading ? (
           <div className="text-white/60">Loading lists...</div>
+        ) : loadError ? (
+          <div className="text-white/60">
+            Could not load your lists. Try refreshing the page.
+          </div>
         ) : lists.length === 0 ? (
           <div className="text-white/40">
             You haven&apos;t created any lists yet.
@@ -148,7 +175,7 @@ const ListsHome = () => {
           setShowCreateModal(false);
           fetchLists();
         }}
-        onListCreated={fetchLists}
+        onListCreated={(id) => (id ? navigate(`/lists/${id}`) : fetchLists())}
       />
 
       {/* Rename Modal */}
@@ -159,6 +186,7 @@ const ListsHome = () => {
             <input
               value={renameValue}
               onChange={(e) => setRenameValue(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleRename()}
               className="w-full p-2 rounded bg-black border border-white/20 text-white mb-4"
               placeholder="New name"
             />

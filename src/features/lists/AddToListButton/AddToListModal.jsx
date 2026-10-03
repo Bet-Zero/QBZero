@@ -1,95 +1,75 @@
 // AddToListModal.jsx
 import React, { useEffect, useId, useState } from 'react';
-import { db } from '@/firebaseConfig';
-import {
-  collection,
-  getDocs,
-  doc,
-  setDoc,
-  updateDoc,
-  arrayUnion,
-} from 'firebase/firestore';
 import { toast } from 'react-hot-toast';
-import { Toaster } from 'react-hot-toast';
+import {
+  fetchAllLists,
+  createList,
+  addPlayerToList,
+} from '@/firebase/listHelpers';
+
+const toastStyle = {
+  style: {
+    background: '#111111',
+    color: '#ffffff',
+    border: '1px solid #333',
+  },
+};
 
 const AddToListModal = ({ player, onClose }) => {
   const fieldId = useId();
   const [lists, setLists] = useState([]);
   const [selectedList, setSelectedList] = useState('');
   const [newListName, setNewListName] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    const fetchLists = async () => {
-      const snapshot = await getDocs(collection(db, 'lists'));
-      const result = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setLists(result);
-    };
-    fetchLists();
+    fetchAllLists()
+      .then((result) =>
+        setLists(
+          [...result].sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+        )
+      )
+      .catch((err) => {
+        console.error('Failed to load lists:', err);
+        toast.error('Could not load your lists', toastStyle);
+      });
   }, []);
 
   const handleAdd = async () => {
+    const trimmedNewName = newListName.trim();
+    if (!selectedList && !trimmedNewName) {
+      toast.error('Please select or create a list name', toastStyle);
+      return;
+    }
+
+    setIsSaving(true);
     try {
-      let listId = selectedList;
-      const trimmedNewName = newListName.trim();
-
-      if (!selectedList && trimmedNewName) {
-        listId = trimmedNewName.toLowerCase().replace(/\s+/g, '_');
-        await setDoc(doc(db, 'lists', listId), {
-          name: trimmedNewName,
-          playerIds: [player.id],
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        });
-        toast.success(`List "${trimmedNewName}" created and player added!`, {
-          style: {
-            background: '#111111',
-            color: '#ffffff',
-            border: '1px solid #333',
-          },
-        });
-      } else if (selectedList) {
-        const listRef = doc(db, 'lists', selectedList);
-        await updateDoc(listRef, {
-          playerIds: arrayUnion(player.id),
-          updatedAt: new Date(),
-        });
-        toast.success('Player added to list!', {
-          style: {
-            background: '#111111',
-            color: '#ffffff',
-            border: '1px solid #333',
-          },
-        });
+      if (selectedList) {
+        const list = lists.find((l) => l.id === selectedList);
+        if (list?.playerIds?.includes(player.id)) {
+          toast(`Already in "${list.name}"`, toastStyle);
+        } else {
+          await addPlayerToList(selectedList, player.id);
+          toast.success('Player added to list!', toastStyle);
+        }
       } else {
-        toast.error('Please select or create a list name', {
-          style: {
-            background: '#111111',
-            color: '#ffffff',
-            border: '1px solid #333',
-          },
-        });
-        return;
+        await createList(trimmedNewName, [player.id]);
+        toast.success(
+          `List "${trimmedNewName}" created and player added!`,
+          toastStyle
+        );
       }
-
       onClose();
     } catch (err) {
       console.error('Failed to save to list:', err);
-      toast.error('Failed to save list', {
-        style: {
-          background: '#111111',
-          color: '#ffffff',
-          border: '1px solid #333',
-        },
-      });
+      toast.error(err.message || 'Failed to save list', toastStyle);
+    } finally {
+      setIsSaving(false);
     }
   };
 
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-      <Toaster position="bottom-center" />
       <div className="bg-neutral-900 p-6 rounded-lg w-full max-w-md">
         <h2 className="text-white text-lg font-bold mb-4">Add to List</h2>
 
@@ -143,9 +123,10 @@ const AddToListModal = ({ player, onClose }) => {
           </button>
           <button
             onClick={handleAdd}
-            className="text-sm px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            disabled={isSaving}
+            className="text-sm px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
           >
-            Add
+            {isSaving ? 'Adding...' : 'Add'}
           </button>
         </div>
       </div>

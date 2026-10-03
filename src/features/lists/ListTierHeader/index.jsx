@@ -6,6 +6,7 @@ import RankedListPlayerRow from './ListPlayerRow';
 
 const RankedListTier = ({
   label,
+  placeholder,
   headerIndex,
   players,
   playersMap,
@@ -46,6 +47,7 @@ const RankedListTier = ({
             <input
               type="text"
               value={label}
+              placeholder={placeholder}
               onChange={(e) => onLabelChange(headerIndex, e.target.value)}
               className="text-xl font-bold tracking-wide bg-transparent text-white w-full focus:outline-none"
             />
@@ -61,12 +63,11 @@ const RankedListTier = ({
       )}
 
       {players.map(({ id, index, rankIndex }) => {
-        const player = playersMap[id];
-        if (!player) return null;
         return (
           <RankedListPlayerRow
             key={id}
-            player={player}
+            playerId={id}
+            player={playersMap[id]}
             index={index}
             rank={rankIndex}
             note={notes[id] || ''}
@@ -75,6 +76,8 @@ const RankedListTier = ({
             onMoveDown={onMoveDown}
             onRemove={onRemove}
             showReorder={showReorder}
+            isFirst={index === 0}
+            isLast={index === orderLength - 1}
           />
         );
       })}

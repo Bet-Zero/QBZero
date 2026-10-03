@@ -8,6 +8,7 @@ import { POSITION_MAP } from '@/utils/roles';
 
 const ListPlayerRow = ({
   player,
+  playerId,
   index, // order index used for reordering
   rank,
   onMoveUp,
@@ -15,7 +16,33 @@ const ListPlayerRow = ({
   onRemove,
   showReorder = true,
   showRank = true, // 🔁 new toggle for rank display
+  isFirst = index === 0,
+  isLast = false,
 }) => {
+  // A saved id that no longer matches anyone on the roster. Shown so it can
+  // be removed, rather than hidden (where it was unreachable) or crashing.
+  if (!player) {
+    return (
+      <div className="relative w-full max-w-[1100px] mx-auto mb-6">
+        <div className="flex items-center justify-between h-[48px] px-4 bg-[#1e1e1e]/60 border border-dashed border-white/15 rounded-sm text-sm text-white/50">
+          <span>
+            Player not found on the roster
+            {playerId ? (
+              <span className="text-white/30"> ({playerId})</span>
+            ) : null}
+          </span>
+          <button
+            onClick={() => onRemove(index)}
+            title="Remove from List"
+            className="text-white/40 hover:text-white transition"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const processedPlayer = {
     ...player,
     id: player.player_id,
@@ -35,7 +62,7 @@ const ListPlayerRow = ({
           {showReorder && (
             <button
               onClick={() => onMoveUp(index)}
-              disabled={index === 0}
+              disabled={isFirst}
               className="text-white/30 hover:text-white disabled:opacity-20"
             >
               <ChevronUp size={16} />
@@ -51,6 +78,7 @@ const ListPlayerRow = ({
           {showReorder && (
             <button
               onClick={() => onMoveDown(index)}
+              disabled={isLast}
               className="text-white/30 hover:text-white disabled:opacity-20"
             >
               <ChevronDown size={16} />
