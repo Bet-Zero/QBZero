@@ -8,6 +8,10 @@
 //   node scripts/refreshHeadshots.js            refresh every quarterback
 //   node scripts/refreshHeadshots.js --dry-run  report matches, write nothing
 //
+// In a cloud session, prefix it with NODE_USE_ENV_PROXY=1. Node's built-in
+// fetch ignores HTTPS_PROXY otherwise, and every request comes back 403 --
+// which this script reports as "no photo found" for every quarterback.
+//
 // Run this whenever quarterbacks.js changes. A new entry has no photo yet,
 // and anyone who changed teams still shows their old team's jersey until
 // this runs -- an id existing in public/assets/headshots/ does not mean the
