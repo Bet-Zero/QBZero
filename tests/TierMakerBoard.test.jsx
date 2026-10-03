@@ -81,6 +81,13 @@ const rowLabels = (container) =>
     (el) => el.textContent
   );
 
+// Answer the in-app confirm dialog.
+const answer = async (label) => {
+  const dialog = await screen.findByRole('dialog');
+  fireEvent.click(within(dialog).getByText(label));
+  await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+};
+
 // Fill in and confirm the in-app naming dialog.
 const nameIt = async (title, value) => {
   const dialog = await screen.findByRole('dialog');
@@ -152,8 +159,16 @@ describe('TierMakerBoard', () => {
     });
     renderBoard('list1');
     await screen.findByText('MAHOMES');
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const native = vi.spyOn(window, 'confirm');
     fireEvent.click(screen.getByText('Send to "Top QBs"'));
+    expect(
+      within(await screen.findByRole('dialog')).getByText(
+        'Send this board to "Top QBs"?'
+      )
+    ).toBeTruthy();
+    expect(sendTierBoardToList).not.toHaveBeenCalled();
+    await answer('Send');
+    expect(native).not.toHaveBeenCalled();
     await waitFor(() => expect(sendTierBoardToList).toHaveBeenCalled());
     expect(sendTierBoardToList).toHaveBeenCalledWith('l9', {
       tiers: { S: ['p1', 'gone'], A: [], Pool: ['p2'] },
@@ -217,7 +232,7 @@ describe('TierMakerBoard saving', () => {
     ]);
   });
 
-  it('asks before following a link away from a board that is saved nowhere', () => {
+  it('asks in-app before following a link away from a board that is saved nowhere', async () => {
     render(
       <MemoryRouter initialEntries={['/tier-maker']}>
         <Routes>
@@ -235,13 +250,14 @@ describe('TierMakerBoard saving', () => {
       </MemoryRouter>
     );
     fireEvent.click(screen.getByText('add patrick mahomes'));
-    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    const native = vi.spyOn(window, 'confirm');
     fireEvent.click(screen.getByText('go elsewhere'));
-    expect(confirm).toHaveBeenCalled();
+    await answer('Keep editing');
     expect(screen.queryByText('Elsewhere')).toBeNull();
-    confirm.mockReturnValue(true);
     fireEvent.click(screen.getByText('go elsewhere'));
-    expect(screen.getByText('Elsewhere')).toBeTruthy();
+    await answer('Discard');
+    expect(await screen.findByText('Elsewhere')).toBeTruthy();
+    expect(native).not.toHaveBeenCalled();
   });
 });
 
@@ -287,6 +303,21 @@ describe('TierMakerBoard history', () => {
       tiers: { S: ['p2'], Pool: ['p1'] },
       tierOrder: ['S', 'Pool'],
     });
+  });
+});
+
+describe('TierMakerBoard confirm dialog', () => {
+  it('asks in-app before clearing the board', async () => {
+    fetchTierList.mockResolvedValue(savedList);
+    const { container } = renderBoard('list1');
+    await screen.findByText('MAHOMES');
+    fireEvent.click(screen.getByText('Reset'));
+    await answer('Cancel');
+    expect(screen.getByText('MAHOMES')).toBeTruthy();
+    fireEvent.click(screen.getByText('Reset'));
+    await answer('Clear');
+    expect(screen.queryByText('MAHOMES')).toBeNull();
+    expect(rowLabels(container)).toEqual(['S', 'A', 'B', 'C', 'D', 'Pool']);
   });
 });
 
