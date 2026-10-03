@@ -13,10 +13,16 @@ import { calculateRankingMovement } from '@/utils/rankingMovement';
  * measuring two saves back.
  *
  * @param {Array} rankings - the board as it currently stands
- * @param {{ enabled?: boolean }} options
+ * @param {{ enabled?: boolean, refreshKey?: any }} options - change
+ *   `refreshKey` (the editor passes the board's version) to re-read the previous
+ *   ranking. It used to be read once on mount, so after a save in the editor the
+ *   arrows kept measuring against the archive from before it -- two saves back.
  * @returns {Object} movement keyed by quarterback id; empty until it loads
  */
-const usePersonalRankingMovement = (rankings, { enabled = true } = {}) => {
+const usePersonalRankingMovement = (
+  rankings,
+  { enabled = true, refreshKey } = {}
+) => {
   const [previous, setPrevious] = useState(null);
   const [movement, setMovement] = useState({});
 
@@ -39,7 +45,7 @@ const usePersonalRankingMovement = (rankings, { enabled = true } = {}) => {
     return () => {
       cancelled = true;
     };
-  }, [enabled]);
+  }, [enabled, refreshKey]);
 
   useEffect(() => {
     if (!enabled || !previous || !rankings?.length) {

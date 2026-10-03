@@ -10,6 +10,25 @@ import {
 import { summariseRankingChange } from '@/utils/rankings/rankingSummary';
 
 /**
+ * Give every archive the date its board was saved.
+ *
+ * Archives written before `savedAt` existed only know when they were replaced.
+ * Each save archives exactly one board, so the board in an archive was saved at
+ * the moment the next-older archive was replaced: that archive's `createdAt`.
+ * The oldest one loaded has no neighbour to read it from, so it is flagged and
+ * shown by its replacement date instead of under a date it does not belong to.
+ * (An archive deleted from the middle of that stretch makes the one above it
+ * read as older than it is; nothing stored says otherwise.)
+ */
+export const withSavedDates = (archives = []) =>
+  archives.map((archive, index) => {
+    if (archive.savedAt) return archive;
+    const older = archives[index + 1];
+    if (older?.createdAt) return { ...archive, savedAt: older.createdAt };
+    return { ...archive, dateIsReplacement: true };
+  });
+
+/**
  * The live board plus its archives, and the two things you can do to a
  * archive: put it back, or throw it away.
  *
@@ -41,11 +60,11 @@ const usePersonalRankingHistory = () => {
       // before it, so two updates a week apart are told apart without opening
       // both. The boards are already loaded; this is the comparison, not a read.
       setArchives(
-        history.archives.map((archive, index) => ({
+        withSavedDates(history.archives).map((archive, index, all) => ({
           ...archive,
           summary: summariseRankingChange(
             archive.rankings,
-            history.archives[index + 1]?.rankings
+            all[index + 1]?.rankings
           ),
         }))
       );

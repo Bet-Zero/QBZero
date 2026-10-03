@@ -65,6 +65,7 @@ const QBRankingsPage = () => {
 
   const movementData = usePersonalRankingMovement(displayedRankings, {
     enabled: isPersonalRankings,
+    refreshKey: loadedVersion,
   });
 
   // Reordering a board is twenty minutes of work that lived only in this tab:
@@ -163,15 +164,21 @@ const QBRankingsPage = () => {
 
       setIsSaving(true);
       try {
-        const { version } = await saveCurrentPersonalRankings(
-          displayedRankings,
-          { expectedVersion: loadedVersion }
-        );
+        const { version, archiveId, reordered } =
+          await saveCurrentPersonalRankings(displayedRankings, {
+            expectedVersion: loadedVersion,
+          });
         setRankings(displayedRankings);
         setLoadedVersion(version);
         setHasChanges(false);
         if (showToast) {
-          toast.success('Rankings saved and archived!');
+          toast.success(
+            archiveId
+              ? 'Rankings saved and archived!'
+              : reordered === false
+                ? 'Saved. The order did not change, so nothing was archived.'
+                : 'Rankings saved!'
+          );
         }
       } catch (error) {
         console.error('Error saving rankings:', error);

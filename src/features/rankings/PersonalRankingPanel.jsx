@@ -3,7 +3,11 @@ import PropTypes from 'prop-types';
 import { Clock, Users } from 'lucide-react';
 import QBRankingCard from '@/features/rankings/QBRankingCard';
 import RankingsExportModal from '@/components/shared/RankingsExportModal';
-import { formatRankingDate } from '@/utils/formatting/rankingDates';
+import {
+  formatArchiveDate,
+  formatRankingDate,
+  formatReplacedDate,
+} from '@/utils/formatting/rankingDates';
 import { describeRankingChange } from '@/utils/rankings/rankingSummary';
 
 /**
@@ -34,11 +38,14 @@ const PersonalRankingPanel = ({
           </div>
           <div>
             <h2 className="text-xl font-bold text-white">
-              Archive from{' '}
-              {formatRankingDate(selectedArchive, { withTime: true })}
+              {selectedArchive.dateIsReplacement ? 'Archive' : 'Ranking from'}{' '}
+              {formatArchiveDate(selectedArchive, { withTime: true })}
             </h2>
             <p className="text-blue-300/80 text-sm">
               {selectedArchive.rankings?.length || 0} QBs ranked
+              {!selectedArchive.dateIsReplacement && (
+                <> • current until {formatReplacedDate(selectedArchive)}</>
+              )}
               {selectedArchive.notes && <> • {selectedArchive.notes}</>}
             </p>
             {describeRankingChange(selectedArchive.summary) && (
@@ -75,9 +82,9 @@ const PersonalRankingPanel = ({
         {exportingArchive && (
           <RankingsExportModal
             rankings={selectedArchive.rankings || []}
-            rankingName={`QB Rankings ${formatRankingDate(selectedArchive)}`}
+            rankingName={`QB Rankings ${formatArchiveDate(selectedArchive)}`}
             title="Export Archive"
-            subtitle={`The board as it stood on ${formatRankingDate(selectedArchive)}`}
+            subtitle={`The board as it stood on ${formatArchiveDate(selectedArchive)}`}
             onClose={() => setExportingArchive(false)}
           />
         )}

@@ -15,8 +15,16 @@ export const toDate = (value) => {
   return Number.isNaN(date.getTime()) ? null : date;
 };
 
-/** The most meaningful stamp on a ranking or snapshot document. */
+/**
+ * The most meaningful stamp on a ranking or snapshot document.
+ *
+ * `savedAt` is when a personal board's order was last saved, and an archive
+ * carries the `savedAt` of the board it holds. Without it an archive fell back
+ * to `createdAt` -- the moment it was *replaced* -- so each one was listed
+ * under the date of the save after it.
+ */
 export const rankingDate = (record) =>
+  toDate(record?.savedAt) ||
   toDate(record?.updatedAt) ||
   toDate(record?.createdAt) ||
   toDate(record?.timestamp);
@@ -24,8 +32,27 @@ export const rankingDate = (record) =>
 const DATE_ONLY = { year: 'numeric', month: 'short', day: 'numeric' };
 const DATE_AND_TIME = { ...DATE_ONLY, hour: 'numeric', minute: '2-digit' };
 
-export const formatRankingDate = (record, { withTime = false } = {}) => {
-  const date = rankingDate(record);
-  if (!date) return 'Unknown date';
-  return date.toLocaleDateString('en-US', withTime ? DATE_AND_TIME : DATE_ONLY);
-};
+const formatDate = (date, withTime) =>
+  date
+    ? date.toLocaleDateString('en-US', withTime ? DATE_AND_TIME : DATE_ONLY)
+    : 'Unknown date';
+
+export const formatRankingDate = (record, { withTime = false } = {}) =>
+  formatDate(rankingDate(record), withTime);
+
+/** When an archive stopped being the live board: the save that replaced it. */
+export const formatReplacedDate = (archive, { withTime = false } = {}) =>
+  formatDate(
+    toDate(archive?.createdAt) || toDate(archive?.timestamp),
+    withTime
+  );
+
+/**
+ * The heading date for an archive: the day its board was saved, or -- for an
+ * old archive whose save date cannot be worked out -- the day it was replaced,
+ * labelled as such rather than passed off as the other.
+ */
+export const formatArchiveDate = (archive, options) =>
+  archive?.dateIsReplacement
+    ? `Replaced ${formatReplacedDate(archive, options)}`
+    : formatRankingDate(archive, options);
