@@ -87,9 +87,14 @@ Saved roster tool projects.
 
 ## `takes/{takeId}` and `takeAuthors/{authorId}`
 
-The QB Weekly takes board. Visitors claim an author name, receive a code, and
-post takes; `status` on a take is `'pending'` | `'correct'` | `'incorrect'`.
-These are the only collections a visitor may write to.
+The QB Weekly takes board. `status` on a take is `'pending'` | `'correct'` |
+`'incorrect'`. Only the owner writes here: visitor writes were closed because
+anyone could post under any author name or overwrite another author's record,
+and author codes are stored in publicly readable documents.
+
+## `qbwShelves/main`
+
+QB Weekly's editable Crystal Ball shelves. Owner-written, publicly readable.
 
 ## `admins/{uid}`
 
