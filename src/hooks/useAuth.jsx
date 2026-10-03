@@ -36,12 +36,25 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // The user and their admin status are published together, after the admin
+    // read. Setting the user first showed a freshly signed-in admin "not an
+    // admin account" until the read came back. The counter drops a read that
+    // finishes after a newer auth change, so a sign-out mid-read can't be
+    // overwritten by the previous account's admin status.
+    let latest = 0;
     const unsubscribe = onAuthStateChanged(auth, async (nextUser) => {
+      const call = ++latest;
+      setLoading(true);
+      const nextIsAdmin = await readIsAdmin(nextUser);
+      if (call !== latest) return;
       setUser(nextUser);
-      setIsAdmin(await readIsAdmin(nextUser));
+      setIsAdmin(nextIsAdmin);
       setLoading(false);
     });
-    return unsubscribe;
+    return () => {
+      latest = Infinity;
+      unsubscribe();
+    };
   }, []);
 
   const value = {
