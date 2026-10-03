@@ -1,5 +1,5 @@
 import React from 'react';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   cleanup,
   render,
@@ -9,9 +9,18 @@ import {
   within,
 } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
+import {
+  fetchBracketPicks,
+  saveBracketPicks,
+} from '@/firebase/backupBracketHelpers';
 import BackupQBBracket, {
   BRACKET_STORAGE_KEY,
 } from '@/features/backupBracket/BackupQBBracket.jsx';
+
+vi.mock('@/firebase/backupBracketHelpers', () => ({
+  fetchBracketPicks: vi.fn(),
+  saveBracketPicks: vi.fn(),
+}));
 
 const createEntrants = (count) =>
   Array.from({ length: count }, (_, index) => ({
@@ -32,6 +41,8 @@ const pickButton = (name) => {
 describe('BackupQBBracket component', () => {
   beforeEach(() => {
     window.localStorage.clear();
+    vi.mocked(fetchBracketPicks).mockReset().mockResolvedValue(null);
+    vi.mocked(saveBracketPicks).mockReset().mockResolvedValue(undefined);
   });
   afterEach(cleanup);
 
@@ -101,5 +112,62 @@ describe('BackupQBBracket component', () => {
         screen.getAllByRole('button', { name: 'Select QB 1 as winner' })
       ).toHaveLength(1)
     );
+  });
+
+  it('loads picks saved to the account over this browser', async () => {
+    window.localStorage.setItem(
+      BRACKET_STORAGE_KEY,
+      JSON.stringify({ winners: [['qb-1', null], [null]] })
+    );
+    vi.mocked(fetchBracketPicks).mockResolvedValue([[null, 'qb-2'], [null]]);
+    render(<BackupQBBracket entrants={createEntrants(4)} preferredSize={4} />);
+
+    expect(
+      await screen.findByText('Picks saved to your account')
+    ).toBeInTheDocument();
+    expect(
+      screen.getAllByRole('button', { name: 'Select QB 2 as winner' })
+    ).toHaveLength(2);
+    expect(
+      screen.getAllByRole('button', { name: 'Select QB 1 as winner' })
+    ).toHaveLength(1);
+  });
+
+  it('saves a pick to the account', async () => {
+    render(<BackupQBBracket entrants={createEntrants(4)} preferredSize={4} />);
+    fireEvent.click(pickButton('QB 1'));
+
+    await waitFor(
+      () =>
+        expect(saveBracketPicks).toHaveBeenCalledWith([['qb-1', null], [null]]),
+      { timeout: 2000 }
+    );
+    expect(
+      await screen.findByText('Picks saved to your account')
+    ).toBeInTheDocument();
+  });
+
+  it("uploads this browser's picks when the account has none", async () => {
+    window.localStorage.setItem(
+      BRACKET_STORAGE_KEY,
+      JSON.stringify({ winners: [['qb-1', null], [null]] })
+    );
+    render(<BackupQBBracket entrants={createEntrants(4)} preferredSize={4} />);
+    await waitFor(() =>
+      expect(saveBracketPicks).toHaveBeenCalledWith([['qb-1', null], [null]])
+    );
+  });
+
+  it('keeps picks on this device when the account cannot be reached', async () => {
+    vi.mocked(fetchBracketPicks).mockRejectedValue(new Error('denied'));
+    vi.mocked(saveBracketPicks).mockRejectedValue(new Error('denied'));
+    render(<BackupQBBracket entrants={createEntrants(4)} preferredSize={4} />);
+    fireEvent.click(pickButton('QB 1'));
+
+    await waitFor(() => expect(saveBracketPicks).toHaveBeenCalled(), {
+      timeout: 2000,
+    });
+    expect(screen.getByText('Picks saved on this device')).toBeInTheDocument();
+    expect(window.localStorage.getItem(BRACKET_STORAGE_KEY)).toContain('qb-1');
   });
 });
