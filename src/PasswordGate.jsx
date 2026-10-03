@@ -4,6 +4,7 @@ import { useState } from 'react';
 const PasswordGate = ({ children }) => {
   const [accessGranted, setAccessGranted] = useState(false);
   const [passwordInput, setPasswordInput] = useState('');
+  const [wrong, setWrong] = useState(false);
   const correctPassword = 'Makenzie1!'; // change this to your real password
 
   const handleSubmit = (e) => {
@@ -11,7 +12,7 @@ const PasswordGate = ({ children }) => {
     if (passwordInput === correctPassword) {
       setAccessGranted(true);
     } else {
-      alert('Incorrect password');
+      setWrong(true);
     }
   };
 
@@ -26,10 +27,19 @@ const PasswordGate = ({ children }) => {
         <input
           type="password"
           value={passwordInput}
-          onChange={(e) => setPasswordInput(e.target.value)}
+          onChange={(e) => {
+            setPasswordInput(e.target.value);
+            setWrong(false);
+          }}
           className="px-4 py-2 rounded text-black mb-3 w-64"
           placeholder="Enter password"
+          aria-invalid={wrong}
         />
+        {wrong && (
+          <p role="alert" className="text-red-400 text-sm mb-3">
+            Incorrect password
+          </p>
+        )}
         <button
           type="submit"
           className="bg-white text-black px-4 py-2 rounded shadow"
