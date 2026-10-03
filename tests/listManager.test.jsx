@@ -107,6 +107,44 @@ describe('ListManager', () => {
   });
 });
 
+describe('ListManager add a QB', () => {
+  it('adds a searched QB to the end of the list and saves it', async () => {
+    helpers.fetchList.mockResolvedValue({
+      id: 'l1',
+      name: 'Empty List',
+      playerIds: [],
+    });
+    renderAt('l1');
+    await screen.findByText(/This list is empty/);
+    fireEvent.change(screen.getByLabelText('Add a QB to this list'), {
+      target: { value: 'brav' },
+    });
+    fireEvent.click(screen.getByText('Bravo QB'));
+    fireEvent.click(screen.getByText(/Save List/));
+    await waitFor(() => expect(helpers.saveList).toHaveBeenCalled());
+    expect(helpers.saveList.mock.calls[0][1]).toMatchObject({
+      playerOrder: ['b'],
+      playerIds: ['b'],
+    });
+  });
+
+  it('does not offer a QB already on the list', async () => {
+    helpers.fetchList.mockResolvedValue({
+      id: 'l1',
+      name: 'My List',
+      playerIds: ['a'],
+    });
+    renderAt('l1');
+    await screen.findByText('My List');
+    fireEvent.change(screen.getByLabelText('Add a QB to this list'), {
+      target: { value: 'QB' },
+    });
+    const options = screen.getAllByRole('listitem').map((li) => li.textContent);
+    expect(options.some((t) => t.includes('Alpha'))).toBe(false);
+    expect(options.some((t) => t.includes('Bravo'))).toBe(true);
+  });
+});
+
 describe('ListManager → tier board', () => {
   it('makes a tier board from the list as shown and opens it', async () => {
     helpers.fetchList.mockResolvedValue({
