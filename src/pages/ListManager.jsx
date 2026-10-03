@@ -17,6 +17,7 @@ import ListColumnToggle from '@/features/lists/ListColumnToggle';
 import ListPreviewModal from '@/features/lists/ListPreviewModal';
 import ListSearchBar from '@/features/lists/ListSearchBar';
 import { fetchAllLists, fetchList, saveList } from '@/firebase/listHelpers';
+import { createTierBoardFromList } from '@/firebase/listTierLink';
 import {
   buildFlatPlayers,
   buildTiers,
@@ -48,6 +49,7 @@ const ListManager = () => {
   const [showExportModal, setShowExportModal] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [allLists, setAllLists] = useState([]);
+  const [isOpeningBoard, setIsOpeningBoard] = useState(false);
   const navigate = useNavigate();
   const listsMap = useMemo(() => {
     const map = {};
@@ -173,6 +175,26 @@ const ListManager = () => {
       toast.error('Failed to save list');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const openAsTierBoard = async () => {
+    if (isDirty) {
+      toast.error('Save the list first, then open it as a tier board.');
+      return;
+    }
+    try {
+      setIsOpeningBoard(true);
+      const boardId = await createTierBoardFromList({
+        id: listId,
+        name: listData.name,
+        playerOrder: order,
+      });
+      navigate(`/tier-maker/${boardId}`);
+    } catch (err) {
+      console.error('Failed to create tier board:', err);
+      toast.error('Failed to create tier board');
+      setIsOpeningBoard(false);
     }
   };
 
@@ -396,7 +418,15 @@ const ListManager = () => {
             isRanked={isRanked}
           />
 
-          <div className="fixed bottom-6 left-6 z-50">
+          <div className="fixed bottom-6 left-6 z-50 flex flex-col gap-2">
+            <button
+              onClick={openAsTierBoard}
+              disabled={isOpeningBoard}
+              title="Make a tier board from this list. Send it back from the board when you're done."
+              className="bg-black/20 text-white px-4 py-2 rounded hover:bg-neutral-600 disabled:opacity-40"
+            >
+              {isOpeningBoard ? 'Opening...' : 'Open as Tier Board'}
+            </button>
             <button
               onClick={() => setShowExportModal(true)}
               className="bg-black/20 text-white px-4 py-2 rounded hover:bg-neutral-600"
