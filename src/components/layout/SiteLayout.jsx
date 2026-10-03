@@ -1,6 +1,6 @@
 // SiteLayout.jsx
 import React, { Suspense, useEffect, useState } from 'react';
-import { Link, Outlet } from 'react-router-dom';
+import { Link, Outlet, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { ChevronDown, Menu, X, Lock } from 'lucide-react';
 import useAuth from '@/hooks/useAuth';
@@ -48,6 +48,7 @@ const NavGroup = ({ label, children, align = 'left', isMobile = false }) => {
       <div className="w-full">
         <button
           onClick={() => setIsOpen(!isOpen)}
+          aria-expanded={isOpen}
           className="w-full flex items-center justify-between py-3 text-white/80 hover:text-white border-b border-white/10"
         >
           <span className="font-medium">{label}</span>
@@ -65,14 +66,17 @@ const NavGroup = ({ label, children, align = 'left', isMobile = false }) => {
 
   return (
     <div className="relative group">
-      <button className="py-2 px-3 text-white/60 hover:text-white flex items-center gap-1">
+      <button
+        aria-haspopup="true"
+        className="py-2 px-3 text-white/60 hover:text-white flex items-center gap-1"
+      >
         {label}
         <ChevronDown size={14} />
       </button>
 
       <div
-        className={`absolute top-full pt-2 opacity-0 group-hover:opacity-100 invisible group-hover:visible transition-all z-50 ${
-          align === 'center' ? '-translate-x-1/2 left-1/2' : ''
+        className={`absolute top-full pt-2 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 invisible group-hover:visible group-focus-within:visible transition-all z-50 ${
+          align === 'right' ? 'right-0' : ''
         }`}
       >
         <div className="bg-[#1a1a1a] border border-white/10 rounded-lg py-2 w-48 shadow-xl">
@@ -104,7 +108,7 @@ const MobileMenu = ({ isOpen, onClose }) => {
         onClick={onClose}
       />
 
-      <div className="fixed top-0 right-0 h-full w-80 bg-[#121212] border-l border-white/10 z-50 lg:hidden transform transition-transform duration-200">
+      <div className="fixed top-0 right-0 h-full w-80 max-w-[85vw] overflow-y-auto bg-[#121212] border-l border-white/10 z-50 lg:hidden transform transition-transform duration-200">
         <div className="flex items-center justify-between p-6 border-b border-white/10">
           <Link
             to="/"
@@ -115,6 +119,7 @@ const MobileMenu = ({ isOpen, onClose }) => {
           </Link>
           <button
             onClick={onClose}
+            aria-label="Close menu"
             className="p-2 text-white/60 hover:text-white"
           >
             <X size={20} />
@@ -155,20 +160,14 @@ const MobileMenu = ({ isOpen, onClose }) => {
             className="block py-2 text-white/60 hover:text-white"
             lockClassName="flex items-center gap-2 py-2 text-white/40 cursor-not-allowed"
           />
-          <AdminLink
-            to="/rankings/browse"
-            label="Browse Rankings"
-            onClick={onClose}
-            className="block py-2 text-white/60 hover:text-white"
-            lockClassName="flex items-center gap-2 py-2 text-white/40 cursor-not-allowed"
-          />
           <NavGroup label="Tools" isMobile={true}>
-            <Link
+            <AdminLink
               to="/tier-maker"
+              label="Tier Maker"
+              onClick={onClose}
               className="block py-2 text-white/60 hover:text-white"
-            >
-              Tier Maker
-            </Link>
+              lockClassName="flex items-center gap-2 py-2 text-white/40 cursor-not-allowed"
+            />
             <Link
               to="/ranker"
               className="block py-2 text-white/60 hover:text-white"
@@ -223,6 +222,13 @@ const PageLoading = () => (
 
 const SiteLayout = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { pathname } = useLocation();
+
+  // Any navigation closes the drawer, including links that forget onClick and
+  // the browser's back button.
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
 
   return (
     <div className="min-h-screen bg-neutral-900 text-white flex flex-col">
@@ -264,13 +270,14 @@ const SiteLayout = () => {
             className="hover:text-white"
             lockClassName="flex items-center gap-1 text-white/40 cursor-not-allowed"
           />
-          <NavGroup label="Tools" align="center">
-            <Link
+          <NavGroup label="Tools" align="right">
+            <AdminLink
               to="/tier-maker"
+              label="Tier Maker"
+              iconSize={12}
               className="block py-2 px-4 text-white/60 hover:text-white hover:bg-white/5"
-            >
-              Tier Maker
-            </Link>
+              lockClassName="flex items-center gap-2 py-2 px-4 text-white/40 cursor-not-allowed"
+            />
             <Link
               to="/ranker"
               className="block py-2 px-4 text-white/60 hover:text-white hover:bg-white/5"
@@ -313,6 +320,8 @@ const SiteLayout = () => {
 
         <button
           onClick={() => setMobileMenuOpen(true)}
+          aria-label="Open menu"
+          aria-expanded={mobileMenuOpen}
           className="lg:hidden p-2 text-white/60 hover:text-white"
         >
           <Menu size={24} />

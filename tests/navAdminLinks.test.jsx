@@ -39,3 +39,25 @@ describe('Lists and Tiers in the nav', () => {
     );
   });
 });
+
+describe('Tier Maker in the nav', () => {
+  // /tier-maker is admin-gated, so a plain link sent visitors to a sign-in
+  // wall from a menu item that looked open.
+  it('is padlocked for a visitor', () => {
+    auth.isAdmin = false;
+    renderNav();
+    const items = screen.getAllByText('Tier Maker');
+    expect(items.length).toBeGreaterThan(0);
+    items.forEach((el) => expect(el.closest('a')).toBeNull());
+  });
+
+  it('links the signed-in admin to it', () => {
+    auth.isAdmin = true;
+    renderNav();
+    screen
+      .getAllByText('Tier Maker')
+      .forEach((el) =>
+        expect(el.closest('a')?.getAttribute('href')).toBe('/tier-maker')
+      );
+  });
+});
