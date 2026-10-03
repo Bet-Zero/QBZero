@@ -4,14 +4,13 @@ import {
   doc,
   addDoc,
   getDocs,
-  getDoc,
   updateDoc,
   deleteDoc,
   query,
   orderBy,
-  where,
   serverTimestamp,
 } from 'firebase/firestore';
+import { pickTakeFields } from '@/utils/qbw/takes';
 
 const takesRef = collection(db, 'takes');
 
@@ -29,30 +28,11 @@ export const fetchAllTakes = async () => {
   }
 };
 
-// Get takes for a specific author
-export const fetchAuthorTakes = async (authorId) => {
-  try {
-    const q = query(
-      takesRef,
-      where('authorId', '==', authorId),
-      orderBy('createdAt', 'desc')
-    );
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-  } catch (error) {
-    console.error('Error fetching takes:', error);
-    throw error;
-  }
-};
-
 // Create a new take with author info
 export const createTake = async (takeData, authorId, authorName) => {
   try {
     const take = {
-      ...takeData,
+      ...pickTakeFields(takeData),
       authorId,
       authorName,
       createdAt: serverTimestamp(),
@@ -67,47 +47,24 @@ export const createTake = async (takeData, authorId, authorName) => {
   }
 };
 
-// Update a take (only if user is the author)
-export const updateTake = async (takeId, takeData, authorId) => {
+// Edit a take's content or status. firestore.rules limits this to admins;
+// the author and creation time are left as they were.
+export const updateTake = async (takeId, takeData) => {
   try {
-    const takeRef = doc(db, 'takes', takeId);
-    const takeSnap = await getDoc(takeRef);
-
-    if (!takeSnap.exists()) {
-      throw new Error('Take not found');
-    }
-
-    if (takeSnap.data().authorId !== authorId) {
-      throw new Error('Unauthorized: You can only edit your own takes');
-    }
-
-    await updateDoc(takeRef, {
-      ...takeData,
+    await updateDoc(doc(db, 'takes', takeId), {
+      ...pickTakeFields(takeData),
       updatedAt: serverTimestamp(),
     });
-    return { success: true };
   } catch (error) {
     console.error('Error updating take:', error);
     throw error;
   }
 };
 
-// Delete a take (only if user is the author)
-export const deleteTake = async (takeId, authorId) => {
+// Delete a take. firestore.rules limits this to admins.
+export const deleteTake = async (takeId) => {
   try {
-    const takeRef = doc(db, 'takes', takeId);
-    const takeSnap = await getDoc(takeRef);
-
-    if (!takeSnap.exists()) {
-      throw new Error('Take not found');
-    }
-
-    if (takeSnap.data().authorId !== authorId) {
-      throw new Error('Unauthorized: You can only delete your own takes');
-    }
-
-    await deleteDoc(takeRef);
-    return { success: true };
+    await deleteDoc(doc(db, 'takes', takeId));
   } catch (error) {
     console.error('Error deleting take:', error);
     throw error;

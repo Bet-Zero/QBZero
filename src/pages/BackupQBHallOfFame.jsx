@@ -46,8 +46,8 @@ const BackupQBHallOfFame = () => {
         <div className="space-y-8">
           {BACKUP_QB_HALL_OF_FAME.map((qb, index) => (
             <div key={qb.id} className="group">
-              <div className="bg-gradient-to-r from-neutral-800/50 to-neutral-700/50 rounded-xl border border-white/10 hover:border-orange-500/30 transition-all p-8">
-                <div className="flex items-start gap-6">
+              <div className="bg-gradient-to-r from-neutral-800/50 to-neutral-700/50 rounded-xl border border-white/10 hover:border-orange-500/30 transition-all p-5 sm:p-8">
+                <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start">
                   {/* Player Image Placeholder */}
                   <div className="flex-shrink-0">
                     <div className="w-24 h-24 bg-neutral-700 rounded-full flex items-center justify-center border-2 border-orange-500/30">
@@ -73,8 +73,8 @@ const BackupQBHallOfFame = () => {
                   </div>
 
                   {/* Player Info */}
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-3 mb-2">
                       <h3 className="text-2xl font-bold">{qb.name}</h3>
                       <span className="px-3 py-1 bg-orange-600/20 text-orange-400 rounded-full text-sm font-medium">
                         {qb.team}

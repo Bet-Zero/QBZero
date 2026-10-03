@@ -48,8 +48,10 @@ export const generateSeedOrder = (size) => {
 
 export const seedEntrants = (entrants, size) => {
   const trimmedSize = Math.min(size, entrants.length);
+  // Sort before trimming. Trimming first let the order the players arrived in
+  // (fallback list, then Firestore) decide who missed the cut, so the field
+  // could change between loads.
   const seededEntrants = entrants
-    .slice(0, trimmedSize)
     .map((entrant) => ({
       ...entrant,
       display_name: fallbackName(entrant),
@@ -57,8 +59,9 @@ export const seedEntrants = (entrants, size) => {
     .sort((a, b) => {
       const nameA = fallbackName(a);
       const nameB = fallbackName(b);
-      return collator.compare(nameA, nameB);
+      return collator.compare(nameA, nameB) || collator.compare(a.id, b.id);
     })
+    .slice(0, trimmedSize)
     .map((entrant, index) => ({
       ...entrant,
       seed: index + 1,
@@ -188,6 +191,57 @@ export const clearDependentWinners = (winners, roundIndex, matchIndex) => {
   }
 
   return cloned;
+};
+
+// Picks `playerId` (or clears with null) for one match. Later rounds lose only
+// the picks the previous winner had made it into; a pick in the next round that
+// came from the other side of the bracket stays.
+export const pickWinner = (winners, roundIndex, matchIndex, playerId) => {
+  const cloned = winners.map((round) => [...round]);
+  const previous = cloned[roundIndex][matchIndex];
+  cloned[roundIndex][matchIndex] = playerId;
+  if (!previous || previous === playerId) return cloned;
+
+  let currentRound = roundIndex + 1;
+  let currentMatch = Math.floor(matchIndex / 2);
+  while (
+    currentRound < cloned.length &&
+    cloned[currentRound][currentMatch] === previous
+  ) {
+    cloned[currentRound][currentMatch] = null;
+    currentMatch = Math.floor(currentMatch / 2);
+    currentRound += 1;
+  }
+
+  return cloned;
+};
+
+// Fits saved picks onto the current bracket: a pick survives only if that
+// player is actually in that match, given the picks before it.
+export const sanitizeWinners = (blueprint, saved) => {
+  const { rounds, seeded, winners: empty } = blueprint;
+  if (!Array.isArray(saved)) return empty;
+
+  const result = empty.map((round) => [...round]);
+  rounds.forEach((round, roundIndex) => {
+    round.matches.forEach((match) => {
+      const pick = saved[roundIndex]?.[match.matchIndex];
+      if (!pick) return;
+      const participants = getMatchParticipants({
+        rounds,
+        seededBySeed: seeded.bySeed,
+        winners: result,
+        roundIndex,
+        matchIndex: match.matchIndex,
+        entrantsById: seeded.byId,
+      });
+      if (participants.some((participant) => participant?.id === pick)) {
+        result[roundIndex][match.matchIndex] = pick;
+      }
+    });
+  });
+
+  return result;
 };
 
 export const setWinner = (winners, roundIndex, matchIndex, playerId) => {
