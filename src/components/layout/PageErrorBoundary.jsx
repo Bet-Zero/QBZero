@@ -6,7 +6,10 @@ import React from 'react';
  * Without it React unmounts the whole tree and the visitor gets a blank screen
  * with no header to navigate away from.
  *
- * SiteLayout keys this on the path, so moving to another page clears the error.
+ * Moving to another path clears the error. That is done by watching `resetKey`
+ * rather than keying the boundary on the path: a key would remount the page on
+ * every path change, and some pages change their own path mid-edit (the tier
+ * maker's first save goes from /tier-maker to /tier-maker/<id>).
  */
 class PageErrorBoundary extends React.Component {
   constructor(props) {
@@ -16,6 +19,12 @@ class PageErrorBoundary extends React.Component {
 
   static getDerivedStateFromError(error) {
     return { error };
+  }
+
+  componentDidUpdate(prevProps) {
+    if (this.state.error && prevProps.resetKey !== this.props.resetKey) {
+      this.setState({ error: null });
+    }
   }
 
   componentDidCatch(error, info) {

@@ -327,7 +327,7 @@ const SiteLayout = () => {
       />
 
       <main className="flex-1 w-full">
-        <PageErrorBoundary key={pathname}>
+        <PageErrorBoundary resetKey={pathname}>
           <Suspense fallback={<PageLoading />}>
             <Outlet />
           </Suspense>

@@ -1,6 +1,7 @@
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { MemoryRouter, Routes, Route, useNavigate } from 'react-router-dom';
 
 vi.mock('@/hooks/useAuth', () => ({
   default: () => ({ user: null, isAdmin: false, loading: false }),
@@ -61,5 +62,45 @@ describe('SiteLayout page error boundary', () => {
     expect(screen.queryByText('This page hit a problem')).toBeNull();
     expect(screen.getByText('fine page')).toBeTruthy();
     consoleError.mockRestore();
+  });
+});
+
+describe('SiteLayout page error boundary, path changes', () => {
+  it('keeps a page mounted when it changes its own path', () => {
+    // The tier maker's first save replaces /tier-maker with /tier-maker/<id>.
+    // Remounting there would throw away the board being edited.
+    let mounts = 0;
+    const Board = () => {
+      const navigate = useNavigate();
+      const [count, setCount] = useState(0);
+      useEffect(() => {
+        mounts += 1;
+      }, []);
+      return (
+        <div>
+          <span>edits {count}</span>
+          <button
+            onClick={() => {
+              setCount(count + 1);
+              navigate('/board/abc', { replace: true });
+            }}
+          >
+            save
+          </button>
+        </div>
+      );
+    };
+    render(
+      <MemoryRouter initialEntries={['/board']}>
+        <Routes>
+          <Route element={<SiteLayout />}>
+            <Route path="/board/:id?" element={<Board />} />
+          </Route>
+        </Routes>
+      </MemoryRouter>
+    );
+    fireEvent.click(screen.getByText('save'));
+    expect(screen.getByText('edits 1')).toBeTruthy();
+    expect(mounts).toBe(1);
   });
 });
