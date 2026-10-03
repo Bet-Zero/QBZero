@@ -9,6 +9,7 @@ import {
 } from '@/firebase/personalRankingHelpers';
 import { summariseRankingChange } from '@/utils/rankings/rankingSummary';
 import { formatArchiveDate } from '@/utils/formatting/rankingDates';
+import { useConfirm } from '@/components/shared/ui/ConfirmModal';
 
 /**
  * Give every archive the date its board was saved.
@@ -36,7 +37,13 @@ export const withSavedDates = (archives = []) =>
  * Restoring goes through the ordinary save, so the board being replaced is
  * archived first -- restoring the wrong version is itself undoable.
  */
+/** The most archives read at once, when the whole history is wanted. */
+const ALL_ARCHIVES = 2000;
+
 const usePersonalRankingHistory = () => {
+  // In-app confirmation rather than the browser's own dialog. Whichever page
+  // offers restore or delete renders `confirmDialog`.
+  const { confirm, confirmDialog } = useConfirm();
   const [current, setCurrent] = useState(null);
   const [archives, setArchives] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -91,15 +98,23 @@ const usePersonalRankingHistory = () => {
     setLoadingMore(false);
   }, [load, pageSize]);
 
+  // Zoomed out to months or years, a page is not enough: every period has to
+  // be there to file. Reads the lot in one bounded query.
+  const loadAll = useCallback(async () => {
+    setLoadingMore(true);
+    setPageSize(ALL_ARCHIVES);
+    await load(ALL_ARCHIVES);
+    setLoadingMore(false);
+  }, [load]);
+
   const restore = useCallback(
     async (archive) => {
-      if (
-        !window.confirm(
-          'Make this archive your current rankings? The board you have now is archived first, so this can be undone.'
-        )
-      ) {
-        return;
-      }
+      const confirmed = await confirm({
+        title: 'Restore this version?',
+        message: `Make the ranking from ${formatArchiveDate(archive)} your current rankings. The board you have now is kept in the history first, so this can be undone.`,
+        confirmLabel: 'Restore',
+      });
+      if (!confirmed) return;
       setBusyId(archive.id);
       try {
         // The note describes the version it is on. A restored board with no
@@ -121,18 +136,18 @@ const usePersonalRankingHistory = () => {
         setBusyId(null);
       }
     },
-    [current, load, pageSize]
+    [confirm, current, load, pageSize]
   );
 
   const remove = useCallback(
     async (archive) => {
-      if (
-        !window.confirm(
-          'Delete this archive? The rankings it holds are not recoverable afterwards.'
-        )
-      ) {
-        return;
-      }
+      const confirmed = await confirm({
+        title: 'Delete this version?',
+        message: `The ranking from ${formatArchiveDate(archive)} is gone for good once deleted.`,
+        confirmLabel: 'Delete',
+        danger: true,
+      });
+      if (!confirmed) return;
       setBusyId(archive.id);
       try {
         await deletePersonalRankingArchive(archive.id);
@@ -145,7 +160,7 @@ const usePersonalRankingHistory = () => {
         setBusyId(null);
       }
     },
-    [load, pageSize]
+    [confirm, load, pageSize]
   );
 
   return {
@@ -155,10 +170,12 @@ const usePersonalRankingHistory = () => {
     loadingMore,
     hasMore,
     loadMore,
+    loadAll,
     error,
     busyId,
     restore,
     remove,
+    confirmDialog,
     reload: load,
   };
 };

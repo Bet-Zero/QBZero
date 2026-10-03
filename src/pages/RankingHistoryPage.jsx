@@ -43,10 +43,12 @@ const RankingHistoryPage = () => {
     loadingMore,
     hasMore,
     loadMore,
+    loadAll,
     error,
     busyId,
     restore,
     remove,
+    confirmDialog,
   } = usePersonalRankingHistory();
   const [params, setParams] = useSearchParams();
   const [exporting, setExporting] = useState(false);
@@ -177,6 +179,7 @@ const RankingHistoryPage = () => {
               hasMore={hasMore}
               onLoadMore={loadMore}
               loadingMore={loadingMore}
+              onLoadAll={loadAll}
             />
           </aside>
 
@@ -294,6 +297,8 @@ const RankingHistoryPage = () => {
           </section>
         </div>
       )}
+
+      {confirmDialog}
 
       {exporting && selected && (
         <RankingsExportModal
