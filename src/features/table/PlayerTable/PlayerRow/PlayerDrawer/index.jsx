@@ -1,4 +1,5 @@
 import React from 'react';
+import OverallBlurbMini from '@/features/table/PlayerTable/PlayerRow/PlayerDrawer/OverallBlurbMini';
 import BadgeMini from '@/features/table/PlayerTable/PlayerRow/PlayerDrawer/BadgeMini';
 import PlayerTraitsMiniGrid from '@/features/table/PlayerTable/PlayerRow/PlayerDrawer/PlayerTraitsMiniGrid';
 import PlayerSubRolesMini from '@/features/table/PlayerTable/PlayerRow/PlayerDrawer/PlayerSubRolesMini';
@@ -8,6 +9,8 @@ import PlayerContractMini from '@/features/table/PlayerTable/PlayerRow/PlayerDra
 const Divider = () => <div className="w-px h-auto bg-white/10 mx-3 my-1" />;
 
 const PlayerDrawer = ({ player }) => {
+  const overallBlurb = player.blurbs?.overall?.trim();
+
   return (
     <div className="w-full bg-[#111] border-t border-white/10 py-3">
       <div className="flex w-full gap-2">
@@ -17,10 +20,13 @@ const PlayerDrawer = ({ player }) => {
             <BadgeMini badges={player.badges || []} />
           </div>
 
-          {/* TODO: Uncomment when overall blurbs are live */}
-          {/* <div className="ml-5 mt-1">
-            <OverallBlurbMini text={player.blurbs?.overall || ""} />
-          </div> */}
+          {/* Only drawn once a summary has been written on the profile, so
+              the many players without one don't show an empty box. */}
+          {overallBlurb && (
+            <div className="ml-5 mt-1">
+              <OverallBlurbMini text={overallBlurb} />
+            </div>
+          )}
         </div>
 
         {/* RIGHT SIDE: Drawer content */}

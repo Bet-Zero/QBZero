@@ -4,7 +4,7 @@ const OverallBlurbMini = ({ text }) => {
   return (
     <div className="w-[320px] h-[120px] bg-neutral-900 rounded-xl p-2 flex flex-col gap-3 border border-black">
       <span className="text-white/50 text-sm mb-1">Overall</span>
-      <div className="text-white/50 text-sm leading-relaxed whitespace-pre-wrap">
+      <div className="text-white/50 text-sm leading-relaxed whitespace-pre-wrap overflow-y-auto">
         {text || (
           <span className="text-white/50 italic">No summary provided.</span>
         )}
