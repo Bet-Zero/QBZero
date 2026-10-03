@@ -1,5 +1,5 @@
 // SiteLayout.jsx
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import { Link, Outlet } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { ChevronDown, Menu, X, Lock } from 'lucide-react';
@@ -201,6 +201,13 @@ const MobileMenu = ({ isOpen, onClose }) => {
   );
 };
 
+// Shown while a page's code downloads on its first visit.
+const PageLoading = () => (
+  <div className="min-h-[50vh] flex items-center justify-center">
+    <div className="text-white/50 text-sm">Loading…</div>
+  </div>
+);
+
 const SiteLayout = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -292,7 +299,9 @@ const SiteLayout = () => {
       />
 
       <main className="flex-1 w-full">
-        <Outlet />
+        <Suspense fallback={<PageLoading />}>
+          <Outlet />
+        </Suspense>
         <Toaster position="bottom-center" />
       </main>
     </div>

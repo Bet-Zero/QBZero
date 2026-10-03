@@ -1,27 +1,38 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import PlayerTableView from '@/pages/PlayerTableView';
-import PlayerProfileView from '@/pages/PlayerProfileView';
-import ListManager from '@/pages/ListManager';
-import ListsHome from '@/pages/ListsHome';
-import TierMakerView from '@/pages/TierMakerView';
-import TierListsHome from '@/pages/TierListsHome';
-import RankerLandingPage from '@/pages/RankerLandingPage';
-import RankerSetupPage from '@/pages/RankerSetupPage';
-import RankerComparisonsPage from '@/pages/RankerComparisonsPage';
-import RankerResultsPage from '@/pages/RankerResultsPage';
-import QBRankingsPage from '@/pages/QBRankingsPage';
-import QBRankingsHome from '@/pages/QBRankingsHome';
-import BrowseRankingsPage from '@/pages/BrowseRankingsPage';
-import PublicQBRankingsPage from '@/pages/PublicQBRankingsPage';
-import QBWPage from '@/pages/QBWPage';
-import BackupQBsHome from '@/pages/BackupQBsHome';
-import BackupQBHallOfFame from '@/pages/BackupQBHallOfFame';
+import lazyPage from '@/utils/lazyPage';
 import { RankerProvider } from '@/context/RankerContext';
 import SiteLayout from '@/components/layout/SiteLayout';
 import NotFound from '@/pages/NotFound';
-import ListPresentationView from '@/pages/ListPresentationView';
 import Home from '@/pages/Home';
 import AdminProtectedRoute from '@/components/shared/AdminProtectedRoute';
+
+// Home and the 404 are tiny and are the likeliest first paint, so they stay in
+// the main bundle. Every other page loads on first visit; SiteLayout holds the
+// header in place while it does.
+const PlayerTableView = lazyPage(() => import('@/pages/PlayerTableView'));
+const PlayerProfileView = lazyPage(() => import('@/pages/PlayerProfileView'));
+const ListManager = lazyPage(() => import('@/pages/ListManager'));
+const ListsHome = lazyPage(() => import('@/pages/ListsHome'));
+const TierMakerView = lazyPage(() => import('@/pages/TierMakerView'));
+const TierListsHome = lazyPage(() => import('@/pages/TierListsHome'));
+const RankerLandingPage = lazyPage(() => import('@/pages/RankerLandingPage'));
+const RankerSetupPage = lazyPage(() => import('@/pages/RankerSetupPage'));
+const RankerComparisonsPage = lazyPage(
+  () => import('@/pages/RankerComparisonsPage')
+);
+const RankerResultsPage = lazyPage(() => import('@/pages/RankerResultsPage'));
+const QBRankingsPage = lazyPage(() => import('@/pages/QBRankingsPage'));
+const QBRankingsHome = lazyPage(() => import('@/pages/QBRankingsHome'));
+const BrowseRankingsPage = lazyPage(() => import('@/pages/BrowseRankingsPage'));
+const PublicQBRankingsPage = lazyPage(
+  () => import('@/pages/PublicQBRankingsPage')
+);
+const QBWPage = lazyPage(() => import('@/pages/QBWPage'));
+const BackupQBsHome = lazyPage(() => import('@/pages/BackupQBsHome'));
+const BackupQBHallOfFame = lazyPage(() => import('@/pages/BackupQBHallOfFame'));
+const ListPresentationView = lazyPage(
+  () => import('@/pages/ListPresentationView')
+);
 
 const App = () => {
   return (
