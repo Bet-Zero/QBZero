@@ -14,34 +14,17 @@
 // `__name__`, and a board cannot hold two tiers with the same label (the list
 // page names every new divider "New Tier").
 
-export const DIVIDER_PREFIX = 'divider::';
+import {
+  isDivider,
+  dividerLabel,
+  makeDivider,
+  mergeListOrder,
+  playerIdsOf,
+} from '@/utils/lists/listOrder';
+
 export const POOL = 'Pool';
 export const UNPLACED_LABEL = 'Unplaced';
 export const DEFAULT_BOARD_TIERS = ['S', 'A', 'B', 'C', 'D'];
-
-export const isDivider = (item) =>
-  typeof item === 'string' && item.startsWith(DIVIDER_PREFIX);
-
-export const dividerLabel = (item) => item.slice(DIVIDER_PREFIX.length);
-
-/**
- * A list's items in display order: `playerOrder` first, then any id that is
- * only in `playerIds` (added from a profile and not yet saved on the list
- * page). Duplicates are dropped.
- */
-export const readListOrder = (list = {}) => {
-  const seen = new Set();
-  const out = [];
-  [...(list.playerOrder || []), ...(list.playerIds || [])].forEach((item) => {
-    if (typeof item !== 'string' || !item) return;
-    if (!isDivider(item)) {
-      if (seen.has(item)) return;
-      seen.add(item);
-    }
-    out.push(item);
-  });
-  return out;
-};
 
 const isUsableLabel = (label) =>
   label.length > 0 && label !== POOL && !/^__.*__$/.test(label);
@@ -71,7 +54,7 @@ export const uniqueTierLabels = (labels) => {
  * order, ready to be sorted.
  */
 export const listToTierBoard = (list) => {
-  const order = readListOrder(list);
+  const order = mergeListOrder(list);
   const groups = [];
   let current = null;
 
@@ -130,7 +113,7 @@ export const tierBoardToList = ({ tiers = {}, tierOrder = [] } = {}) => {
 
   const playerOrder = [];
   order.forEach((tier, idx) => {
-    playerOrder.push(`${DIVIDER_PREFIX}${labels[idx]}`);
+    playerOrder.push(makeDivider(labels[idx]));
     playerOrder.push(...take(tiers[tier]));
   });
 
@@ -139,12 +122,12 @@ export const tierBoardToList = ({ tiers = {}, tierOrder = [] } = {}) => {
     const label = labels.includes(UNPLACED_LABEL)
       ? uniqueTierLabels([...labels, UNPLACED_LABEL]).at(-1)
       : UNPLACED_LABEL;
-    playerOrder.push(`${DIVIDER_PREFIX}${label}`, ...pool);
+    playerOrder.push(makeDivider(label), ...pool);
   }
 
   return {
     playerOrder,
-    playerIds: playerOrder.filter((item) => !isDivider(item)),
+    playerIds: playerIdsOf(playerOrder),
   };
 };
 

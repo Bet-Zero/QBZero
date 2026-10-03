@@ -1,27 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import {
-  readListOrder,
   uniqueTierLabels,
   listToTierBoard,
   tierBoardToList,
   keepNotesFor,
 } from '@/utils/lists/listTierBridge';
-
-describe('readListOrder', () => {
-  it('appends ids only in playerIds after the saved order, once each', () => {
-    expect(
-      readListOrder({
-        playerOrder: ['a', 'divider::X', 'b'],
-        playerIds: ['a', 'b', 'c'],
-      })
-    ).toEqual(['a', 'divider::X', 'b', 'c']);
-  });
-
-  it('handles a list created from a profile with no playerOrder', () => {
-    expect(readListOrder({ playerIds: ['a', 'b'] })).toEqual(['a', 'b']);
-    expect(readListOrder({})).toEqual([]);
-  });
-});
 
 describe('uniqueTierLabels', () => {
   it('numbers repeated labels instead of merging them', () => {
