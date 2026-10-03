@@ -1,8 +1,13 @@
 import React from 'react';
 import Shelf from '@/features/qbw/Shelf';
 import TakeBoard from '@/features/qbw/TakeBoard';
+import useTakes from '@/features/qbw/useTakes';
+import { takeStats } from '@/utils/qbw/takes';
 
 const QBWPage = () => {
+  const { takes, loading, reload } = useTakes();
+  const stats = takeStats(takes);
+
   // Sample data for crystal ball QBs (successful predictions)
   // All 5 good crystal balls go to Elite Tier Predictions
   const successfulPredictions = [
@@ -54,216 +59,6 @@ const QBWPage = () => {
     },
   ];
 
-  // Sample data for takes/predictions
-  const takes = [
-    {
-      id: '1',
-      title: 'Josh Allen will be a top 3 QB',
-      description:
-        'Called his rise to elite status before his breakout 2020 season',
-      qbName: 'Josh Allen',
-      date: 'Draft Day 2018',
-      proofDate: '2020 Season',
-      status: 'correct',
-    },
-    {
-      id: '2',
-      title: 'Justin Herbert OROY',
-      description:
-        'Predicted he would win Offensive Rookie of the Year over Tua',
-      qbName: 'Justin Herbert',
-      date: 'Week 2 2020',
-      proofDate: 'Feb 2021',
-      status: 'correct',
-    },
-    {
-      id: '3',
-      title: 'Joe Burrow leads Bengals to Super Bowl',
-      description: 'Predicted championship run in his second season',
-      qbName: 'Joe Burrow',
-      date: '2021 Draft',
-      proofDate: 'Feb 2022',
-      status: 'correct',
-    },
-    {
-      id: '4',
-      title: 'Lamar Jackson 40+ passing TDs',
-      description: 'Predicted he would develop into elite passer',
-      qbName: 'Lamar Jackson',
-      date: '2019 Offseason',
-      proofDate: '2019 Season',
-      status: 'correct',
-    },
-    {
-      id: '5',
-      title: 'Mac Jones will struggle without McDaniels',
-      description: 'Predicted his regression when OC left',
-      qbName: 'Mac Jones',
-      date: 'Jan 2022',
-      status: 'wrong',
-    },
-    {
-      id: '6',
-      title: 'Dak Prescott bounce back season',
-      description: 'Predicted strong return from injury',
-      qbName: 'Dak Prescott',
-      date: '2022 Offseason',
-      status: 'correct',
-    },
-    {
-      id: '7',
-      title: 'Tua stays healthy all season',
-      description: 'Called his improved durability',
-      qbName: 'Tua Tagovailoa',
-      date: '2023 Training Camp',
-      status: 'correct',
-    },
-    {
-      id: '8',
-      title: 'Jordan Love breakout year',
-      description: 'Predicted his leap after Rodgers departure',
-      qbName: 'Jordan Love',
-      date: '2023 Draft',
-      status: 'correct',
-    },
-    {
-      id: '9',
-      title: 'Geno Smith proves doubters wrong',
-      description: 'Called his resurgence in Seattle',
-      qbName: 'Geno Smith',
-      date: '2022 Preseason',
-      status: 'correct',
-    },
-    {
-      id: '10',
-      title: 'Baker Mayfield Comeback Player of the Year',
-      description: 'Predicted his Tampa Bay success',
-      qbName: 'Baker Mayfield',
-      date: '2023 Free Agency',
-      status: 'correct',
-    },
-    {
-      id: '11',
-      title: 'Brock Purdy sustains success',
-      description: 'Said he was more than a system QB',
-      qbName: 'Brock Purdy',
-      date: '2023 Offseason',
-      status: 'correct',
-    },
-    {
-      id: '12',
-      title: 'Jared Goff top 10 QB',
-      description: 'Predicted his Detroit renaissance',
-      qbName: 'Jared Goff',
-      date: '2021 Trade',
-      status: 'correct',
-    },
-    {
-      id: '13',
-      title: 'Kirk Cousins struggles in big games',
-      description: 'Called his playoff inconsistency',
-      qbName: 'Kirk Cousins',
-      date: '2020 Season',
-      status: 'correct',
-    },
-    {
-      id: '14',
-      title: 'Trevor Lawrence takes the leap',
-      description: 'Predicted his second year improvement',
-      qbName: 'Trevor Lawrence',
-      date: '2022 Offseason',
-      status: 'correct',
-    },
-    {
-      id: '15',
-      title: 'Russell Wilson declines in Denver',
-      description: 'Predicted his struggles with new team',
-      qbName: 'Russell Wilson',
-      date: '2022 Trade',
-      status: 'correct',
-    },
-    {
-      id: '16',
-      title: 'Kyler Murray injury concerns',
-      description: 'Called his durability issues',
-      qbName: 'Kyler Murray',
-      date: '2021 Season',
-      status: 'correct',
-    },
-    {
-      id: '17',
-      title: 'Derek Carr leaves Raiders',
-      description: 'Predicted the breakup before it happened',
-      qbName: 'Derek Carr',
-      date: '2022 Midseason',
-      status: 'correct',
-    },
-    {
-      id: '18',
-      title: 'Aaron Rodgers drama continues',
-      description: 'Called the ongoing Jets situation',
-      qbName: 'Aaron Rodgers',
-      date: '2023 Offseason',
-      status: 'correct',
-    },
-    {
-      id: '19',
-      title: 'Daniel Jones gets paid',
-      description: 'Predicted Giants would extend him',
-      qbName: 'Daniel Jones',
-      date: '2022 Season',
-      status: 'correct',
-    },
-    {
-      id: '20',
-      title: 'Sam Darnold finds success as backup',
-      description: 'Called his role player value',
-      qbName: 'Sam Darnold',
-      date: '2023 Free Agency',
-      status: 'correct',
-    },
-    {
-      id: '21',
-      title: 'C.J. Stroud OROY frontrunner',
-      description: 'Predicted his immediate impact',
-      qbName: 'C.J. Stroud',
-      date: '2023 Draft',
-      status: 'correct',
-    },
-    {
-      id: '22',
-      title: 'Matthew Stafford age catches up',
-      description: 'Called his decline after Super Bowl',
-      qbName: 'Matthew Stafford',
-      date: '2022 Offseason',
-      status: 'correct',
-    },
-    {
-      id: '23',
-      title: 'Anthony Richardson will win OROY',
-      description: 'Bold prediction for the rookie season',
-      qbName: 'Anthony Richardson',
-      date: '2023 Draft',
-      status: 'wrong',
-    },
-    {
-      id: '24',
-      title: 'Caleb Williams 35+ TD passes rookie year',
-      description: 'High expectations for the #1 pick',
-      qbName: 'Caleb Williams',
-      date: '2024 Draft',
-      status: 'pending',
-    },
-    {
-      id: '25',
-      title: 'Bryce Young struggles year one',
-      description: 'Predicted rookie growing pains',
-      qbName: 'Bryce Young',
-      date: '2023 Draft',
-      status: 'wrong',
-    },
-  ];
-
   return (
     <div className="min-h-screen bg-neutral-900 text-white">
       {/* Hero Section */}
@@ -284,7 +79,7 @@ const QBWPage = () => {
           <div className="flex justify-center items-center gap-8 text-white/50 relative z-10">
             <div className="text-center">
               <div className="text-2xl font-bold text-purple-400">
-                {takes.filter((t) => t.status === 'correct').length}
+                {loading ? '–' : stats.correct}
               </div>
               <div className="text-sm">Correct Takes</div>
             </div>
@@ -298,12 +93,9 @@ const QBWPage = () => {
             <div className="w-px h-12 bg-white/20"></div>
             <div className="text-center">
               <div className="text-2xl font-bold text-cyan-400">
-                {Math.round(
-                  (takes.filter((t) => t.status === 'correct').length /
-                    takes.filter((t) => t.status !== 'pending').length) *
-                    100
-                )}
-                %
+                {loading || stats.accuracy === null
+                  ? '–'
+                  : `${stats.accuracy}%`}
               </div>
               <div className="text-sm">Accuracy Rate</div>
             </div>
@@ -336,7 +128,7 @@ const QBWPage = () => {
       <div className="bg-gradient-to-b from-neutral-900 via-[#141429] to-[#1a1a2e] border-t border-white/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <section>
-            <TakeBoard takes={takes} />
+            <TakeBoard takes={takes} loading={loading} onChanged={reload} />
           </section>
         </div>
       </div>
