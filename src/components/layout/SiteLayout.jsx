@@ -185,14 +185,20 @@ const MobileMenu = ({ isOpen, onClose }) => {
             />
             <div className="border-t border-white/10 my-2" />
             <div>
-              <div className="flex items-center gap-2 py-2 text-white/40 cursor-not-allowed">
-                <Lock size={14} />
-                <span>Lists</span>
-              </div>
-              <div className="flex items-center gap-2 py-2 text-white/40 cursor-not-allowed">
-                <Lock size={14} />
-                <span>Tiers</span>
-              </div>
+              <AdminLink
+                to="/lists"
+                label="Lists"
+                onClick={onClose}
+                className="block py-2 text-white/60 hover:text-white"
+                lockClassName="flex items-center gap-2 py-2 text-white/40 cursor-not-allowed"
+              />
+              <AdminLink
+                to="/tier-lists"
+                label="Tiers"
+                onClick={onClose}
+                className="block py-2 text-white/60 hover:text-white"
+                lockClassName="flex items-center gap-2 py-2 text-white/40 cursor-not-allowed"
+              />
               <AdminLink
                 to="/rankings/browse"
                 label="Browse Rankings"
@@ -280,14 +286,20 @@ const SiteLayout = () => {
             />
             <div className="border-t border-white/10 my-2" />
             <div className="px-4">
-              <div className="flex items-center gap-2 py-2 text-white/40 cursor-not-allowed">
-                <Lock size={12} />
-                <span>Lists</span>
-              </div>
-              <div className="flex items-center gap-2 py-2 text-white/40 cursor-not-allowed">
-                <Lock size={12} />
-                <span>Tiers</span>
-              </div>
+              <AdminLink
+                to="/lists"
+                label="Lists"
+                iconSize={12}
+                className="block py-2 text-white/60 hover:text-white"
+                lockClassName="flex items-center gap-2 py-2 text-white/40 cursor-not-allowed"
+              />
+              <AdminLink
+                to="/tier-lists"
+                label="Tiers"
+                iconSize={12}
+                className="block py-2 text-white/60 hover:text-white"
+                lockClassName="flex items-center gap-2 py-2 text-white/40 cursor-not-allowed"
+              />
               <AdminLink
                 to="/rankings/browse"
                 label="Browse Rankings"
