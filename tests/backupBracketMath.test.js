@@ -2,6 +2,10 @@ import { describe, expect, it } from 'vitest';
 import {
   buildBracketBlueprint,
   clearDependentWinners,
+  createInitialWinners,
+  pickWinner,
+  sanitizeWinners,
+  seedEntrants,
   determineBracketSize,
   getMatchParticipants,
   setWinner,
@@ -110,5 +114,54 @@ describe('backup bracket math', () => {
 
     const downstreamWinner = winners[1][0];
     expect(downstreamWinner).toBeNull();
+  });
+});
+
+describe('backup bracket picks', () => {
+  const names = ['Ann', 'Bo', 'Cy', 'Di'];
+  const entrants = names.map((name) => ({
+    id: name.toLowerCase(),
+    display_name: name,
+  }));
+
+  it('picks the same field whatever order the players arrive in', () => {
+    const many = Array.from({ length: 35 }, (_, i) => ({
+      id: `qb-${i}`,
+      display_name: `QB ${String(i).padStart(2, '0')}`,
+    }));
+    const a = seedEntrants(many, 32).list.map((qb) => qb.id);
+    const b = seedEntrants([...many].reverse(), 32).list.map((qb) => qb.id);
+    expect(b).toEqual(a);
+    expect(a).not.toContain('qb-34');
+  });
+
+  it('changing a pick keeps later picks from the other side', () => {
+    // 4-player bracket: R1-M1 is ann vs di, R1-M2 is bo vs cy.
+    let winners = createInitialWinners(4);
+    winners = pickWinner(winners, 0, 0, 'ann');
+    winners = pickWinner(winners, 0, 1, 'bo');
+    winners = pickWinner(winners, 1, 0, 'bo');
+    winners = pickWinner(winners, 0, 0, 'di');
+    expect(winners).toEqual([['di', 'bo'], ['bo']]);
+
+    winners = pickWinner(winners, 1, 0, 'di');
+    winners = pickWinner(winners, 0, 0, 'ann');
+    expect(winners).toEqual([['ann', 'bo'], [null]]);
+
+    winners = pickWinner(winners, 0, 1, null);
+    expect(winners).toEqual([['ann', null], [null]]);
+  });
+
+  it('keeps only saved picks that still fit the bracket', () => {
+    const blueprint = buildBracketBlueprint(entrants, 4);
+    expect(sanitizeWinners(blueprint, [['ann', 'bo'], ['bo']])).toEqual([
+      ['ann', 'bo'],
+      ['bo'],
+    ]);
+    expect(sanitizeWinners(blueprint, [['bo', 'bo'], ['ann']])).toEqual([
+      [null, 'bo'],
+      [null],
+    ]);
+    expect(sanitizeWinners(blueprint, null)).toEqual([[null, null], [null]]);
   });
 });
