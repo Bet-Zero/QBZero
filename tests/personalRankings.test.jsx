@@ -302,3 +302,72 @@ describe('Personal rankings Clear All', () => {
     browserConfirm.mockRestore();
   });
 });
+
+describe('Personal rankings drafts', () => {
+  const board = {
+    id: 'current',
+    version: 3,
+    rankings: [
+      { id: 'josh-allen', name: 'Josh Allen', team: 'BUF', notes: '' },
+      { id: 'lamar-jackson', name: 'Lamar Jackson', team: 'BAL', notes: '' },
+    ],
+  };
+
+  it('keeps an unsaved reorder as a draft, not behind a browser pop-up', async () => {
+    localStorage.clear();
+    helpers.getCurrentPersonalRanking.mockResolvedValue(board);
+    const listen = vi.spyOn(window, 'addEventListener');
+    renderEditor();
+    await waitFor(() => screen.getByText('Josh Allen'));
+    fireEvent.click(document.querySelectorAll('button[title="Move up"]')[1]);
+
+    expect(listen.mock.calls.map(([type]) => type)).not.toContain(
+      'beforeunload'
+    );
+    const draft = JSON.parse(
+      localStorage.getItem('qbzero:draft:rankings:personal')
+    );
+    expect(draft.snapshot.rankings.map((q) => q.id)).toEqual([
+      'lamar-jackson',
+      'josh-allen',
+    ]);
+    listen.mockRestore();
+    localStorage.clear();
+  });
+
+  it('puts a draft from a closed tab back, ready to save', async () => {
+    localStorage.setItem(
+      'qbzero:draft:rankings:personal',
+      JSON.stringify({
+        snapshot: {
+          rankings: [board.rankings[1], board.rankings[0]],
+          saveNote: 'Lamar first',
+        },
+        base: null,
+        at: Date.now(),
+      })
+    );
+    helpers.getCurrentPersonalRanking.mockResolvedValue(board);
+    helpers.saveCurrentPersonalRankings.mockResolvedValue({
+      version: 4,
+      archiveId: 'a',
+      reordered: true,
+    });
+    renderEditor();
+    await waitFor(() => screen.getByText('Josh Allen'));
+    expect(screen.getByLabelText('Note for this save').value).toBe(
+      'Lamar first'
+    );
+    fireEvent.click(screen.getByText('Save'));
+    await waitFor(() =>
+      expect(helpers.saveCurrentPersonalRankings).toHaveBeenCalled()
+    );
+    const [written, options] =
+      helpers.saveCurrentPersonalRankings.mock.calls[0];
+    expect(written.map((q) => q.id)).toEqual(['lamar-jackson', 'josh-allen']);
+    expect(options).toEqual({ notes: 'Lamar first', expectedVersion: 3 });
+    await waitFor(() =>
+      expect(localStorage.getItem('qbzero:draft:rankings:personal')).toBeNull()
+    );
+  });
+});

@@ -29,6 +29,7 @@ import TierRow, { tierDragId } from '@/features/tierMaker/TierRow';
 import TierPlayerTile from '@/features/lists/TierPlayerTile';
 import usePlayerData from '@/hooks/usePlayerData.js';
 import useFirebaseQuery from '@/hooks/useFirebaseQuery';
+import useUnsavedDraft from '@/hooks/useUnsavedDraft';
 import { POSITION_MAP } from '@/utils/roles';
 import { TeamListFull, teamAbbrFor } from '@/constants/teamList';
 import DrawerShell from '@/components/shared/ui/drawers/DrawerShell';
@@ -231,12 +232,8 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
 
   useEffect(() => {
     if (!hasUnsavedWork) return undefined;
-    const warn = (e) => {
-      e.preventDefault();
-      e.returnValue = '';
-    };
-    window.addEventListener('beforeunload', warn);
-    // Links inside the site change pages without unloading, so ask here too.
+    // Links inside the site change pages without unloading, so ask here.
+    // Closing or reloading the tab keeps a draft instead (below).
     const guardLinks = (e) => {
       const link = e.target.closest?.('a[href]');
       if (!link || link.target === '_blank' || e.defaultPrevented) return;
@@ -252,12 +249,28 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
     };
     document.addEventListener('click', guardLinks, true);
     return () => {
-      window.removeEventListener('beforeunload', warn);
       document.removeEventListener('click', guardLinks, true);
     };
     // confirmLeave only wraps the stable confirm().
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasUnsavedWork, navigate]);
+
+  // A new board saved nowhere yet lives in this browser until it is, so a
+  // closed or reloaded tab picks up where it left off. Boards on a tier list
+  // autosave, and edits to an old version are explicitly not kept.
+  useUnsavedDraft({
+    key: initialTierListId ? null : 'tier-maker:new',
+    ready: !loading && allPlayers.length > 0,
+    dirty: isDirty && !selectedTierList,
+    snapshot: boardToSaved(board),
+    restore: (draft, isDraft) =>
+      setBoard(
+        isDraft && draft
+          ? boardFromSaved(draft, playersMap)
+          : createEmptyBoard(players)
+      ),
+    confirm,
+  });
 
   // Calculate which players are currently used in any tier
   const usedPlayerIds = useMemo(() => boardPlayerIds(tiers), [tiers]);
