@@ -157,9 +157,7 @@ export const deleteTier = (board, tier) => {
 /** Ids of every player placed anywhere on the board. */
 export const boardPlayerIds = (tiers) => {
   const ids = new Set();
-  Object.values(tiers).forEach((list) =>
-    list.forEach((p) => ids.add(idOf(p)))
-  );
+  Object.values(tiers).forEach((list) => list.forEach((p) => ids.add(idOf(p))));
   return ids;
 };
 
@@ -191,4 +189,39 @@ export const canMove = (tierOrder, tier, direction) => {
   const index = tierOrder.indexOf(tier);
   if (index === -1) return false;
   return direction === 'up' ? index > 0 : index < tierOrder.length - 1;
+};
+
+// Moves a player to `toTier` at `index` (end of the tier when index is
+// missing or out of range). Returns the same object when nothing changes.
+export const movePlayerTo = (tiers, playerId, toTier, index) => {
+  const fromTier = Object.keys(tiers).find((t) =>
+    tiers[t].some((p) => p.player_id === playerId)
+  );
+  if (!fromTier || !tiers[toTier]) return tiers;
+
+  const player = tiers[fromTier].find((p) => p.player_id === playerId);
+  const source = tiers[fromTier].filter((p) => p.player_id !== playerId);
+  const target = fromTier === toTier ? source : [...tiers[toTier]];
+  const at =
+    index === undefined || index < 0 || index > target.length
+      ? target.length
+      : index;
+  if (fromTier === toTier && tiers[fromTier].indexOf(player) === at)
+    return tiers;
+  target.splice(at, 0, player);
+
+  return fromTier === toTier
+    ? { ...tiers, [toTier]: target }
+    : { ...tiers, [fromTier]: source, [toTier]: target };
+};
+
+// Moves tier `active` to the slot of tier `over`. Pool stays last.
+export const reorderTiers = (tierOrder, active, over) => {
+  const ranked = tierOrder.filter((t) => t !== POOL);
+  const from = ranked.indexOf(active);
+  const to = ranked.indexOf(over);
+  if (from === -1 || to === -1 || from === to) return tierOrder;
+  const next = [...ranked];
+  next.splice(to, 0, next.splice(from, 1)[0]);
+  return [...next, POOL];
 };
