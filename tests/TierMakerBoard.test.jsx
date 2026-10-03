@@ -4,6 +4,7 @@ import {
   fireEvent,
   waitFor,
   cleanup,
+  within,
 } from '@testing-library/react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { MemoryRouter, Routes, Route, Link } from 'react-router-dom';
@@ -80,6 +81,16 @@ const rowLabels = (container) =>
     (el) => el.textContent
   );
 
+// Fill in and confirm the in-app naming dialog.
+const nameIt = async (title, value) => {
+  const dialog = await screen.findByRole('dialog');
+  fireEvent.change(within(dialog).getByLabelText(title), {
+    target: { value },
+  });
+  const buttons = within(dialog).getAllByRole('button');
+  fireEvent.click(buttons[buttons.length - 1]);
+};
+
 afterEach(() => {
   cleanup();
   fetchTierList.mockReset();
@@ -118,8 +129,11 @@ describe('TierMakerBoard', () => {
     });
     renderBoard('list1');
     await screen.findByText('MAHOMES');
-    vi.spyOn(window, 'prompt').mockReturnValue('S');
     fireEvent.click(screen.getByText('Add Tier'));
+    await nameIt('Add tier', 'S');
+    expect((await screen.findByRole('alert')).textContent).toMatch(/already/);
+    fireEvent.click(within(screen.getByRole('dialog')).getByText('Cancel'));
+    expect(screen.queryByRole('dialog')).toBeNull();
     fireEvent.click(screen.getByText(/^Saved?$/));
     await waitFor(() => expect(saveTierList).toHaveBeenCalled());
     expect(saveTierList.mock.calls[0][1]).toEqual({
@@ -171,8 +185,8 @@ describe('TierMakerBoard saving', () => {
     fetchTierList.mockResolvedValue(savedList);
     renderBoard('list1');
     await screen.findByText('MAHOMES');
-    vi.spyOn(window, 'prompt').mockReturnValue('Elite');
     fireEvent.click(screen.getByText('Add Tier'));
+    await nameIt('Add tier', 'Elite');
     expect(saveTierList).not.toHaveBeenCalled();
     await waitFor(() => expect(saveTierList).toHaveBeenCalledTimes(1), {
       timeout: 3000,
@@ -191,8 +205,8 @@ describe('TierMakerBoard saving', () => {
     fetchTierList.mockResolvedValue(savedList);
     const { unmount } = renderBoard('list1');
     await screen.findByText('MAHOMES');
-    vi.spyOn(window, 'prompt').mockReturnValue('Elite');
     fireEvent.click(screen.getByText('Add Tier'));
+    await nameIt('Add tier', 'Elite');
     unmount();
     expect(saveTierList).toHaveBeenCalledTimes(1);
     expect(saveTierList.mock.calls[0][1].tierOrder).toEqual([
@@ -276,14 +290,34 @@ describe('TierMakerBoard history', () => {
   });
 });
 
+describe('TierMakerBoard naming dialog', () => {
+  it('renames a tier in an in-app dialog, prefilled with its name', async () => {
+    fetchTierList.mockResolvedValue(savedList);
+    const { container } = renderBoard('list1');
+    await screen.findByText('MAHOMES');
+    fireEvent.click(screen.getByLabelText('Rename tier S'));
+    const input = within(await screen.findByRole('dialog')).getByLabelText(
+      'Rename tier'
+    );
+    expect(input.value).toBe('S');
+    await nameIt('Rename tier', 'Elite');
+    await waitFor(() =>
+      expect(rowLabels(container)).toEqual(['Elite', 'A', 'Pool'])
+    );
+  });
+});
+
 describe('TierMakerBoard named versions', () => {
   it('saves the current board under a name', async () => {
     fetchTierList.mockResolvedValue(savedList);
     renderBoard('list1');
     await screen.findByText('MAHOMES');
-    vi.spyOn(window, 'prompt').mockReturnValue('  Preseason ');
+    const prompt = vi.spyOn(window, 'prompt');
     fireEvent.click(screen.getByText('Save as version'));
+    await nameIt('Save as version', '  Preseason ');
     await waitFor(() => expect(saveNamedTierListVersion).toHaveBeenCalled());
+    expect(prompt).not.toHaveBeenCalled();
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     expect(saveNamedTierListVersion).toHaveBeenCalledWith(
       'list1',
       { tiers: savedList.tiers, tierOrder: savedList.tierOrder },

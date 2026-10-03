@@ -35,6 +35,7 @@ import DrawerShell from '@/components/shared/ui/drawers/DrawerShell';
 import OpenDrawerButton from '@/components/shared/ui/drawers/OpenDrawerButton';
 import AddPlayerDrawer from '@/features/roster/AddPlayerDrawer';
 import CreateTierListModal from '@/features/tierMaker/CreateTierListModal';
+import NamePromptModal from '@/components/shared/ui/NamePromptModal';
 import TierMakerExport from '@/features/tierMaker/TierMakerExport';
 import {
   fetchAllTierLists,
@@ -182,6 +183,8 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
   const boardBeforeVersion = useRef(null);
   // A save that failed is not retried until the board changes again.
   const [failedSignature, setFailedSignature] = useState(null);
+  // The open naming dialog: { kind: 'addTier' | 'renameTier' | 'version', tier? }
+  const [namePrompt, setNamePrompt] = useState(null);
 
   const refreshVersions = useCallback(async (id) => {
     if (!id) {
@@ -367,30 +370,27 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
     // Player will automatically become available in drawer due to usedPlayerIds recalculation
   };
 
-  const addTier = () => {
-    const name = prompt('New tier name?');
-    if (name === null) return;
-    const result = addTierToBoard(board, name);
-    if (result.error) {
-      toast.error(result.error);
-      return;
-    }
+  const addTier = () => setNamePrompt({ kind: 'addTier' });
+
+  // Returns an error message to show in the dialog, if any.
+  const submitAddTier = (name) => {
+    const result = addTierToBoard(latest.current.board, name);
+    if (result.error) return result.error;
     setBoard(result.board);
+    return null;
   };
 
   const deleteTier = (tier) => {
     setBoard((prev) => deleteTierFromBoard(prev, tier));
   };
 
-  const renameTier = (tier) => {
-    const name = prompt('Rename tier', tier);
-    if (name === null) return;
-    const result = renameTierOnBoard(board, tier, name);
-    if (result.error) {
-      toast.error(result.error);
-      return;
-    }
+  const renameTier = (tier) => setNamePrompt({ kind: 'renameTier', tier });
+
+  const submitRenameTier = (tier, name) => {
+    const result = renameTierOnBoard(latest.current.board, tier, name);
+    if (result.error) return result.error;
     setBoard(result.board);
+    return null;
   };
 
   const resetBoard = () => {
@@ -565,16 +565,18 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
     setViewingVersion(version);
   };
 
-  const saveNamedVersion = async () => {
+  const saveNamedVersion = () => {
     if (!selectedTierList || viewingVersion) return;
-    const raw = window.prompt(
-      'Name this version (for example "Preseason" or "After Week 4")'
-    );
-    const label = (raw || '').trim();
-    if (!label) return;
+    setNamePrompt({ kind: 'version' });
+  };
+
+  const submitNamedVersion = async (label) => {
     // Name what is saved, so the version matches the list.
-    if (isDirty && !(await saveBoard(selectedTierList, { silent: true })))
-      return;
+    if (
+      latest.current.isDirty &&
+      !(await saveBoard(selectedTierList, { silent: true }))
+    )
+      return 'Could not save the board first. Try again.';
     try {
       await saveNamedTierListVersion(
         selectedTierList,
@@ -583,9 +585,10 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
       );
       toast.success(`Saved version "${label}"`);
       refreshVersions(selectedTierList);
+      return null;
     } catch (err) {
       console.error('Failed to save named version', err);
-      toast.error('Failed to save version');
+      return 'Could not save this version. Try again.';
     }
   };
 
@@ -934,6 +937,31 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
           </button>
         </div>
       )}
+
+      <NamePromptModal
+        isOpen={!!namePrompt}
+        onClose={() => setNamePrompt(null)}
+        {...(namePrompt?.kind === 'version'
+          ? {
+              title: 'Save as version',
+              description:
+                'Keeps the board as it is now under this name. Later saves never replace it.',
+              placeholder: 'e.g. Preseason or After Week 4',
+              onSubmit: submitNamedVersion,
+            }
+          : namePrompt?.kind === 'renameTier'
+            ? {
+                title: 'Rename tier',
+                initialValue: namePrompt.tier,
+                onSubmit: (name) => submitRenameTier(namePrompt.tier, name),
+              }
+            : {
+                title: 'Add tier',
+                placeholder: 'e.g. Elite',
+                confirmLabel: 'Add',
+                onSubmit: submitAddTier,
+              })}
+      />
 
       <CreateTierListModal
         isOpen={showCreateModal}
