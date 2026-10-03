@@ -76,14 +76,25 @@ const RankingSession = ({
 
   // Save every answer as it is given, so a reload or a trip to another page
   // resumes the session instead of starting it over.
+  // Nothing is saved until there is a session to save, so a render before the
+  // pool or setup is available cannot wipe what is stored.
   useEffect(() => {
+    if (!setupData || players.length < 2) return;
     onProgressChange?.({
       key: progressKey,
       history,
       anchorResults,
       anchorDone,
     });
-  }, [onProgressChange, progressKey, history, anchorResults, anchorDone]);
+  }, [
+    onProgressChange,
+    setupData,
+    players,
+    progressKey,
+    history,
+    anchorResults,
+    anchorDone,
+  ]);
 
   // Comparisons implied by the first/last place lock-ins. Derived rather than
   // pushed into state, so it can never be clobbered or undone away.

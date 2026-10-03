@@ -10,6 +10,7 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import RankingSession from '@/features/ranker/RankingSession.jsx';
 import { RankerProvider, useRankerContext } from '@/context/RankerContext';
 import { encodeRankerState } from '@/utils/ranker/rankerStateCodec';
+import RankerComparisonsPage from '@/pages/RankerComparisonsPage';
 import { quarterbacks } from '@/features/ranker/quarterbacks.js';
 
 afterEach(cleanup);
@@ -264,5 +265,43 @@ describe('RankerContext session progress', () => {
     expect(shared.sessionProgress).toBeNull();
     act(() => shared.setSessionProgress({ ...progress, key: 'other' }));
     expect(storedProgress()).toEqual(progress);
+  });
+});
+
+describe('Comparisons page across a reload', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    localStorage.setItem('ranker_session_id', 's1');
+    localStorage.setItem('ranker_player_pool_s1', JSON.stringify(quarterbacks));
+    localStorage.setItem('ranker_setup_data_s1', JSON.stringify(setup));
+  });
+
+  const mountPage = () =>
+    render(
+      <MemoryRouter initialEntries={['/ranker/comparisons']}>
+        <Routes>
+          <Route element={<RankerProvider />}>
+            <Route
+              path="/ranker/comparisons"
+              element={<RankerComparisonsPage />}
+            />
+          </Route>
+        </Routes>
+      </MemoryRouter>
+    );
+
+  it('comes back with the answers already given', () => {
+    // Saved state used to load in an effect, after a blank first render had
+    // already saved an empty session over it.
+    const first = mountPage();
+    for (let i = 0; i < 3; i += 1) {
+      fireEvent.click(first.container.querySelectorAll('.compare-button')[1]);
+    }
+    const before = pairText(first.container);
+    cleanup();
+
+    const { container } = mountPage();
+    expect(answered(within(container))).toBe(3);
+    expect(pairText(container)).toEqual(before);
   });
 });
