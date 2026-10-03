@@ -1,6 +1,7 @@
 // src/features/tierMaker/TierMakerBoard.jsx
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import TierRow from '@/features/tierMaker/TierRow';
 import usePlayerData from '@/hooks/usePlayerData.js';
 import useFirebaseQuery from '@/hooks/useFirebaseQuery';
@@ -11,15 +12,28 @@ import OpenDrawerButton from '@/components/shared/ui/drawers/OpenDrawerButton';
 import AddPlayerDrawer from '@/features/roster/AddPlayerDrawer';
 import CreateTierListModal from '@/features/tierMaker/CreateTierListModal';
 import TierMakerExport from '@/features/tierMaker/TierMakerExport';
-import { fetchTierList, saveTierList } from '@/firebase/listHelpers';
+import {
+  fetchAllTierLists,
+  fetchTierList,
+  saveTierList,
+} from '@/firebase/listHelpers';
+import {
+  addToPool,
+  addTier as addTierToBoard,
+  boardFromSaved,
+  boardPlayerIds,
+  boardSignature,
+  boardToSaved,
+  createEmptyBoard,
+  deleteTier as deleteTierFromBoard,
+  renameTier as renameTierOnBoard,
+} from '@/utils/tierMaker/tierBoard';
 import { toast } from 'react-hot-toast';
-
-const DEFAULT_TIERS = ['S', 'A', 'B', 'C', 'D'];
 
 const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
   const { players: allPlayers, loading } = usePlayerData();
   const { data: listsData } = useFirebaseQuery('lists');
-  const { data: tierListsData } = useFirebaseQuery('tierLists');
+  const navigate = useNavigate();
 
   const processedPlayers = useMemo(
     () =>
@@ -75,25 +89,32 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
     [listsData]
   );
 
+  const [tierListsData, setTierListsData] = useState([]);
+  const refreshTierLists = useCallback(async () => {
+    try {
+      setTierListsData(await fetchAllTierLists());
+    } catch (err) {
+      console.error('Failed to fetch tier lists', err);
+    }
+  }, []);
+  useEffect(() => {
+    refreshTierLists();
+  }, [refreshTierLists]);
+
   const tierLists = useMemo(
     () =>
-      (tierListsData || []).map((l) => ({
-        id: l.id,
-        name: l.name,
-        tiers: l.tiers || {},
-        tierOrder: l.tierOrder || [],
-      })),
+      tierListsData
+        .map((l) => ({ id: l.id, name: l.name || 'Untitled' }))
+        .sort((a, b) => a.name.localeCompare(b.name)),
     [tierListsData]
   );
 
-  const getInitialTiers = () =>
-    [...DEFAULT_TIERS, 'Pool'].reduce((acc, tier) => {
-      acc[tier] = tier === 'Pool' ? [...players] : [];
-      return acc;
-    }, {});
-
-  const [tiers, setTiers] = useState(getInitialTiers);
-  const [tierOrder, setTierOrder] = useState([...DEFAULT_TIERS, 'Pool']);
+  const [board, setBoard] = useState(() => createEmptyBoard(players));
+  const { tiers, tierOrder } = board;
+  // Signature of the board as last loaded or saved.
+  const [savedSignature, setSavedSignature] = useState(() =>
+    boardSignature(createEmptyBoard(players))
+  );
   const [screenshotMode, setScreenshotMode] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -104,16 +125,22 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [initialLoaded, setInitialLoaded] = useState(false);
 
+  const isDirty = boardSignature(board) !== savedSignature;
+  const confirmDiscard = () =>
+    !isDirty || window.confirm('You have unsaved changes. Discard them?');
+
+  useEffect(() => {
+    if (!isDirty) return undefined;
+    const warn = (e) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [isDirty]);
+
   // Calculate which players are currently used in any tier
-  const usedPlayerIds = useMemo(() => {
-    const ids = new Set();
-    Object.values(tiers).forEach((tierPlayers) => {
-      tierPlayers.forEach((player) => {
-        ids.add(player.player_id || player.id);
-      });
-    });
-    return ids;
-  }, [tiers]);
+  const usedPlayerIds = useMemo(() => boardPlayerIds(tiers), [tiers]);
 
   // Filter available players for the drawer (exclude already used players)
   const availablePlayersForDrawer = useMemo(() => {
@@ -121,77 +148,84 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
   }, [processedPlayers, usedPlayerIds]);
 
   const addPlayerToPool = (player) => {
-    const formatted = { ...player, player_id: player.id };
-    setTiers((prev) => ({
-      ...prev,
-      Pool: [...prev.Pool, formatted],
-    }));
+    setBoard((prev) => addToPool(prev, [player]));
   };
 
   const addPlayersToPool = (playersArray) => {
-    setTiers((prev) => {
-      const existingIds = new Set(prev.Pool.map((p) => p.player_id));
-      const additions = playersArray
-        .filter((p) => !existingIds.has(p.id))
-        .map((p) => ({ ...p, player_id: p.id }));
-      return { ...prev, Pool: [...prev.Pool, ...additions] };
-    });
+    setBoard((prev) => addToPool(prev, playersArray));
   };
 
   const movePlayer = (playerId, fromTier, direction) => {
-    const tierKeys = [...tierOrder];
-    const currentIndex = tierKeys.indexOf(fromTier);
-    const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-    if (newIndex < 0 || newIndex >= tierKeys.length) return;
-
-    const sourceItems = [...tiers[fromTier]];
-    const player = sourceItems.find((p) => p.player_id === playerId);
-    if (!player) return;
-
-    setTiers((prev) => ({
-      ...prev,
-      [fromTier]: sourceItems.filter((p) => p.player_id !== playerId),
-      [tierKeys[newIndex]]: [...prev[tierKeys[newIndex]], player],
-    }));
+    setBoard((prev) => {
+      const currentIndex = prev.tierOrder.indexOf(fromTier);
+      const newIndex =
+        direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+      if (
+        currentIndex < 0 ||
+        newIndex < 0 ||
+        newIndex >= prev.tierOrder.length
+      )
+        return prev;
+      const toTier = prev.tierOrder[newIndex];
+      const player = prev.tiers[fromTier].find(
+        (p) => p.player_id === playerId
+      );
+      if (!player) return prev;
+      return {
+        ...prev,
+        tiers: {
+          ...prev.tiers,
+          [fromTier]: prev.tiers[fromTier].filter(
+            (p) => p.player_id !== playerId
+          ),
+          [toTier]: [...prev.tiers[toTier], player],
+        },
+      };
+    });
   };
 
   const removePlayer = (playerId, fromTier) => {
-    setTiers((prev) => ({
+    setBoard((prev) => ({
       ...prev,
-      [fromTier]: prev[fromTier].filter((p) => p.player_id !== playerId),
+      tiers: {
+        ...prev.tiers,
+        [fromTier]: prev.tiers[fromTier].filter(
+          (p) => p.player_id !== playerId
+        ),
+      },
     }));
     // Player will automatically become available in drawer due to usedPlayerIds recalculation
   };
 
   const addTier = () => {
     const name = prompt('New tier name?');
-    if (!name) return;
-    setTiers((prev) => ({ ...prev, [name]: [] }));
-    setTierOrder((prev) => [...prev.slice(0, -1), name, 'Pool']);
+    if (name === null) return;
+    const result = addTierToBoard(board, name);
+    if (result.error) {
+      toast.error(result.error);
+      return;
+    }
+    setBoard(result.board);
   };
 
   const deleteTier = (tier) => {
-    if (tier === 'Pool') return;
-    setTiers((prev) => {
-      const { [tier]: removed, ...rest } = prev;
-      return { ...rest, Pool: [...prev.Pool, ...(removed || [])] };
-    });
-    setTierOrder((prev) => prev.filter((t) => t !== tier));
+    setBoard((prev) => deleteTierFromBoard(prev, tier));
   };
 
   const renameTier = (tier) => {
     const name = prompt('Rename tier', tier);
-    if (!name || name === tier) return;
-    setTiers((prev) => {
-      const { [tier]: items, ...rest } = prev;
-      return { ...rest, [name]: items };
-    });
-    setTierOrder((prev) => prev.map((t) => (t === tier ? name : t)));
+    if (name === null) return;
+    const result = renameTierOnBoard(board, tier, name);
+    if (result.error) {
+      toast.error(result.error);
+      return;
+    }
+    setBoard(result.board);
   };
 
   const resetBoard = () => {
-    setTiers(getInitialTiers());
-    setTierOrder([...DEFAULT_TIERS, 'Pool']);
+    if (!window.confirm('Clear every tier and the pool?')) return;
+    setBoard(createEmptyBoard(players));
   };
 
   const handleAddTeamRoster = () => {
@@ -214,22 +248,38 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
     setSelectedList('');
   };
 
+  const showTierListInUrl = useCallback(
+    (id) => {
+      // The board now owns this id; don't let the URL change re-trigger
+      // the initial load below.
+      setInitialLoaded(true);
+      if (id && id !== initialTierListId) {
+        navigate(`/tier-maker/${id}`, { replace: true });
+      }
+    },
+    [navigate, initialTierListId]
+  );
+
   const handleLoadTierList = useCallback(
     async (id) => {
       if (!id) return;
       try {
         const data = await fetchTierList(id);
-        if (data?.tiers) {
-          const newTiers = {};
-          Object.entries(data.tiers).forEach(([tier, ids]) => {
-            newTiers[tier] = ids
-              .map((pid) => playersMap[pid])
-              .filter(Boolean)
-              .map((p) => ({ ...p, player_id: p.id }));
-          });
-          setTiers(newTiers);
-          setTierOrder(data.tierOrder || Object.keys(newTiers));
-          setSelectedTierList(id);
+        if (!data) {
+          toast.error('That tier list no longer exists');
+          return;
+        }
+        const loaded = boardFromSaved(data, playersMap);
+        setBoard(loaded);
+        setSavedSignature(boardSignature(loaded));
+        setSelectedTierList(id);
+        showTierListInUrl(id);
+        const missing = Object.values(loaded.unresolved).flat().length;
+        if (missing) {
+          toast(
+            `${missing} saved player${missing === 1 ? '' : 's'} could not be found and ${missing === 1 ? 'is' : 'are'} hidden; saving keeps them.`
+          );
+        } else {
           toast.success('Tier list loaded!');
         }
       } catch (err) {
@@ -237,7 +287,7 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
         toast.error('Failed to load tier list');
       }
     },
-    [playersMap]
+    [playersMap, showTierListInUrl]
   );
 
   const handleSaveTierList = async (idOverride) => {
@@ -246,16 +296,11 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
       setShowCreateModal(true);
       return;
     }
-    const dataToSave = {};
-    Object.keys(tiers).forEach((t) => {
-      dataToSave[t] = tiers[t].map((p) => p.player_id);
-    });
+    const snapshot = board;
     try {
       setIsSaving(true);
-      await saveTierList(listId, {
-        tiers: dataToSave,
-        tierOrder,
-      });
+      await saveTierList(listId, boardToSaved(snapshot));
+      setSavedSignature(boardSignature(snapshot));
       toast.success('Tier list saved!');
     } catch (err) {
       console.error('Failed to save tier list', err);
@@ -269,26 +314,17 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
     if (!newId) return;
     setSelectedTierList(newId);
     setShowCreateModal(false);
+    showTierListInUrl(newId);
     await handleSaveTierList(newId);
+    refreshTierLists();
   };
 
   useEffect(() => {
-    if (
-      !initialLoaded &&
-      initialTierListId &&
-      tierListsData &&
-      allPlayers.length
-    ) {
+    if (!initialLoaded && initialTierListId && allPlayers.length) {
       handleLoadTierList(initialTierListId);
       setInitialLoaded(true);
     }
-  }, [
-    initialLoaded,
-    initialTierListId,
-    tierListsData,
-    allPlayers.length,
-    handleLoadTierList,
-  ]);
+  }, [initialLoaded, initialTierListId, allPlayers.length, handleLoadTierList]);
 
   // Get current tier list name for export
   const getCurrentTierListName = () => {
@@ -412,7 +448,9 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
               <div className="flex items-center gap-1">
                 <select
                   value={selectedTierList}
-                  onChange={(e) => handleLoadTierList(e.target.value)}
+                  onChange={(e) => {
+                    if (confirmDiscard()) handleLoadTierList(e.target.value);
+                  }}
                   className="bg-[#1a1a1a] text-white text-sm px-2 py-1 rounded border border-white/10"
                 >
                   <option value="">Load Tier List...</option>
@@ -463,7 +501,11 @@ const TierMakerBoard = ({ players = [], initialTierListId = '' }) => {
             onClick={() => handleSaveTierList()}
             className="bg-black/20 text-white px-4 py-2 rounded hover:bg-white/20"
           >
-            {isSaving ? 'Saving...' : 'Save'}
+            {isSaving
+              ? 'Saving...'
+              : selectedTierList && !isDirty
+                ? 'Saved'
+                : 'Save'}
           </button>
         </div>
       )}

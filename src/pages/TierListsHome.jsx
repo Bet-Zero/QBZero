@@ -139,7 +139,7 @@ const TierListsHome = () => {
           setShowCreateModal(false);
           fetchLists();
         }}
-        onCreated={fetchLists}
+        onCreated={(id) => id && navigate(`/tier-maker/${id}`)}
       />
 
       {renamingId && (
