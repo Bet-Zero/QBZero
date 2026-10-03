@@ -146,9 +146,12 @@ grades, roles and blurbs. Only name, team and position are refreshed.
 
 A mid-season move does not need the script: set the team on the quarterback's
 profile (the TEAM field in the info card), which an admin can do from any
-browser. Update `quarterbacks.js` to match as well, though — populateQBs writes
-team from the list on every run, so a list left behind would undo the profile
-edit the next time it runs.
+browser. The save also records what the list said at the time
+(`team_override` on the player record), and populateQBs keeps the profile's
+team for as long as the list still says that. Once the list is updated — to the
+same team or a different one — the list wins and the marker is dropped, so the
+list stays the long-run source of truth. The script's report names every team
+it kept this way; catch the list up when convenient.
 
 **Never remove a quarterback from the list.** Their grades and any past
 ranking that includes them depend on the entry existing. Mark them retired on

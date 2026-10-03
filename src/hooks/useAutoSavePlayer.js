@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { savePlayerData } from '@/firebaseHelpers';
 import useAuth from '@/hooks/useAuth';
+import { teamOverrideForSave } from '@/utils/roster/teamOverride';
 
 const AUTOSAVE_DEBOUNCE_MS = 1000;
 
@@ -41,7 +42,8 @@ const stripUndefinedDeep = (value) => {
 //
 // `team` is the one bio field the profile edits, so a trade can be recorded
 // without a service-account key and populateQBs. It is merged over the saved
-// bio rather than replacing it.
+// bio rather than replacing it, and an actual change also writes
+// team_override so the next populateQBs run keeps it (see teamOverride.js).
 const buildPlayerUpdate = ({
   player,
   team,
@@ -58,6 +60,7 @@ const buildPlayerUpdate = ({
     player_id: player.player_id ?? player.id,
     display_name: player.display_name ?? player.name ?? '',
     bio: { ...(player.bio ?? {}), ...(team ? { Team: team } : {}) },
+    team_override: teamOverrideForSave({ player, team }),
     traits,
     roles,
     subRoles,

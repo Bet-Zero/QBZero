@@ -2,8 +2,9 @@
 //
 // This list decides who the app carries. `team` is a seed value: the saved
 // player record wins at runtime (see useQBRoster). Moving someone mid-season
-// is the TEAM field on their profile; correct it here too, or the next
-// populateQBs run puts the old team back.
+// is the TEAM field on their profile. populateQBs keeps that edit until this
+// list changes for the quarterback, then this list wins again -- so correct it
+// here too when convenient (see src/utils/roster/teamOverride.js).
 //
 // Never remove an entry. Grades and any past ranking containing a quarterback
 // depend on it existing — set `status: RETIRED` instead, which keeps them

@@ -92,6 +92,22 @@ describe('useAutoSavePlayer', () => {
     expect(payload.bio).toEqual({ Team: 'NYG', Position: 'QB' });
   });
 
+  it('marks an edited team so populateQBs does not put the old one back', async () => {
+    renderAutosave({ team: 'NYG' });
+    await flush();
+
+    const [, payload] = savePlayerData.mock.calls[0];
+    expect(payload.team_override).toEqual({ team: 'NYG', list_team: 'BUF' });
+  });
+
+  it('does not mark a team that was left alone', async () => {
+    renderAutosave({ team: 'BUF' });
+    await flush();
+
+    const [, payload] = savePlayerData.mock.calls[0];
+    expect(payload.team_override).toBeNull();
+  });
+
   it('does not write derived fields back', async () => {
     renderAutosave();
     await flush();
