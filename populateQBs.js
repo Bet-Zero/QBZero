@@ -6,7 +6,9 @@
 //
 // Existing saved data always wins over the defaults here, so re-running is
 // safe: grades, roles and blurbs survive. Only the curated fields -- name,
-// team, position -- are refreshed from the list. `status` is curated too, but
+// team, position -- are refreshed from the list. Team gives way to a trade
+// recorded on the profile page until the list itself is updated past it (see
+// src/utils/roster/teamOverride.js). `status` is curated too, but
 // one-directional: a `status: RETIRED` entry always pushes RETIRED, while an
 // entry with no status leaves whatever is already saved alone (so the manual
 // toggle on the profile page still works for anyone not yet marked here).
@@ -22,6 +24,8 @@ import { quarterbacks } from './src/features/ranker/quarterbacks.js';
 import { emptyTraits } from './src/constants/traits.js';
 import { ACTIVE, RETIRED } from './src/constants/playerStatus.js';
 import { getAdminDb } from './scripts/firebaseAdmin.js';
+import { FieldValue } from 'firebase-admin/firestore';
+import { resolveListTeam } from './src/utils/roster/teamOverride.js';
 
 let db;
 try {
@@ -41,6 +45,7 @@ async function populateQBs() {
   const created = [];
   const movedTeam = [];
   const renamed = [];
+  const keptProfileTeam = [];
   const unchanged = [];
 
   for (const qb of quarterbacks) {
@@ -51,6 +56,8 @@ async function populateQBs() {
       const docSnap = await docRef.get();
 
       const existing = docSnap.exists ? docSnap.data() : {};
+      const resolved = resolveListTeam(qb.team, existing);
+      const team = resolved.team;
 
       // Basic QB data structure matching what the components expect
       const qbData = {
@@ -101,25 +108,32 @@ async function populateQBs() {
           WT: null,
           'Years Pro': null,
           ...(existing.bio || {}),
-          Team: qb.team,
+          Team: team,
           Position: 'QB',
         },
+        // The list has moved on since a profile edit, so the edit is spent.
+        ...(resolved.clearOverride
+          ? { team_override: FieldValue.delete() }
+          : {}),
       };
 
       // Classify before writing so a dry run can report the same thing.
       if (!docSnap.exists) {
-        created.push(`${qb.name} (${qb.team})`);
+        created.push(`${qb.name} (${team})`);
       } else {
         const wasTeam = existing.bio?.Team;
         const wasName = existing.display_name;
-        if (wasTeam && wasTeam !== qb.team) {
-          movedTeam.push(`${qb.name}: ${wasTeam} -> ${qb.team}`);
+        if (resolved.keptOverride) {
+          keptProfileTeam.push(`${qb.name}: ${team} (list says ${qb.team})`);
+        }
+        if (wasTeam && wasTeam !== team) {
+          movedTeam.push(`${qb.name}: ${wasTeam} -> ${team}`);
         }
         if (wasName && wasName !== qb.name) {
           renamed.push(`${wasName} -> ${qb.name}`);
         }
         if (
-          (!wasTeam || wasTeam === qb.team) &&
+          (!wasTeam || wasTeam === team) &&
           (!wasName || wasName === qb.name)
         ) {
           unchanged.push(qb.name);
@@ -142,6 +156,10 @@ async function populateQBs() {
 
   report('Created', created);
   report('Changed team', movedTeam);
+  report(
+    'Kept team set on the profile (update quarterbacks.js when convenient)',
+    keptProfileTeam
+  );
   report('Renamed', renamed);
   console.log(`\nUnchanged: ${unchanged.length}`);
 
