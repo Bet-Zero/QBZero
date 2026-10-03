@@ -189,6 +189,39 @@ describe('Personal rankings editor', () => {
     expect(written[0].id).toBe('josh-allen');
   });
 
+  it('saves the note typed for this version, then clears it', async () => {
+    helpers.getCurrentPersonalRanking.mockResolvedValue({
+      id: 'current',
+      version: 4,
+      rankings: [
+        { id: 'josh-allen', name: 'Josh Allen', team: 'BUF', notes: '' },
+        { id: 'lamar-jackson', name: 'Lamar Jackson', team: 'BAL', notes: '' },
+      ],
+    });
+    helpers.saveCurrentPersonalRankings.mockResolvedValue({
+      version: 5,
+      archiveId: 'a',
+      reordered: true,
+    });
+    renderEditor();
+    await waitFor(() => screen.getByText('Josh Allen'));
+
+    fireEvent.click(document.querySelectorAll('button[title="Move up"]')[1]);
+    const note = await screen.findByLabelText('Note for this save');
+    fireEvent.change(note, { target: { value: 'Lamar back on top' } });
+    fireEvent.click(screen.getByText('Save'));
+
+    await waitFor(() =>
+      expect(helpers.saveCurrentPersonalRankings).toHaveBeenCalled()
+    );
+    const [, options] = helpers.saveCurrentPersonalRankings.mock.calls[0];
+    expect(options).toEqual({ notes: 'Lamar back on top', expectedVersion: 4 });
+    // Saved, so there is nothing left to describe.
+    await waitFor(() =>
+      expect(screen.queryByLabelText('Note for this save')).toBeNull()
+    );
+  });
+
   it('does not commit an unsaved reorder when a note is edited', async () => {
     helpers.getCurrentPersonalRanking.mockResolvedValue({
       id: 'current',

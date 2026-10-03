@@ -40,6 +40,9 @@ const QBRankingsPage = () => {
   // The version of the live board this page loaded. Sent back on save so a
   // change made in another tab is refused rather than overwritten.
   const [loadedVersion, setLoadedVersion] = useState(null);
+  // A line saying what this save changed. It is stored on the version and
+  // shown against it in the history.
+  const [saveNote, setSaveNote] = useState('');
 
   // Determine if this is personal rankings (no rankingId) or other rankings (with rankingId)
   const isPersonalRankings = !rankingId;
@@ -166,11 +169,13 @@ const QBRankingsPage = () => {
       try {
         const { version, archiveId, reordered } =
           await saveCurrentPersonalRankings(displayedRankings, {
+            notes: saveNote.trim(),
             expectedVersion: loadedVersion,
           });
         setRankings(displayedRankings);
         setLoadedVersion(version);
         setHasChanges(false);
+        setSaveNote('');
         if (showToast) {
           toast.success(
             archiveId
@@ -312,8 +317,10 @@ const QBRankingsPage = () => {
           isSaving={isSaving}
           canSave={hasChanges && (isPersonalRankings || !!rankingId)}
           onSave={() => saveRankings(true)}
+          saveNote={isPersonalRankings ? saveNote : undefined}
+          onSaveNoteChange={isPersonalRankings ? setSaveNote : undefined}
           onViewArchives={
-            isPersonalRankings ? () => navigate('/rankings/browse') : undefined
+            isPersonalRankings ? () => navigate('/rankings/history') : undefined
           }
           showViewArchives={isPersonalRankings}
           onClearAll={handleClearAll}

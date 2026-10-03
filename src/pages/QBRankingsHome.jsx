@@ -9,7 +9,7 @@ import {
 } from '@/firebase/listHelpers';
 import usePersonalRankingHistory from '@/hooks/usePersonalRankingHistory';
 import PersonalRankingPanel from '@/features/rankings/PersonalRankingPanel';
-import ArchiveSidebar from '@/features/rankings/ArchiveSidebar';
+import HistoryPreview from '@/features/rankings/history/HistoryPreview';
 import CreateRankingModal from '@/features/rankings/CreateRankingModal';
 import ListSearchBar from '@/features/lists/ListSearchBar';
 import usePlayerData from '@/hooks/usePlayerData.js';
@@ -27,14 +27,7 @@ const QBRankingsHome = () => {
   const {
     current: currentPersonal,
     archives: personalArchives,
-    selectedArchive,
-    setSelectedArchive,
-    busyId,
-    restore,
-    remove,
     hasMore,
-    loadMore,
-    loadingMore,
   } = usePersonalRankingHistory();
 
   const playersMap = useMemo(() => {
@@ -125,11 +118,7 @@ const QBRankingsHome = () => {
             <div className="lg:col-span-2">
               <PersonalRankingPanel
                 current={currentPersonal}
-                selectedArchive={selectedArchive}
-                onClearSelection={() => setSelectedArchive(null)}
                 onEdit={() => navigate('/rankings/edit')}
-                onRestore={restore}
-                isRestoring={busyId === selectedArchive?.id}
               />
 
               {/* Other Standalone Rankings */}
@@ -197,17 +186,7 @@ const QBRankingsHome = () => {
 
             {/* Personal Rankings Archives Sidebar */}
             <div>
-              <ArchiveSidebar
-                archives={personalArchives}
-                selectedId={selectedArchive?.id}
-                onSelect={setSelectedArchive}
-                onRestore={restore}
-                onDelete={remove}
-                busyId={busyId}
-                hasMore={hasMore}
-                onLoadMore={loadMore}
-                loadingMore={loadingMore}
-              />
+              <HistoryPreview archives={personalArchives} hasMore={hasMore} />
             </div>
           </div>
         )}

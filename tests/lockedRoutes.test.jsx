@@ -25,6 +25,7 @@ describe.each([
   '/backup-qbs/hall-of-fame',
   '/players',
   '/list-presentation',
+  '/rankings/history',
 ])('%s', (path) => {
   it('asks a visitor to sign in as admin', async () => {
     render(

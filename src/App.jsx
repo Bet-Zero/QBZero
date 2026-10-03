@@ -24,6 +24,7 @@ const RankerResultsPage = lazyPage(() => import('@/pages/RankerResultsPage'));
 const QBRankingsPage = lazyPage(() => import('@/pages/QBRankingsPage'));
 const QBRankingsHome = lazyPage(() => import('@/pages/QBRankingsHome'));
 const BrowseRankingsPage = lazyPage(() => import('@/pages/BrowseRankingsPage'));
+const RankingHistoryPage = lazyPage(() => import('@/pages/RankingHistoryPage'));
 const PublicQBRankingsPage = lazyPage(
   () => import('@/pages/PublicQBRankingsPage')
 );
@@ -68,6 +69,16 @@ const App = () => {
           element={
             <AdminProtectedRoute>
               <BrowseRankingsPage />
+            </AdminProtectedRoute>
+          }
+        />
+
+        {/* Every version of the personal rankings. Admin-only, like Browse. */}
+        <Route
+          path="/rankings/history"
+          element={
+            <AdminProtectedRoute>
+              <RankingHistoryPage />
             </AdminProtectedRoute>
           }
         />

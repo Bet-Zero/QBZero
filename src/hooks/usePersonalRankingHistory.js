@@ -8,6 +8,7 @@ import {
   ARCHIVE_PAGE_SIZE,
 } from '@/firebase/personalRankingHelpers';
 import { summariseRankingChange } from '@/utils/rankings/rankingSummary';
+import { formatArchiveDate } from '@/utils/formatting/rankingDates';
 
 /**
  * Give every archive the date its board was saved.
@@ -38,7 +39,6 @@ export const withSavedDates = (archives = []) =>
 const usePersonalRankingHistory = () => {
   const [current, setCurrent] = useState(null);
   const [archives, setArchives] = useState([]);
-  const [selectedArchive, setSelectedArchive] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(null);
@@ -102,13 +102,18 @@ const usePersonalRankingHistory = () => {
       }
       setBusyId(archive.id);
       try {
+        // The note describes the version it is on. A restored board with no
+        // note of its own says where it came from, so the history reads
+        // through rather than showing an unexplained jump back.
         await saveCurrentPersonalRankings(archive.rankings || [], {
-          notes: archive.notes || '',
+          notes:
+            archive.notes ||
+            `Restored the ranking from ${formatArchiveDate(archive)}`,
           expectedVersion: current?.version ?? null,
         });
         toast.success('Rankings restored from that archive.');
-        setSelectedArchive(null);
         await load(pageSize);
+        return true;
       } catch (restoreError) {
         console.error('Error restoring archive:', restoreError);
         toast.error(restoreError?.message || 'Could not restore that archive.');
@@ -132,9 +137,6 @@ const usePersonalRankingHistory = () => {
       try {
         await deletePersonalRankingArchive(archive.id);
         toast.success('Archive deleted.');
-        setSelectedArchive((selected) =>
-          selected?.id === archive.id ? null : selected
-        );
         await load(pageSize);
       } catch (deleteError) {
         console.error('Error deleting archive:', deleteError);
@@ -149,8 +151,6 @@ const usePersonalRankingHistory = () => {
   return {
     current,
     archives,
-    selectedArchive,
-    setSelectedArchive,
     loading,
     loadingMore,
     hasMore,
