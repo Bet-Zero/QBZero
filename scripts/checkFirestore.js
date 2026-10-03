@@ -38,6 +38,7 @@ const COLLECTIONS = [
   'rosterProjects',
   'takes',
   'takeAuthors',
+  'qbwShelves',
   'admins',
 ];
 

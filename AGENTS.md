@@ -67,7 +67,8 @@ New code is grouped by feature. Reusable UI or logic goes in `shared/`,
 | `lists`                   | User-built lists                              | admin            |
 | `tierLists`               | Tier maker boards                             | admin            |
 | `rosterProjects`          | Roster tool projects                          | admin            |
-| `takes` / `takeAuthors`   | QB Weekly takes board                         | any visitor      |
+| `takes` / `takeAuthors`   | QB Weekly takes board                         | admin            |
+| `qbwShelves`              | QB Weekly Crystal Ball shelves (one doc)      | admin            |
 | `admins`                  | One document per admin UID                    | nobody (console) |
 
 `firestore.rules` in the repo is the source of truth for the policy above.

@@ -1,4 +1,4 @@
-import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
+import React, { useId, useMemo, useRef, useState } from 'react';
 import {
   CheckCircle,
   XCircle,
@@ -6,15 +6,12 @@ import {
   Eye,
   Plus,
   User,
-  Shield,
   Pencil,
   Trash2,
 } from 'lucide-react';
 import { createTake, updateTake, deleteTake } from '@/firebase/takeHelpers';
 import useQBRoster from '@/hooks/useQBRoster';
 import { toast } from 'react-hot-toast';
-import TakeAuthorModal from './TakeAuthorModal';
-import AdminGate from './AdminGate';
 import useAuth from '@/hooks/useAuth';
 import { useConfirm } from '@/components/shared/ui/ConfirmModal';
 import {
@@ -24,22 +21,10 @@ import {
   takeStats,
 } from '@/utils/qbw/takes';
 
-const readSavedAuthor = () => {
-  try {
-    return JSON.parse(localStorage.getItem('takeAuthor')) || null;
-  } catch {
-    return null;
-  }
-};
-
-const writeSavedAuthor = (author) => {
-  try {
-    if (author) localStorage.setItem('takeAuthor', JSON.stringify(author));
-    else localStorage.removeItem('takeAuthor');
-  } catch {
-    // Storage blocked: the author just won't be remembered.
-  }
-};
+// Takes are written by the signed-in admin; firestore.rules allows no one
+// else. (Visitor author accounts were removed: their codes sat in publicly
+// readable documents.)
+const ADMIN_AUTHOR = { id: 'admin', name: 'Admin' };
 
 const TakeCard = ({ take, onEdit, onDelete }) => {
   const getStatusIcon = () => {
@@ -134,8 +119,6 @@ const TakeBoard = ({ takes = [], loading = false, onChanged = () => {} }) => {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [author, setAuthor] = useState(null);
-  const [showAuthorModal, setShowAuthorModal] = useState(false);
   const [viewingAuthorId, setViewingAuthorId] = useState(null); // null means viewing all takes
   const [formData, setFormData] = useState(emptyTake);
   const [showQbOptions, setShowQbOptions] = useState(false);
@@ -150,21 +133,6 @@ const TakeBoard = ({ takes = [], loading = false, onChanged = () => {} }) => {
         qb.name.toLowerCase() !== needle
     );
   }, [formData.qbName, roster]);
-
-  const [adminMode, setAdminMode] = useState(false);
-  const [showAdminGate, setShowAdminGate] = useState(false);
-
-  // Admin mode follows the signed-in account; otherwise pick up a visitor
-  // author remembered from an earlier visit.
-  useEffect(() => {
-    if (isAdmin) {
-      setAdminMode(true);
-      setAuthor({ id: 'admin', name: 'Admin' });
-    } else {
-      const savedAuthor = readSavedAuthor();
-      if (savedAuthor) setAuthor(savedAuthor);
-    }
-  }, [isAdmin]);
 
   const closeForm = () => {
     setShowForm(false);
@@ -213,10 +181,7 @@ const TakeBoard = ({ takes = [], loading = false, onChanged = () => {} }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!author) {
-      setShowAuthorModal(true);
-      return;
-    }
+    if (!isAdmin) return;
 
     const take = {
       ...formData,
@@ -238,7 +203,7 @@ const TakeBoard = ({ takes = [], loading = false, onChanged = () => {} }) => {
         await updateTake(editingId, take);
         toast.success('Take updated');
       } else {
-        await createTake(take, author.id, author.name);
+        await createTake(take, ADMIN_AUTHOR.id, ADMIN_AUTHOR.name);
         toast.success('Take added successfully!');
       }
       closeForm();
@@ -252,16 +217,7 @@ const TakeBoard = ({ takes = [], loading = false, onChanged = () => {} }) => {
     }
   };
 
-  const handleLogin = (authorData) => {
-    setAuthor(authorData);
-    setShowAuthorModal(false);
-    writeSavedAuthor(authorData);
-  };
-
   const handleLogout = () => {
-    setAdminMode(false);
-    setAuthor(null);
-    writeSavedAuthor(null);
     closeForm();
     signOut();
     toast.success('Logged out');
@@ -308,17 +264,9 @@ const TakeBoard = ({ takes = [], loading = false, onChanged = () => {} }) => {
             QB predictions and hot takes
           </p>
 
-          {/* Mobile: Login/Add Button positioned near title */}
-          <div className="md:hidden absolute top-0 right-0">
-            {!author ? (
-              <button
-                onClick={() => setShowAuthorModal(true)}
-                className="flex items-center gap-1 px-3 py-1.5 bg-blue-600/80 hover:bg-blue-700 rounded-lg text-white text-xs font-medium transition-all whitespace-nowrap"
-              >
-                <Plus size={14} />
-                Add Take
-              </button>
-            ) : (
+          {/* Mobile: Add button positioned near title */}
+          {isAdmin && (
+            <div className="md:hidden absolute top-0 right-0">
               <button
                 onClick={openNewTake}
                 className="flex items-center gap-1 px-3 py-1.5 bg-blue-600/80 hover:bg-blue-700 rounded-lg text-white text-xs font-medium transition-all whitespace-nowrap"
@@ -326,134 +274,81 @@ const TakeBoard = ({ takes = [], loading = false, onChanged = () => {} }) => {
                 <Plus size={14} />
                 Add Take
               </button>
-            )}
-          </div>
-        </div>
-
-        {/* Desktop: Author Controls - Positioned Absolute Right */}
-        <div className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 items-center gap-3">
-          {!author ? (
-            <>
-              <button
-                onClick={() => setShowAuthorModal(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600/80 hover:bg-blue-700 rounded-lg text-white text-sm font-medium transition-all whitespace-nowrap"
-              >
-                <User size={16} />
-                Login to Add Takes
-              </button>
-
-              <button
-                onClick={() => setShowAdminGate(true)}
-                className="flex items-center gap-2 px-3 py-2 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 rounded-lg text-purple-300 text-sm font-medium transition-all whitespace-nowrap"
-              >
-                <Shield size={14} />
-                Admin
-              </button>
-            </>
-          ) : (
-            <>
-              <div
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap ${
-                  adminMode
-                    ? 'bg-purple-600/20 border border-purple-500/30'
-                    : 'bg-white/10'
-                }`}
-              >
-                <User size={16} className="text-white/60" />
-                <span className="text-white text-sm font-medium">
-                  {author.name}
-                </span>
-                {adminMode && (
-                  <span className="text-xs bg-purple-500/20 text-purple-300 px-2 py-1 rounded">
-                    ADMIN
-                  </span>
-                )}
-              </div>
-
-              {adminMode && (
-                <button
-                  onClick={handleLogout}
-                  className="px-3 py-2 bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 rounded-lg text-red-300 text-xs font-medium transition-all"
-                >
-                  Logout
-                </button>
-              )}
-
-              <button
-                onClick={openNewTake}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600/80 hover:bg-blue-700 rounded-lg text-white text-sm font-medium transition-all whitespace-nowrap"
-              >
-                <Plus size={16} />
-                Add Take
-              </button>
-
-              <select
-                value={viewingAuthorId || ''}
-                onChange={(e) => setViewingAuthorId(e.target.value || null)}
-                className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500 whitespace-nowrap"
-              >
-                <option value="">All Takes</option>
-                <option value={author.id}>My Takes Only</option>
-              </select>
-            </>
+            </div>
           )}
         </div>
-      </div>
 
-      {/* Mobile: Author Info and Controls */}
-      <div className="md:hidden space-y-3">
-        {author && (
-          <div className="flex items-center justify-center gap-3">
-            <div
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
-                adminMode
-                  ? 'bg-purple-600/20 border border-purple-500/30'
-                  : 'bg-white/10'
-              }`}
-            >
-              <User size={14} className="text-white/60" />
-              <span className="text-white font-medium">{author.name}</span>
-              {adminMode && (
-                <span className="text-xs bg-purple-500/20 text-purple-300 px-2 py-1 rounded">
-                  ADMIN
-                </span>
-              )}
+        {/* Desktop: Admin Controls - Positioned Absolute Right */}
+        {isAdmin && (
+          <div className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 items-center gap-3">
+            <div className="flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap bg-purple-600/20 border border-purple-500/30">
+              <User size={16} className="text-white/60" />
+              <span className="text-white text-sm font-medium">
+                {ADMIN_AUTHOR.name}
+              </span>
+              <span className="text-xs bg-purple-500/20 text-purple-300 px-2 py-1 rounded">
+                ADMIN
+              </span>
             </div>
+
+            <button
+              onClick={handleLogout}
+              className="px-3 py-2 bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 rounded-lg text-red-300 text-xs font-medium transition-all"
+            >
+              Logout
+            </button>
+
+            <button
+              onClick={openNewTake}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600/80 hover:bg-blue-700 rounded-lg text-white text-sm font-medium transition-all whitespace-nowrap"
+            >
+              <Plus size={16} />
+              Add Take
+            </button>
 
             <select
               value={viewingAuthorId || ''}
               onChange={(e) => setViewingAuthorId(e.target.value || null)}
-              className="px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
+              className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500 whitespace-nowrap"
             >
               <option value="">All Takes</option>
-              <option value={author.id}>My Takes Only</option>
+              <option value={ADMIN_AUTHOR.id}>My Takes Only</option>
             </select>
           </div>
         )}
-
-        {/* Mobile: Admin Button */}
-        <div className="flex justify-center">
-          {!author ? (
-            <button
-              onClick={() => setShowAdminGate(true)}
-              className="flex items-center gap-2 px-3 py-2 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 rounded-lg text-purple-300 text-sm font-medium transition-all"
-            >
-              <Shield size={14} />
-              Admin
-            </button>
-          ) : adminMode ? (
-            <button
-              onClick={handleLogout}
-              className="px-3 py-2 bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 rounded-lg text-red-300 text-sm font-medium transition-all"
-            >
-              Logout
-            </button>
-          ) : null}
-        </div>
       </div>
 
+      {/* Mobile: Admin Info and Controls */}
+      {isAdmin && (
+        <div className="md:hidden flex items-center justify-center gap-3">
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-purple-600/20 border border-purple-500/30">
+            <User size={14} className="text-white/60" />
+            <span className="text-white font-medium">{ADMIN_AUTHOR.name}</span>
+            <span className="text-xs bg-purple-500/20 text-purple-300 px-2 py-1 rounded">
+              ADMIN
+            </span>
+          </div>
+
+          <select
+            value={viewingAuthorId || ''}
+            onChange={(e) => setViewingAuthorId(e.target.value || null)}
+            className="px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
+          >
+            <option value="">All Takes</option>
+            <option value={ADMIN_AUTHOR.id}>My Takes Only</option>
+          </select>
+
+          <button
+            onClick={handleLogout}
+            className="px-3 py-2 bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 rounded-lg text-red-300 text-sm font-medium transition-all"
+          >
+            Logout
+          </button>
+        </div>
+      )}
+
       {/* Take Creation Form */}
-      {showForm && (
+      {isAdmin && showForm && (
         <div
           ref={formRef}
           className="bg-[#1a1a1a] rounded-xl border border-white/20 p-6"
@@ -758,7 +653,7 @@ const TakeBoard = ({ takes = [], loading = false, onChanged = () => {} }) => {
             <TakeCard
               key={take.id}
               take={take}
-              onEdit={adminMode ? openEdit : null}
+              onEdit={isAdmin ? openEdit : null}
               onDelete={handleDelete}
             />
           ))
@@ -771,27 +666,6 @@ const TakeBoard = ({ takes = [], loading = false, onChanged = () => {} }) => {
           </div>
         )}
       </div>
-
-      {/* Author Modal */}
-      {showAuthorModal && (
-        <TakeAuthorModal
-          onClose={() => setShowAuthorModal(false)}
-          onLogin={handleLogin}
-          currentAuthor={author}
-        />
-      )}
-
-      {/* Admin Gate Modal */}
-      {showAdminGate && (
-        <AdminGate
-          onAdminAccess={() => {
-            setAdminMode(true);
-            setAuthor({ id: 'admin', name: 'Admin' });
-            setShowAdminGate(false);
-          }}
-          onClose={() => setShowAdminGate(false)}
-        />
-      )}
 
       {confirmDialog}
     </div>

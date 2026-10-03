@@ -7,6 +7,7 @@ import {
 } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { filterTakes, takeStats } from '@/utils/qbw/takes';
+import { DEFAULT_SHELVES, normalizeShelves } from '@/utils/qbw/shelves';
 
 const helpers = {
   fetchAllTakes: vi.fn(),
@@ -15,7 +16,8 @@ const helpers = {
   deleteTake: vi.fn(),
 };
 vi.mock('@/firebase/takeHelpers', () => helpers);
-vi.mock('@/firebase/takeAuthHelpers', () => ({}));
+const shelfHelpers = { fetchShelves: vi.fn(), saveShelves: vi.fn() };
+vi.mock('@/firebase/qbwShelfHelpers', () => shelfHelpers);
 vi.mock('@/hooks/useQBRoster', () => ({
   default: () => ({
     roster: [
@@ -24,9 +26,8 @@ vi.mock('@/hooks/useQBRoster', () => ({
     ],
   }),
 }));
-vi.mock('@/hooks/useAuth', () => ({
-  default: () => ({ isAdmin: true, signOut: vi.fn() }),
-}));
+const auth = { isAdmin: true, signOut: vi.fn() };
+vi.mock('@/hooks/useAuth', () => ({ default: () => auth }));
 vi.mock('react-hot-toast', () => {
   const toast = Object.assign(vi.fn(), { success: vi.fn(), error: vi.fn() });
   return { toast, default: toast };
@@ -65,6 +66,10 @@ beforeEach(() => {
   helpers.createTake.mockResolvedValue({});
   helpers.updateTake.mockResolvedValue();
   helpers.deleteTake.mockResolvedValue();
+  Object.values(shelfHelpers).forEach((fn) => fn.mockReset());
+  shelfHelpers.fetchShelves.mockResolvedValue(null);
+  shelfHelpers.saveShelves.mockResolvedValue();
+  auth.isAdmin = true;
 });
 afterEach(cleanup);
 
@@ -162,5 +167,106 @@ describe('QB Weekly page', () => {
       'admin',
       'Admin'
     );
+  });
+});
+
+describe('crystal ball shelves', () => {
+  it('normalizes saved shelves and falls back to the defaults', () => {
+    expect(normalizeShelves(null)).toBe(DEFAULT_SHELVES);
+    expect(normalizeShelves([])).toBe(DEFAULT_SHELVES);
+    expect(
+      normalizeShelves([
+        {
+          id: 's',
+          title: ' Hits ',
+          qbs: [
+            { id: 'a', name: ' Jayden Daniels ', predictionText: 'OROY' },
+            { id: 'b', name: '   ' },
+          ],
+        },
+      ])
+    ).toEqual([
+      {
+        id: 's',
+        title: 'Hits',
+        qbs: [
+          {
+            id: 'a',
+            name: 'Jayden Daniels',
+            imageUrl: '',
+            predictionText: 'OROY',
+          },
+        ],
+      },
+    ]);
+  });
+
+  it('shows the default shelves until some are saved', async () => {
+    render(<QBWPage />);
+    await screen.findByText('Josh Allen top 3');
+    expect(screen.getAllByText('The Whisperer').length).toBeGreaterThan(0);
+    expect(screen.getAllByAltText('Kirk Cousins Crystal Ball').length).toBe(2);
+    expect(screen.getByText('7')).toBeTruthy();
+  });
+
+  it('shows saved shelves, naming QBs on the generic ball', async () => {
+    shelfHelpers.fetchShelves.mockResolvedValue([
+      {
+        id: 'whisperer',
+        title: 'Called It',
+        qbs: [{ id: 'x', name: 'Jayden Daniels', imageUrl: '' }],
+      },
+    ]);
+    render(<QBWPage />);
+    expect((await screen.findAllByText('Called It')).length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Jayden Daniels').length).toBeGreaterThan(0);
+    expect(screen.queryByText('The Whisperer')).toBeNull();
+  });
+
+  it('lets the admin add a QB to a shelf and saves every shelf', async () => {
+    render(<QBWPage />);
+    await screen.findByText('Josh Allen top 3');
+    fireEvent.click(screen.getAllByLabelText("Edit Told You He's Garbage")[0]);
+    fireEvent.click(screen.getByText('Add QB'));
+    fireEvent.change(screen.getByLabelText('QB 3 name'), {
+      target: { value: 'Zach Wilson' },
+    });
+    fireEvent.change(screen.getByLabelText('QB 3 prediction'), {
+      target: { value: 'Bust' },
+    });
+    fireEvent.click(screen.getByText('Save Shelf'));
+
+    await waitFor(() => expect(shelfHelpers.saveShelves).toHaveBeenCalled());
+    const saved = shelfHelpers.saveShelves.mock.calls[0][0];
+    expect(saved).toHaveLength(2);
+    expect(saved[0]).toEqual(DEFAULT_SHELVES[0]);
+    expect(saved[1].qbs.map((qb) => qb.name)).toEqual([
+      'Kirk Cousins',
+      'Russell Wilson',
+      'Zach Wilson',
+    ]);
+    await waitFor(() => expect(screen.queryByText('Save Shelf')).toBeNull());
+    expect(screen.getByText('8')).toBeTruthy();
+  });
+
+  it('keeps the editor open when the save is refused', async () => {
+    shelfHelpers.saveShelves.mockRejectedValue({ code: 'permission-denied' });
+    render(<QBWPage />);
+    await screen.findByText('Josh Allen top 3');
+    fireEvent.click(screen.getAllByLabelText('Edit The Whisperer')[0]);
+    fireEvent.click(screen.getAllByLabelText('Remove Jared Goff')[0]);
+    fireEvent.click(screen.getByText('Save Shelf'));
+    await waitFor(() => expect(shelfHelpers.saveShelves).toHaveBeenCalled());
+    expect(screen.getByText('Save Shelf')).toBeTruthy();
+    expect(screen.getByText('7')).toBeTruthy();
+  });
+
+  it('offers no visitor sign-in or editing to a non-admin', async () => {
+    auth.isAdmin = false;
+    render(<QBWPage />);
+    await screen.findByText('Josh Allen top 3');
+    expect(screen.queryByText('Login to Add Takes')).toBeNull();
+    expect(screen.queryByText('Add Take')).toBeNull();
+    expect(screen.queryByLabelText('Edit The Whisperer')).toBeNull();
   });
 });

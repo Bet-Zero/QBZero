@@ -1,16 +1,35 @@
 import React from 'react';
+import { Pencil } from 'lucide-react';
 import CrystalBall from './CrystalBall';
 
-const Shelf = ({ title, qbs = [], className = '' }) => {
+const EditButton = ({ onEdit, title }) => (
+  <button
+    type="button"
+    onClick={onEdit}
+    aria-label={`Edit ${title || 'shelf'}`}
+    className="p-1.5 rounded text-white/40 hover:text-white hover:bg-white/10"
+  >
+    <Pencil size={14} />
+  </button>
+);
+
+const Shelf = ({ title, qbs = [], className = '', onEdit }) => {
+  // The desktop shelf is one row; shrink the balls once a full row would
+  // spill past it.
+  const desktopSize = qbs.length > 6 ? 'sm' : 'md';
+
   return (
     <div className={`mb-8 ${className}`}>
       {/* Mobile Layout: Card-based grouping (no shelf metaphor) */}
       <div className="sm:hidden">
         <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-xl border border-white/10 p-6 backdrop-blur-sm">
           {/* Title */}
-          {title && (
+          {(title || onEdit) && (
             <div className="text-center mb-6">
-              <h3 className="text-xl font-bold text-white/90 mb-2">{title}</h3>
+              <h3 className="text-xl font-bold text-white/90 mb-2 flex items-center justify-center gap-2">
+                {title}
+                {onEdit && <EditButton onEdit={onEdit} title={title} />}
+              </h3>
               <div className="w-16 h-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full mx-auto"></div>
             </div>
           )}
@@ -35,9 +54,12 @@ const Shelf = ({ title, qbs = [], className = '' }) => {
       {/* Desktop Layout: Traditional shelf design */}
       <div className="hidden sm:block">
         {/* Shelf Title */}
-        {title && (
+        {(title || onEdit) && (
           <div className="mb-4">
-            <h3 className="text-xl font-bold text-white/90 mb-1">{title}</h3>
+            <h3 className="text-xl font-bold text-white/90 mb-1 flex items-center gap-2">
+              {title}
+              {onEdit && <EditButton onEdit={onEdit} title={title} />}
+            </h3>
             <div className="w-24 h-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></div>
           </div>
         )}
@@ -81,7 +103,7 @@ const Shelf = ({ title, qbs = [], className = '' }) => {
                     key={qb.id || index}
                     className="flex-shrink-0 relative z-30"
                   >
-                    <CrystalBall qb={qb} size="md" />
+                    <CrystalBall qb={qb} size={desktopSize} />
                   </div>
                 ))
               ) : (
