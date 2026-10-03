@@ -76,27 +76,6 @@ export function getFilterStyles(key, value) {
       textClass: 'text-white/80',
     };
   }
-  if (key.toLowerCase().includes('shooting')) {
-    const shootingTiers = {
-      Elite: { borderClass: 'border-green-500', textClass: 'text-green-500' },
-      Plus: { borderClass: 'border-lime-400', textClass: 'text-lime-400' },
-      Capable: {
-        borderClass: 'border-yellow-400',
-        textClass: 'text-yellow-400',
-      },
-      Willing: {
-        borderClass: 'border-orange-400',
-        textClass: 'text-orange-400',
-      },
-      Hesitant: {
-        borderClass: 'border-orange-600',
-        textClass: 'text-orange-600',
-      },
-      Non: { borderClass: 'border-red-600', textClass: 'text-red-600' },
-    };
-    const cleaned = String(value).replace('Shooter', '').trim();
-    return shootingTiers[cleaned] || defaultStyles;
-  }
 
   if (
     key.toLowerCase().includes('grade') ||
