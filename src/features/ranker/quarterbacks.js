@@ -62,7 +62,7 @@ export const quarterbacks = [
   { id: 'haynes-king', name: 'Haynes King', team: 'CAR' },
   { id: 'j-j-mccarthy', name: 'J.J. McCarthy', team: 'NYG' },
   { id: 'jack-strand', name: 'Jack Strand', team: 'ATL' },
-  { id: 'jacoby-brissett', name: 'Jacoby Brissett', team: 'ARI' },
+  { id: 'jacoby-brissett', name: 'Jacoby Brissett', team: 'BAL' },
   { id: 'jake-haener', name: 'Jake Haener', team: 'NYG' },
   { id: 'jalen-hurts', name: 'Jalen Hurts', team: 'PHI' },
   { id: 'jalen-milroe', name: 'Jalen Milroe', team: 'SEA' },
