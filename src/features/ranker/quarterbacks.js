@@ -13,6 +13,10 @@
 // same as a team correction. It only ever pushes RETIRED — leaving `status`
 // off an entry never overwrites a status set by hand on the profile page, so
 // the manual toggle there still works for anything not yet reflected here.
+// `throws: 'L'` marks a left-handed passer; leaving it off means right-handed
+// (see src/utils/roster/throws.js). Like `team`, a hand set on the profile
+// wins.
+//
 // Ids are Firestore document ids and must never change once a quarterback has
 // been graded.
 //
@@ -45,13 +49,13 @@ export const quarterbacks = [
   { id: 'carson-beck', name: 'Carson Beck', team: 'ARI' },
   { id: 'carson-wentz', name: 'Carson Wentz', team: 'MIN' },
   { id: 'case-keenum', name: 'Case Keenum', team: 'CHI' },
-  { id: 'cole-payton', name: 'Cole Payton', team: 'PHI' },
+  { id: 'cole-payton', name: 'Cole Payton', team: 'PHI', throws: 'L' },
   { id: 'cooper-rush', name: 'Cooper Rush', team: 'ATL' },
   { id: 'dak-prescott', name: 'Dak Prescott', team: 'DAL' },
   { id: 'daniel-jones', name: 'Daniel Jones', team: 'IND' },
   { id: 'davis-mills', name: 'Davis Mills', team: 'HOU' },
   { id: 'deshaun-watson', name: 'Deshaun Watson', team: 'CLE' },
-  { id: 'dillon-gabriel', name: 'Dillon Gabriel', team: 'CLE' },
+  { id: 'dillon-gabriel', name: 'Dillon Gabriel', team: 'CLE', throws: 'L' },
   { id: 'drake-maye', name: 'Drake Maye', team: 'NE' },
   { id: 'drew-allar', name: 'Drew Allar', team: 'PIT' },
   { id: 'drew-lock', name: 'Drew Lock', team: 'SEA' },
@@ -75,6 +79,7 @@ export const quarterbacks = [
   { id: 'joe-burrow', name: 'Joe Burrow', team: 'CIN' },
   { id: 'joe-fagnano', name: 'Joe Fagnano', team: 'BAL' },
   { id: 'joe-flacco', name: 'Joe Flacco', team: 'CIN' },
+  { id: 'joe-milton-iii', name: 'Joe Milton III', team: 'PHI' },
   { id: 'jordan-love', name: 'Jordan Love', team: 'GB' },
   { id: 'josh-allen', name: 'Josh Allen', team: 'BUF' },
   { id: 'joshua-dobbs', name: 'Joshua Dobbs', team: 'DET' },
@@ -93,7 +98,7 @@ export const quarterbacks = [
   { id: 'mason-rudolph', name: 'Mason Rudolph', team: 'PIT' },
   { id: 'matthew-stafford', name: 'Matthew Stafford', team: 'LAR' },
   { id: 'max-brosmer', name: 'Max Brosmer', team: 'MIN' },
-  { id: 'michael-penix-jr', name: 'Michael Penix Jr', team: 'ATL' },
+  { id: 'michael-penix-jr', name: 'Michael Penix Jr', team: 'ATL', throws: 'L' },
   { id: 'mitchell-trubisky', name: 'Mitchell Trubisky', team: 'TEN' },
   { id: 'patrick-mahomes', name: 'Patrick Mahomes', team: 'KC' },
   { id: 'quinn-ewers', name: 'Quinn Ewers', team: 'JAX' },
@@ -111,7 +116,7 @@ export const quarterbacks = [
   { id: 'tommy-devito', name: 'Tommy DeVito', team: 'NE' },
   { id: 'trevor-lawrence', name: 'Trevor Lawrence', team: 'JAX' },
   { id: 'trey-lance', name: 'Trey Lance', team: 'LAC' },
-  { id: 'tua-tagovailoa', name: 'Tua Tagovailoa', team: 'ATL' },
+  { id: 'tua-tagovailoa', name: 'Tua Tagovailoa', team: 'ATL', throws: 'L' },
   { id: 'ty-simpson', name: 'Ty Simpson', team: 'LAR' },
   { id: 'tyler-huntley', name: 'Tyler Huntley', team: 'BAL' },
   { id: 'tyler-shough', name: 'Tyler Shough', team: 'NO' },
@@ -134,3 +139,7 @@ export const quarterbacks = [
 // Dart's knee injury; Dart stays on NYG, since an injury is not a move.
 //
 // 2 Oct 2026: J.J. McCarthy traded from MIN to NYG on 30 Sep.
+//
+// 6 Nov 2026: Jacoby Brissett traded from ARI to BAL. Joe Milton III added
+// (PHI), elevated to start while Jalen Hurts recovers from blood clots; kept
+// out of the ranker's default pool on purpose.

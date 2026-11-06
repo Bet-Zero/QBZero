@@ -2,7 +2,7 @@ import React from 'react';
 
 /**
  * Which hand the quarterback throws with, stored as bio.Throws ('R' or 'L').
- * Unset until someone picks one, rather than assuming right-handed.
+ * Defaults from quarterbacks.js (see src/utils/roster/throws.js).
  */
 const ThrowsSelect = ({ value, onChange }) => (
   <select

@@ -9,6 +9,7 @@ import { getCurrentSeasonYear } from '@/utils/contracts';
 import { formatHeightLabel } from '@/utils/formatting';
 import TeamSelect from './TeamSelect';
 import ThrowsSelect from './ThrowsSelect';
+import { throwsFor } from '@/utils/roster/throws';
 
 const THROWS_LABEL = { R: 'Right', L: 'Left' };
 
@@ -24,7 +25,7 @@ const PlayerHeader = ({
   onThrowsChange,
 }) => {
   const currentTeam = team || player.bio?.Team;
-  const currentThrows = throws || player.bio?.Throws;
+  const currentThrows = throws || throwsFor(player);
 
   const getAbbreviatedPosition = (position) => {
     if (!position) return 'N/A';
