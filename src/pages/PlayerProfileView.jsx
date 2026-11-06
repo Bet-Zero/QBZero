@@ -9,6 +9,7 @@ import React, {
 } from 'react';
 import usePlayerData from '@/hooks/usePlayerData.js';
 import useAutoSavePlayer from '@/hooks/useAutoSavePlayer';
+import { throwsFor } from '@/utils/roster/throws';
 
 import TeamPlayerDropdowns from '@/features/profile/TeamPlayerDropdowns';
 import PlayerNavigation from '@/features/profile/PlayerNavigation';
@@ -105,7 +106,7 @@ const PlayerProfileView = () => {
     setOverallGrade(data.overall_grade || null);
     setStatus(data.status || 'active');
     setTeam(data.bio?.Team || '');
-    setThrows(data.bio?.Throws || '');
+    setThrows(throwsFor(data));
     setHasChanges(false);
   }, [selectedPlayer, playersData]);
 
