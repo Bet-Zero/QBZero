@@ -19,10 +19,11 @@
 // pool at runtime, so retiring someone here does not need an edit — but it
 // leaves a gap in the last row until the list is updated.
 //
-// Last set: 2 Oct 2026, week 5.
+// Last set: 6 Nov 2026 — Brissett traded to BAL, Minshew starts for ARI,
+// Howell out.
 
 export const DEFAULT_POOL_STARTERS = {
-  ARI: 'jacoby-brissett',
+  ARI: 'gardner-minshew-ii',
   ATL: 'michael-penix-jr',
   BAL: 'lamar-jackson',
   BUF: 'josh-allen',
@@ -66,7 +67,7 @@ export const DEFAULT_POOL_BACKUPS = [
   'joe-flacco', // CIN
   'carson-wentz', // MIN
   'marcus-mariota', // WAS
-  'sam-howell', // DAL
+  'jacoby-brissett', // BAL — traded from ARI
   'j-j-mccarthy', // NYG
   'drew-lock', // SEA
 ];
