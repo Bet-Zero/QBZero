@@ -40,13 +40,17 @@ const stripUndefinedDeep = (value) => {
 // bio.Position is 'QB', so a record saved without it is dropped on reload and
 // the edit looks like it never saved.
 //
-// `team` is the one bio field the profile edits, so a trade can be recorded
+// `throws` (bio.Throws, 'R' or 'L') is the other bio field the profile edits,
+// merged the same way.
+//
+// `team` is the bio field the profile edits most, so a trade can be recorded
 // without a service-account key and populateQBs. It is merged over the saved
 // bio rather than replacing it, and an actual change also writes
 // team_override so the next populateQBs run keeps it (see teamOverride.js).
 const buildPlayerUpdate = ({
   player,
   team,
+  throws,
   traits,
   roles,
   subRoles,
@@ -59,7 +63,11 @@ const buildPlayerUpdate = ({
   stripUndefinedDeep({
     player_id: player.player_id ?? player.id,
     display_name: player.display_name ?? player.name ?? '',
-    bio: { ...(player.bio ?? {}), ...(team ? { Team: team } : {}) },
+    bio: {
+      ...(player.bio ?? {}),
+      ...(team ? { Team: team } : {}),
+      ...(throws ? { Throws: throws } : {}),
+    },
     team_override: teamOverrideForSave({ player, team }),
     traits,
     roles,
@@ -98,6 +106,7 @@ const useAutoSavePlayer = ({
   playerId,
   player,
   team,
+  throws,
   traits,
   roles,
   subRoles,
@@ -218,6 +227,7 @@ const useAutoSavePlayer = ({
       playerId,
       player,
       team,
+      throws,
       traits,
       roles,
       subRoles,
@@ -235,6 +245,7 @@ const useAutoSavePlayer = ({
     playerId,
     player,
     team,
+    throws,
     traits,
     roles,
     subRoles,

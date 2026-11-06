@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import PlayerNameMini from '@/features/table/PlayerTable/PlayerRow/PlayerNameMini';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { getPlayerPositionLabel } from '@/utils/roles';
-import { formatSalary } from '@/utils/formatting';
+import { formatSalary, formatHeightLabel } from '@/utils/formatting';
 
 const PlayerRowMini = ({ player, onClick }) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -14,13 +14,7 @@ const PlayerRowMini = ({ player, onClick }) => {
   const rawPosition = player.bio?.Position || '—';
   const position = getPlayerPositionLabel(rawPosition);
 
-  // Format height from "6-01" to "6-1"
-  const formatHeight = (height) => {
-    if (!height || height === '—') return '—';
-    return height.replace(/-0(\d)$/, '-$1'); // Replace "-0X" with "-X" at end of string
-  };
-
-  const height = formatHeight(player.bio?.HT);
+  const height = formatHeightLabel(player.bio?.HT) || '—';
   const weight = player.bio?.WT || '—';
   const currentYearSalary = player.contract?.annual_salaries?.find(
     (s) => s.year === 2025

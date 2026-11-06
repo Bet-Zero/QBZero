@@ -6,13 +6,25 @@ import PlayerHeadshot from '@/components/shared/PlayerHeadshot';
 import QBRankingBadge from '@/components/shared/QBRankingBadge';
 import { POSITION_MAP } from '@/utils/roles';
 import { getCurrentSeasonYear } from '@/utils/contracts';
+import { formatHeightLabel } from '@/utils/formatting';
 import TeamSelect from './TeamSelect';
+import ThrowsSelect from './ThrowsSelect';
+
+const THROWS_LABEL = { R: 'Right', L: 'Left' };
 
 // `team` is the edited value, which leads the saved one until the save lands
 // and the record reloads. Falls back to the record for callers that do not
 // edit it.
-const PlayerHeader = ({ player, selectedPlayer, team, onTeamChange }) => {
+const PlayerHeader = ({
+  player,
+  selectedPlayer,
+  team,
+  onTeamChange,
+  throws,
+  onThrowsChange,
+}) => {
   const currentTeam = team || player.bio?.Team;
+  const currentThrows = throws || player.bio?.Throws;
 
   const getAbbreviatedPosition = (position) => {
     if (!position) return 'N/A';
@@ -67,10 +79,10 @@ const PlayerHeader = ({ player, selectedPlayer, team, onTeamChange }) => {
       <div className="flex items-center">
         <PlayerHeadshot playerId={selectedPlayer} />
       </div>
-      <div className="w-[230px] h-[190px] bg-[#1f1f1f] rounded-2xl shadow-lg text-white text-[13px] font-thin px-4 py-3 flex flex-col relative top-[0.11rem] justify-center">
+      <div className="w-[230px] h-[210px] bg-[#1f1f1f] rounded-2xl shadow-lg text-white text-[13px] font-thin px-4 py-3 flex flex-col relative top-[0.11rem] justify-center">
         <div className="space-y-[2px]">
           <p>
-            <span className="font-bold">HT</span>: {player.bio?.HT || 'N/A'}
+            <span className="font-bold">HT</span>: {formatHeightLabel(player.bio?.HT) || 'N/A'}
           </p>
           <p>
             <span className="font-bold">WT</span>: {player.bio?.WT || 'N/A'}
@@ -82,8 +94,16 @@ const PlayerHeader = ({ player, selectedPlayer, team, onTeamChange }) => {
             <span className="font-bold">YEARS PRO</span>:{' '}
             {player.bio?.['Years Pro'] || 'N/A'}
           </p>
+          <p>
+            <span className="font-bold">THROWS</span>:{' '}
+            {onThrowsChange ? (
+              <ThrowsSelect value={currentThrows} onChange={onThrowsChange} />
+            ) : (
+              THROWS_LABEL[currentThrows] || 'N/A'
+            )}
+          </p>
         </div>
-        <div className="h-6" />
+        <div className="h-4" />
         <div className="space-y-[2px]">
           <p>
             <span className="font-bold">TEAM</span>:{' '}

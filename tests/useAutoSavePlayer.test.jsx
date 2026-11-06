@@ -108,6 +108,14 @@ describe('useAutoSavePlayer', () => {
     expect(payload.team_override).toBeNull();
   });
 
+  it('writes the throwing hand into the bio without losing the rest', async () => {
+    renderAutosave({ throws: 'L' });
+    await flush();
+
+    const [, payload] = savePlayerData.mock.calls[0];
+    expect(payload.bio).toEqual({ Team: 'BUF', Position: 'QB', Throws: 'L' });
+  });
+
   it('does not write derived fields back', async () => {
     renderAutosave();
     await flush();

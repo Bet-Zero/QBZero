@@ -9,12 +9,13 @@ import { ChevronDown, ChevronUp } from 'lucide-react';
 import AddToListButton from '@/features/lists/AddToListButton';
 import { getCurrentSeasonYear } from '@/utils/contracts';
 import { formatQBStat } from '@/utils/formatting/qbStats';
+import { formatHeightLabel } from '@/utils/formatting';
 
 // Height and weight as "6-2 | 225 lbs", leaving out whichever is missing
 // rather than printing "— | — lbs".
 const formatHeightWeight = (bio = {}) => {
   const parts = [];
-  if (bio.HT) parts.push(bio.HT);
+  if (bio.HT) parts.push(formatHeightLabel(bio.HT));
   if (bio.WT) parts.push(`${bio.WT} lbs`);
   return parts.length ? parts.join(' | ') : '—';
 };
