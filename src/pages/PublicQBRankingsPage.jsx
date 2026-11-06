@@ -1,16 +1,27 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import QBRankingCard from '@/features/rankings/QBRankingCard';
 import { getCurrentPersonalRanking } from '@/firebase/personalRankingHelpers';
 import usePersonalRankingMovement from '@/hooks/usePersonalRankingMovement';
+import useQBRoster from '@/hooks/useQBRoster';
+import { resolveRankingEntries } from '@/utils/rankings/personalRankingEntries';
 import { formatRankingDate } from '@/utils/formatting/rankingDates';
 import { Calendar, TrendingUp } from 'lucide-react';
 
 const PublicQBRankingsPage = () => {
-  const [rankings, setRankings] = useState([]);
+  const [savedRankings, setSavedRankings] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [showMovement, setShowMovement] = useState(false);
+
+  // The saved board carries a copy of each quarterback's team from when it
+  // was saved. Show the current one instead, the way the editor does, so a
+  // team changed on a profile shows up here too. History pages keep the copy.
+  const { roster } = useQBRoster();
+  const rankings = useMemo(
+    () => resolveRankingEntries(savedRankings, roster),
+    [savedRankings, roster]
+  );
 
   const movementData = usePersonalRankingMovement(rankings);
 
@@ -18,7 +29,7 @@ const PublicQBRankingsPage = () => {
     const loadRankings = async () => {
       try {
         const currentRanking = await getCurrentPersonalRanking();
-        setRankings(currentRanking?.rankings || []);
+        setSavedRankings(currentRanking?.rankings || []);
         setLastUpdated(currentRanking || null);
       } catch (error) {
         console.error('Error loading rankings:', error);
