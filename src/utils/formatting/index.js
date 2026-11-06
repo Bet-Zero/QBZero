@@ -5,3 +5,4 @@ export * from './teamLogos.js';
 export * from './formatName.js';
 export * from './formatCurrencyFull.js';
 export * from './qbStats.js';
+export * from './heightLabel.js';

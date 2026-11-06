@@ -1,4 +1,5 @@
 // src/features/lists/ListExportPlayerRowTwoColumn.jsx
+import { formatHeightLabel } from '@/utils/formatting';
 import React from 'react';
 import PlayerNameMini from '@/features/table/PlayerTable/PlayerRow/PlayerNameMini';
 import TeamLogo from '@/components/shared/TeamLogo';
@@ -40,7 +41,7 @@ const ListExportPlayerRowTwoColumn = ({ player, rank }) => {
         <div className="flex items-center mt-[11px] -mb-1 gap-2 text-white/50 text-[13px]">
           <TeamLogo teamAbbr={player.bio?.Team} className="w-5 h-5" />
           <div>
-            {player.bio?.HT || '—'} <span className="text-white/30">|</span>{' '}
+            {formatHeightLabel(player.bio?.HT) || '—'} <span className="text-white/30">|</span>{' '}
             {player.bio?.WT || '—'} lbs
           </div>
         </div>

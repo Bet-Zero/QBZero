@@ -29,6 +29,8 @@ const PlayerDetails = ({
   setStatus,
   team,
   setTeam,
+  throws,
+  setThrows,
   setOpenModal,
 }) => (
   <>
@@ -38,6 +40,8 @@ const PlayerDetails = ({
         selectedPlayer={selectedPlayer}
         team={team}
         onTeamChange={setTeam}
+        throws={throws}
+        onThrowsChange={setThrows}
       />
       <PlayerStatusToggle
         status={status}

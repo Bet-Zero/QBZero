@@ -1,4 +1,5 @@
 // src/features/lists/ListExportRowCompactTwoColumn.jsx
+import { formatHeightLabel } from '@/utils/formatting';
 import React from 'react';
 import TeamLogo from '@/components/shared/TeamLogo';
 import { getPlayerPositionLabel } from '@/utils/roles';
@@ -12,7 +13,7 @@ const ListExportRowCompactTwoColumn = ({ player, rank }) => {
   const rawPosition = player.bio?.Position || player.formattedPosition || '';
   const position = getPlayerPositionLabel(rawPosition) || '—';
 
-  const height = player.bio?.HT || '—';
+  const height = formatHeightLabel(player.bio?.HT) || '—';
   const weight = player.bio?.WT ? `${player.bio.WT} lbs` : '— lbs';
 
   return (

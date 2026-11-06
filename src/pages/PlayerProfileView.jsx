@@ -53,6 +53,7 @@ const PlayerProfileView = () => {
   const [overallGrade, setOverallGrade] = useState(null);
   const [status, setStatus] = useState('active');
   const [team, setTeam] = useState('');
+  const [throws, setThrows] = useState('');
   const [hasChanges, setHasChanges] = useState(false);
 
   useEffect(() => {
@@ -104,6 +105,7 @@ const PlayerProfileView = () => {
     setOverallGrade(data.overall_grade || null);
     setStatus(data.status || 'active');
     setTeam(data.bio?.Team || '');
+    setThrows(data.bio?.Throws || '');
     setHasChanges(false);
   }, [selectedPlayer, playersData]);
 
@@ -129,6 +131,7 @@ const PlayerProfileView = () => {
     playerId: selectedPlayer,
     player,
     team,
+    throws,
     traits,
     roles,
     subRoles,
@@ -284,6 +287,11 @@ const PlayerProfileView = () => {
             team={team}
             setTeam={(val) => {
               setTeam(val);
+              setHasChanges(true);
+            }}
+            throws={throws}
+            setThrows={(val) => {
+              setThrows(val);
               setHasChanges(true);
             }}
             setOpenModal={setOpenModal}
